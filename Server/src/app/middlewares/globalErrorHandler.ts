@@ -1,0 +1,97 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable no-unused-vars */
+import { ErrorRequestHandler } from 'express';
+import { ZodError } from 'zod';
+import config from '../config';
+import AppError from '../errors/AppError';
+import handleCastError from '../errors/handleCastError';
+import handleValidationError from '../errors/handleValidationError';
+import handleZodError from '../errors/handleZodError';
+import handleDuplicateError from '../errors/handlerDuplicateError';
+import handlePrismaError from '../errors/handlePrismaError';
+import { TErrorSources } from '../interfaces/error.interface';
+import { TImageFiles } from '../interfaces/image.interface';
+import { deleteImageFromCloudinary } from '../utils/deleteImage';
+
+const globalErrorHandler: ErrorRequestHandler = async (err, req, res, next) => {
+  //setting default values
+  let statusCode = 500;
+  let message = 'Something went wrong!';
+  let errorSources: TErrorSources[] = [
+    {
+      path: '',
+      message: 'Something went wrong',
+    },
+  ];
+
+  if (req.files && Object.keys(req.files).length > 0) {
+    await deleteImageFromCloudinary(req.files as TImageFiles);
+  }
+
+  // Handle different types of errors
+  if (err instanceof ZodError) {
+    const simplifiedError = handleZodError(err);
+    statusCode = simplifiedError?.statusCode;
+    message = simplifiedError?.message;
+    errorSources = simplifiedError?.errorSources;
+  } else if (err?.code && err?.code.startsWith('P')) {
+    // Handle Prisma errors (they start with P)
+    const simplifiedError = handlePrismaError(err);
+    statusCode = simplifiedError?.statusCode;
+    message = simplifiedError?.message;
+    errorSources = simplifiedError?.errorSources;
+  } else if (err?.code === 'P2002') {
+    // Prisma unique constraint error
+    const simplifiedError = handleDuplicateError(err);
+    statusCode = simplifiedError?.statusCode;
+    message = simplifiedError?.message;
+    errorSources = simplifiedError?.errorSources;
+  } else if (err?.name === 'ValidationError') {
+    const simplifiedError = handleValidationError(err);
+    statusCode = simplifiedError?.statusCode;
+    message = simplifiedError?.message;
+    errorSources = simplifiedError?.errorSources;
+  } else if (err?.name === 'CastError') {
+    const simplifiedError = handleCastError(err);
+    statusCode = simplifiedError?.statusCode;
+    message = simplifiedError?.message;
+    errorSources = simplifiedError?.errorSources;
+  } else if (err?.code === 11000) {
+    // MongoDB duplicate key error (legacy)
+    const simplifiedError = handleDuplicateError(err);
+    statusCode = simplifiedError?.statusCode;
+    message = simplifiedError?.message;
+    errorSources = simplifiedError?.errorSources;
+  } else if (err instanceof AppError) {
+    statusCode = err?.statusCode;
+    message = err.message;
+    errorSources = [
+      {
+        path: '',
+        message: err?.message,
+      },
+    ];
+  } else if (err instanceof Error) {
+    message = err.message;
+    errorSources = [
+      {
+        path: '',
+        message: err?.message,
+      },
+    ];
+  }
+
+  //ultimate return
+  return res.status(statusCode).json({
+    success: false,
+    message,
+    errorSources,
+    // Only include error details in development
+    ...(config.NODE_ENV === 'development' && {
+      error: err,
+      stack: err?.stack,
+    }),
+  });
+};
+
+export default globalErrorHandler;
