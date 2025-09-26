@@ -70,7 +70,7 @@ export const getCurrentUser = async () => {
       id: decodedToken.id || decodedToken._id,
       name: decodedToken.name,
       email: decodedToken.email,
-      phone: decodedToken.phone || decodedToken.mobileNumber,
+      phone: decodedToken.phone || decodedToken.phone,
       role: decodedToken.role,
       status: decodedToken.status,
       profilePhoto: decodedToken.profilePhoto,

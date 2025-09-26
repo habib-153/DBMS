@@ -49,7 +49,7 @@ const UpdateProfileModal = ({
   const { mutate: handleUpdateUser } = useUpdateUser();
 
   const handleUpdate: SubmitHandler<FieldValues> = (data) => {
-    const formData = new FormData()
+    const formData = new FormData();
 
     formData.append("data", JSON.stringify(data));
     formData.append("profilePhoto", imageFile);
@@ -94,7 +94,7 @@ const UpdateProfileModal = ({
                   defaultValues={{
                     name: user?.name,
                     email: user.email,
-                    mobileNumber: user?.mobileNumber,
+                    phone: user?.phone,
                   }}
                   onSubmit={handleUpdate}
                 >
@@ -105,7 +105,7 @@ const UpdateProfileModal = ({
                     <FXInput label="Email" name="email" type="email" />
                   </div>
                   <div className="py-3">
-                    <FXInput label="Mobile Number" name="mobileNumber" type="text" />
+                    <FXInput label="Mobile Number" name="phone" type="text" />
                   </div>
 
                   <div className="min-w-fit flex-1">

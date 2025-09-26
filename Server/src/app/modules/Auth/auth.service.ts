@@ -40,14 +40,13 @@ const registerUser = async (payload: TRegisterUser) => {
       );
     }
   }
-
+console.log(payload)
   // Hash the password
   const hashedPassword = await bcrypt.hash(
     payload.password,
     Number(config.bcrypt_salt_rounds)
   );
 
-  // Create new user
   const newUser = await prisma.user.create({
     data: {
       name: payload.name,

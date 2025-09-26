@@ -3,8 +3,8 @@ import React from "react";
 const Footer = () => {
   return (
     <>
-      <footer className="bg-[#f2f2f2] p-5 bg-base-200 text-base-content">
-        <div className="container mx-auto text-[#1a1c1cfd]">
+      <footer className="bg-[#A50034] p-5 bg-base-200 text-base-content">
+        <div className="container mx-auto text-[#FFFFFF]">
           <div className="grid sm:grid-cols-2 gap-12 md:grid-cols-4 items-center">
             <aside className="">
               <p>

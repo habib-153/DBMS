@@ -4,7 +4,6 @@ export type IconSvgProps = SVGProps<SVGSVGElement> & {
   size?: number;
 };
 
-
 export type TPostCategory =
   | "Adventure"
   | "Exploration"
@@ -47,7 +46,7 @@ export interface IUser {
   role: string;
   email: string;
   status: string;
-  mobileNumber: string;
+  phone: string;
   profilePhoto: string;
   followers: [IUser];
   following: [IUser];

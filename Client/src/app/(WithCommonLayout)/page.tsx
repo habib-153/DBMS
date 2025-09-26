@@ -99,7 +99,7 @@ const PostCard = ({
 
   return (
     <Card className="w-full h-full hover:shadow-xl transition-all duration-300 border-1 border-gray-200 dark:border-gray-700 group">
-      <CardBody className="p-0 h-full flex flex-col">
+          <CardBody className="p-0 h-full flex flex-col">
         {/* Image */}
         {post.image && (
           <div className="relative overflow-hidden rounded-t-xl h-48">
@@ -596,7 +596,7 @@ const Posts = () => {
           <InfiniteScroll
             dataLength={posts.length}
             endMessage={
-              <Card className="mt-8 col-span-full">
+              <Card className="mt-8 col-span-full rounded-none">
                 <CardBody className="text-center py-8">
                   <p className="text-gray-600 dark:text-gray-400">
                     🎉 You&apos;ve seen all posts!

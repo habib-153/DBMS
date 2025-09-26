@@ -61,7 +61,7 @@ export default function RegisterPage() {
             <FXInput label="Email" name="email" size="sm" />
           </div>
           <div className="py-3">
-            <FXInput label="Mobile Number" name="mobileNumber" size="sm" />
+            <FXInput label="Mobile Number" name="phone" size="sm" />
           </div>
           <div className="py-3">
             <FXInput
@@ -72,7 +72,7 @@ export default function RegisterPage() {
             />
           </div>
           <Button
-            className="my-3 w-full rounded-2xl bg-default-900 text-default"
+            className="my-3 w-full rounded-2xl bg-[#A50034] text-white"
             size="lg"
             type="submit"
           >

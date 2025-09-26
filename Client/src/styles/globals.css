@@ -97,7 +97,14 @@
     var(--brand-accent-light) 100%
   );
 }
-
+/* 14AE8C -- Color code 
+A587E9 -- light purple
+E6E6FE -- very light purple
+DFDBFE -- light purple
+E9DFFB -- light pink
+FF4D59 -- light red
+A50034 -- dark red
+*/ 
 /* Enhanced Image Display */
 .enhanced-image {
   filter: brightness(1.1) contrast(1.1) saturate(1.1);
