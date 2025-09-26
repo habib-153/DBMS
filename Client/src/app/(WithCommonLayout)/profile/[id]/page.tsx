@@ -2,10 +2,10 @@
 import { useParams } from "next/navigation";
 import React, { useState } from "react";
 import { BadgeCheck, BookOpen, Users } from "lucide-react";
-import { Avatar } from "@nextui-org/avatar";
-import { Card } from "@nextui-org/card";
-import { Tab, Tabs } from "@nextui-org/tabs";
-import { Chip } from "@nextui-org/chip";
+import { Avatar } from "@heroui/avatar";
+import { Card } from "@heroui/card";
+import { Tab, Tabs } from "@heroui/tabs";
+import { Chip } from "@heroui/chip";
 
 import { useGetAllPosts } from "@/src/hooks/post.hook";
 import envConfig from "@/src/config/envConfig";

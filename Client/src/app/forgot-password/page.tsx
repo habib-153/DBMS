@@ -8,7 +8,7 @@ import {
   Button,
   Link,
   Spinner
-} from "@nextui-org/react";
+} from "@heroui/react";
 import { Compass, Mail, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 

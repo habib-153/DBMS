@@ -8,13 +8,13 @@ import {
   NavbarBrand,
   NavbarItem,
   NavbarMenuItem,
-} from "@nextui-org/navbar";
-import { Link } from "@nextui-org/link";
-import { link as linkStyles } from "@nextui-org/theme";
+} from "@heroui/navbar";
+import { Link } from "@heroui/link";
+import { link as linkStyles } from "@heroui/theme";
 import NextLink from "next/link";
 import clsx from "clsx";
 import Image from "next/image";
-import { Button } from "@nextui-org/button";
+import { Button } from "@heroui/button";
 import { useRouter } from "next/navigation";
 
 import { ThemeSwitch } from "../theme-switch";
@@ -42,7 +42,7 @@ export const Navbar = () => {
               src={Logo}
               width={50}
             />
-            <p className="font-bold text-2xl text-inherit">Warden</p>
+            <p className="font-bold text-2xl text-brand-primary">Warden</p>
           </NextLink>
         </NavbarBrand>
         <ul className="hidden lg:flex gap-4 ml-2">

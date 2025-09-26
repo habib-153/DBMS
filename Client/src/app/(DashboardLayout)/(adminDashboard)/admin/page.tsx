@@ -1,6 +1,6 @@
 'use client';
-import { Card, CardBody, CardHeader } from "@nextui-org/card";
-import { Tab, Tabs } from "@nextui-org/tabs";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Tab, Tabs } from "@heroui/tabs";
 import { CreditCard, Users } from "lucide-react";
 
 import { useGetAllUsers } from "@/src/hooks/user.hook";

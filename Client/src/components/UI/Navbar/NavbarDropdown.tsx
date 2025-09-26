@@ -1,12 +1,12 @@
 "use client";
 
-import { Avatar } from "@nextui-org/avatar";
+import { Avatar } from "@heroui/avatar";
 import {
   Dropdown,
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
-} from "@nextui-org/dropdown";
+} from "@heroui/dropdown";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 

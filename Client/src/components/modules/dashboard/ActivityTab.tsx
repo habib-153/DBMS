@@ -1,9 +1,9 @@
-import { Avatar } from "@nextui-org/avatar";
-import { Card, CardBody } from "@nextui-org/card";
-import { Chip } from "@nextui-org/chip";
+import { Avatar } from "@heroui/avatar";
+import { Card, CardBody } from "@heroui/card";
+import { Chip } from "@heroui/chip";
 import { Activity, Clock, FileText, TrendingUp, User } from "lucide-react";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Table, TableHeader, TableBody, TableColumn, TableRow, TableCell } from "@nextui-org/table";
+import { Table, TableHeader, TableBody, TableColumn, TableRow, TableCell } from "@heroui/table";
 
 import { IPost, IUser } from "@/src/types";
 

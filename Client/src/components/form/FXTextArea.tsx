@@ -1,4 +1,4 @@
-import { Textarea } from "@nextui-org/input";
+import { Textarea } from "@heroui/input";
 import { useFormContext, useWatch } from "react-hook-form";
 
 import { IInput } from "@/src/types";

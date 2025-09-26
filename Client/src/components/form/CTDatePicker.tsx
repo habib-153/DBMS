@@ -1,4 +1,4 @@
-import { DatePicker } from "@nextui-org/date-picker";
+import { DatePicker } from "@heroui/date-picker";
 import { Controller } from "react-hook-form";
 
 import { IInput } from "@/src/types";

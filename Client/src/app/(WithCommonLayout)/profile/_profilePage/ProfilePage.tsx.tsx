@@ -1,10 +1,10 @@
 "use client";
 
-import { Avatar } from "@nextui-org/avatar";
-import { Button } from "@nextui-org/button";
-import { Card } from "@nextui-org/card";
-import { Chip } from "@nextui-org/chip";
-import { Tab, Tabs } from "@nextui-org/tabs";
+import { Avatar } from "@heroui/avatar";
+import { Button } from "@heroui/button";
+import { Card } from "@heroui/card";
+import { Chip } from "@heroui/chip";
+import { Tab, Tabs } from "@heroui/tabs";
 import { BadgeCheck, BookOpen, Edit, KeySquare, Users } from "lucide-react";
 import { useState } from "react";
 

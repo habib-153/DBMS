@@ -1,20 +1,18 @@
 "use client";
 
-import { Input } from "@nextui-org/input";
+import { Input } from "@heroui/input";
 import { useFormContext } from "react-hook-form";
 
 interface IProps {
-  variant?: "flat" | "bordered" | "faded" | "underlined";
   size?: "sm" | "md" | "lg";
   required?: boolean;
   type?: string;
   label: string;
   name: string;
-  radius?: "sm" | "md" | "lg" | "none" | "full"
+  radius?: "sm" | "md" | "lg" | "none" | "full";
 }
 
 export default function FXInput({
-  variant = "bordered",
   size = "md",
   required = false,
   type = "text",
@@ -30,6 +28,7 @@ export default function FXInput({
   return (
     <Input
       {...register(name)}
+      className="focus-within:border-0"
       errorMessage={errors?.[name] ? (errors?.[name]?.message as string) : ""}
       isInvalid={!!errors[name]}
       label={label}
@@ -37,7 +36,6 @@ export default function FXInput({
       required={required}
       size={size}
       type={type}
-      variant={variant}
     />
   );
 }

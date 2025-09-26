@@ -13,7 +13,7 @@ import {
   DropdownMenu,
   DropdownItem,
   Skeleton,
-} from "@nextui-org/react";
+} from "@heroui/react";
 import {
   Search,
   ThumbsUp,
@@ -456,7 +456,6 @@ const Posts = () => {
           Create Report
         </Button>
       </div>
-
       {/* Filters */}
       <Card className="mb-6">
         <CardBody className="p-6">
@@ -582,16 +581,15 @@ const Posts = () => {
           </div>
         </CardBody>
       </Card>
-
       {/* Posts */}
       <div>
         {isLoading && page === 1 ? (
           // Loading skeletons
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          (<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {Array.from({ length: 8 }).map((_, index) => (
               <LoadingSkeleton key={index} />
             ))}
-          </div>
+          </div>)
         ) : posts.length > 0 ? (
           <InfiniteScroll
             dataLength={posts.length}
@@ -634,7 +632,7 @@ const Posts = () => {
           </InfiniteScroll>
         ) : (
           // No posts
-          <Card>
+          (<Card>
             <CardBody className="text-center py-12">
               <div className="text-6xl mb-4">📝</div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
@@ -653,10 +651,9 @@ const Posts = () => {
                 Create First Report
               </Button>
             </CardBody>
-          </Card>
+          </Card>)
         )}
       </div>
-
       {/* Modals */}
       <AuthModal
         openAuthModal={openAuthModal}

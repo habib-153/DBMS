@@ -1,6 +1,6 @@
-import { Card } from "@nextui-org/card";
-import { Skeleton } from "@nextui-org/skeleton";
-import { Tab, Tabs } from "@nextui-org/tabs";
+import { Card } from "@heroui/card";
+import { Skeleton } from "@heroui/skeleton";
+import { Tab, Tabs } from "@heroui/tabs";
 import { BookOpen, Users } from "lucide-react";
 
 const ProfileSkeleton = () => {

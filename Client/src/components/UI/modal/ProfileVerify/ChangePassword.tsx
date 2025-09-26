@@ -1,4 +1,4 @@
-import { Button } from "@nextui-org/button";
+import { Button } from "@heroui/button";
 import { PressEvent } from "@react-types/shared";
 import {
   Modal,
@@ -6,7 +6,7 @@ import {
   ModalContent,
   ModalFooter,
   ModalHeader,
-} from "@nextui-org/modal";
+} from "@heroui/modal";
 import React, { useRef } from "react";
 import { SubmitHandler } from "react-hook-form";
 import { toast } from "sonner";

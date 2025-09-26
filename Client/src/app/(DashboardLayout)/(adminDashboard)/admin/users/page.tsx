@@ -1,8 +1,8 @@
 "use client";
-import { Chip } from "@nextui-org/chip";
-import { User } from "@nextui-org/user";
+import { Chip } from "@heroui/chip";
+import { User } from "@heroui/user";
 import { useCallback } from "react";
-import { Button } from "@nextui-org/button";
+import { Button } from "@heroui/button";
 import {
   Table,
   TableBody,
@@ -10,10 +10,10 @@ import {
   TableColumn,
   TableHeader,
   TableRow,
-} from "@nextui-org/table";
-import { Tooltip } from "@nextui-org/tooltip";
+} from "@heroui/table";
+import { Tooltip } from "@heroui/tooltip";
 import { Trash2, UserCog } from "lucide-react";
-import { Spinner } from "@nextui-org/react";
+import { Spinner } from "@heroui/react";
 
 import { useUser } from "@/src/context/user.provider";
 import { useDeleteUser, useGetAllUsers, useUpdateUserRole } from "@/src/hooks/user.hook";

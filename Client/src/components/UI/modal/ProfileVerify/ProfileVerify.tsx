@@ -1,6 +1,6 @@
-import { Button } from "@nextui-org/button";
-import { Card } from "@nextui-org/card";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@nextui-org/modal";
+import { Button } from "@heroui/button";
+import { Card } from "@heroui/card";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
 import { Crown, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";

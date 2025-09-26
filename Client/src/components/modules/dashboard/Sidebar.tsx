@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
-import { Button } from "@nextui-org/button";
-import { Divider } from "@nextui-org/divider";
+import { Button } from "@heroui/button";
+import { Divider } from "@heroui/divider";
 import {
   MessageSquareQuote,
   Contact,

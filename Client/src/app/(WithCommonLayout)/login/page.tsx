@@ -1,11 +1,11 @@
 "use client";
-import { Button } from "@nextui-org/button";
+import { Button } from "@heroui/button";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FieldValues, SubmitHandler } from "react-hook-form";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
-import { Card } from "@nextui-org/card";
+import { Card } from "@heroui/card";
 
 import FXForm from "@/src/components/form/FXForm";
 import FXInput from "@/src/components/form/FXInput";
@@ -66,7 +66,6 @@ const LoginPage = () => {
   return (
     <div className="flex relative min-h-[calc(100vh-200px)] w-full flex-col items-center justify-center px-4 py-8">
       <h3 className="my-2 text-xl sm:text-2xl font-bold text-center">
-        Login with Warden
       </h3>
       <p className="mb-4 text-sm sm:text-base text-center">
         Welcome Back! Let&lsquo;s Get Started

@@ -60,7 +60,8 @@
     box-shadow: 0 25px 45px rgba(0, 0, 0, 0.4);
   }
 }
-
+  }
+}
 
 @keyframes flicker-warning {
   0%,
@@ -193,6 +194,45 @@
   line-clamp: 2;
 }
 
+@keyframes moveAlong {
+  from {
+    offset-distance: 0%;
+  }
+  to {
+    offset-distance: 100%;
+  }
+}
+
+@keyframes floatCloud {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(400%);
+  }
+}
+
+.cloud-1 {
+  top: 20%;
+  left: -20%;
+}
+
+.cloud-2 {
+  top: 40%;
+  left: -20%;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .animate-fade-in {
   animation: fade-in 1s ease-out forwards;
 }
@@ -238,7 +278,7 @@
 
 /* Enhanced glass form with better visibility */
 .glass-form-enhanced {
-  background: rgba(12, 12, 12, 0.062);
+  background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(15px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow:
@@ -251,7 +291,7 @@
   background: rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow:
-    0 25px 45px rgba(0, 0, 0, 0.179),
+    0 25px 45px rgba(0, 0, 0, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 

@@ -1,5 +1,5 @@
-import { Button } from "@nextui-org/button";
-import { Divider } from "@nextui-org/divider";
+import { Button } from "@heroui/button";
+import { Divider } from "@heroui/divider";
 import React, { ChangeEvent, useState, useEffect, Key } from "react";
 import {
   FieldValues,
@@ -7,14 +7,14 @@ import {
   SubmitHandler,
   useForm,
 } from "react-hook-form";
-import { Modal, ModalContent } from "@nextui-org/modal";
+import { Modal, ModalContent } from "@heroui/modal";
 import { useRouter } from "next/navigation";
 import {
   Dropdown,
   DropdownItem,
   DropdownMenu,
   DropdownTrigger,
-} from "@nextui-org/dropdown";
+} from "@heroui/dropdown";
 
 import Loading from "../../Loading";
 
