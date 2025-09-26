@@ -8,19 +8,16 @@ const express_1 = __importDefault(require("express"));
 const user_controller_1 = require("./user.controller");
 const auth_1 = __importDefault(require("../../middlewares/auth"));
 const user_constant_1 = require("./user.constant");
-const validateRequest_1 = __importDefault(require("../../middlewares/validateRequest"));
-const user_validation_1 = require("./user.validation");
 const router = express_1.default.Router();
 exports.UserRoutes = router;
-router.post('/create-user', (0, auth_1.default)(user_constant_1.USER_ROLE.ADMIN), (0, validateRequest_1.default)(user_validation_1.UserValidation.createUserValidationSchema), user_controller_1.UserControllers.userRegister);
 // router.put(
 //   '/get-verified',
 //   auth(USER_ROLE.USER, USER_ROLE.ADMIN),
 //   UserControllers.getVerified
 // );
-router.post('/send-otp', user_controller_1.UserControllers.sendOTPController);
-router.post('/verify-otp', user_controller_1.UserControllers.verifyOTPController);
-router.get('/', (0, auth_1.default)(user_constant_1.USER_ROLE.ADMIN), user_controller_1.UserControllers.getAllUsers);
-router.get('/:id', user_controller_1.UserControllers.getSingleUser);
-router.put('/:id', (0, auth_1.default)(user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.USER), user_controller_1.UserControllers.updateUser);
-router.delete('/:id', (0, auth_1.default)(user_constant_1.USER_ROLE.ADMIN), user_controller_1.UserControllers.deleteUser);
+// router.post('/send-otp', UserController.sendOTPController);
+// router.post('/verify-otp', UserController.verifyOTPController);
+router.get('/', (0, auth_1.default)(user_constant_1.USER_ROLE.ADMIN), user_controller_1.UserController.getAllUsers);
+router.get('/:id', user_controller_1.UserController.getUserById);
+router.put('/:id', (0, auth_1.default)(user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.USER), user_controller_1.UserController.updateUser);
+router.delete('/:id', (0, auth_1.default)(user_constant_1.USER_ROLE.ADMIN), user_controller_1.UserController.deleteUser);

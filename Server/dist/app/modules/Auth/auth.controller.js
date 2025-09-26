@@ -20,16 +20,17 @@ const auth_service_1 = require("./auth.service");
 const catchAsync_1 = require("../../utils/catchAsync");
 const registerUser = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield auth_service_1.AuthServices.registerUser(req.body);
-    const { refreshToken, accessToken } = result;
+    const { refreshToken, accessToken, user } = result;
     res.cookie('refreshToken', refreshToken, {
         secure: config_1.default.NODE_ENV === 'production',
         httpOnly: true,
     });
     (0, sendResponse_1.default)(res, {
-        statusCode: http_status_1.default.OK,
+        statusCode: http_status_1.default.CREATED,
         success: true,
-        message: 'User registered in successfully!',
+        message: 'User registered successfully!',
         data: {
+            user,
             accessToken,
             refreshToken,
         },

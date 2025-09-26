@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.postSearchableFields = exports.POST_STATUS = exports.DISTRICTS = void 0;
+exports.postFilterableFields = exports.postSearchableFields = exports.POST_STATUS = exports.DISTRICTS = void 0;
 exports.DISTRICTS = [
     'Barguna',
     'Barisal',
@@ -71,4 +71,19 @@ exports.POST_STATUS = {
     BASIC: 'BASIC',
     PREMIUM: 'PREMIUM',
 };
-exports.postSearchableFields = ['title', 'category'];
+exports.postSearchableFields = [
+    'title',
+    'description',
+    'location',
+    'district',
+    'division',
+];
+exports.postFilterableFields = [
+    'title',
+    'location',
+    'district',
+    'division',
+    'status',
+    'authorId',
+    'searchTerm',
+];

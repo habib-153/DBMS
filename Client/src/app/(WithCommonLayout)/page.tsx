@@ -75,11 +75,10 @@ export default function HomePage() {
         openAuthModal={openAuthModal}
         setOpenAuthModal={setOpenAuthModal}
       />
-
-      
-      {openCreatePostModal && (
-        <CreatePostModal isOpen={openCreatePostModal} setIsOpen={setOpenCreatePostModal} />
-      )}
+      <CreatePostModal
+        isOpen={openCreatePostModal}
+        setIsOpen={setOpenCreatePostModal}
+      />
     </div>
   );
 }

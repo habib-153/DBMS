@@ -1,11 +1,4 @@
-import {
-  Button,
-  Divider,
-  Modal,
-  ModalContent,
-  Select,
-  SelectItem,
-} from "@heroui/react";
+import { Button, Divider, Modal, ModalContent } from "@heroui/react";
 import React, { ChangeEvent, useState, useEffect } from "react";
 import {
   FieldValues,
@@ -60,6 +53,8 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
   const [selectedDivision, setSelectedDivision] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [divisionsLoading, setDivisionsLoading] = useState(false);
+  const [showDivisionDropdown, setShowDivisionDropdown] = useState(false);
+  const [showDistrictDropdown, setShowDistrictDropdown] = useState(false);
 
   // Load divisions on component mount
   useEffect(() => {
@@ -99,6 +94,38 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
         });
     }
   }, [selectedDivision]);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowDivisionDropdown(false);
+      setShowDistrictDropdown(false);
+    };
+
+    if (showDivisionDropdown || showDistrictDropdown) {
+      document.addEventListener("click", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [showDivisionDropdown, showDistrictDropdown]);
+
+  // Check if all required fields are filled
+  const isFormValid = () => {
+    const formData = methods.watch();
+
+    return (
+      formData.title &&
+      formData.title.trim() !== "" &&
+      formData.crimeDate &&
+      selectedDivision !== "" &&
+      selectedDistrict !== "" &&
+      imageFiles.length > 0 &&
+      formData.description &&
+      formData.description.trim() !== ""
+    );
+  };
 
   const onSubmit: SubmitHandler<FieldValues> = (data) => {
     // Validation
@@ -244,62 +271,129 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
                     </div>
                     <div className="flex flex-wrap gap-2 py-2">
                       <div className="min-w-fit flex-1">
-                        <Select
-                          className="w-full"
-                          classNames={{
-                            trigger:
-                              "bg-gray-50 dark:bg-gray-800 border-1 border-gray-200 dark:border-gray-700 hover:border-brand-primary/50 data-[focus=true]:border-brand-primary",
-                          }}
-                          isDisabled={divisionsLoading}
-                          isLoading={divisionsLoading}
-                          label="Division"
-                          placeholder={
-                            divisionsLoading
-                              ? "Loading divisions..."
-                              : "Select Division"
-                          }
-                          selectedKeys={
-                            selectedDivision ? [selectedDivision] : []
-                          }
-                          onSelectionChange={(keys) => {
-                            const selected = Array.from(keys)[0] as string;
-
-                            setSelectedDivision(selected || "");
-                            setSelectedDistrict(""); // Reset district when division changes
-                          }}
-                        >
-                          {divisions.map((division) => (
-                            <SelectItem key={division.id}>
-                              {division.name}
-                            </SelectItem>
-                          ))}
-                        </Select>
+                        <div className="relative">
+                          <div className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Division
+                          </div>
+                          <button
+                            className="w-full px-3 py-2 text-left bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-brand-primary/50 focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"
+                            disabled={divisionsLoading}
+                            type="button"
+                            onClick={() =>
+                              setShowDivisionDropdown(!showDivisionDropdown)
+                            }
+                          >
+                            <div className="flex justify-between items-center">
+                              <span
+                                className={
+                                  divisionsLoading || !selectedDivision
+                                    ? "text-gray-500"
+                                    : "text-gray-900 dark:text-gray-100"
+                                }
+                              >
+                                {divisionsLoading
+                                  ? "Loading divisions..."
+                                  : divisions.find(
+                                      (div) => div.id === selectedDivision
+                                    )?.name || "Select Division"}
+                              </span>
+                              <svg
+                                className={`w-4 h-4 transition-transform ${showDivisionDropdown ? "rotate-180" : ""}`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  d="M19 9l-7 7-7-7"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                />
+                              </svg>
+                            </div>
+                          </button>
+                          {showDivisionDropdown && divisions.length > 0 && (
+                            <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                              {divisions.map((division) => (
+                                <button
+                                  key={division.id}
+                                  className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 focus:outline-none"
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedDivision(division.id);
+                                    setSelectedDistrict(""); // Reset district when division changes
+                                    setShowDivisionDropdown(false);
+                                  }}
+                                >
+                                  {division.name}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <div className="min-w-fit flex-1">
-                        <Select
-                          className="w-full"
-                          classNames={{
-                            trigger:
-                              "bg-gray-50 dark:bg-gray-800 border-1 border-gray-200 dark:border-gray-700 hover:border-brand-primary/50 data-[focus=true]:border-brand-primary",
-                          }}
-                          isDisabled={!selectedDivision}
-                          label="District"
-                          placeholder="Select District"
-                          selectedKeys={
-                            selectedDistrict ? [selectedDistrict] : []
-                          }
-                          onSelectionChange={(keys) => {
-                            const selected = Array.from(keys)[0] as string;
-
-                            setSelectedDistrict(selected || "");
-                          }}
-                        >
-                          {districts.map((district) => (
-                            <SelectItem key={district.id}>
-                              {district.name}
-                            </SelectItem>
-                          ))}
-                        </Select>
+                        <div className="relative">
+                          <div className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            District
+                          </div>
+                          <button
+                            className="w-full px-3 py-2 text-left bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-brand-primary/50 focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={!selectedDivision}
+                            type="button"
+                            onClick={() =>
+                              setShowDistrictDropdown(!showDistrictDropdown)
+                            }
+                          >
+                            <div className="flex justify-between items-center">
+                              <span
+                                className={
+                                  !selectedDivision || !selectedDistrict
+                                    ? "text-gray-500"
+                                    : "text-gray-900 dark:text-gray-100"
+                                }
+                              >
+                                {!selectedDivision
+                                  ? "Select Division First"
+                                  : districts.find(
+                                      (dist) => dist.id === selectedDistrict
+                                    )?.name || "Select District"}
+                              </span>
+                              <svg
+                                className={`w-4 h-4 transition-transform ${showDistrictDropdown ? "rotate-180" : ""}`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  d="M19 9l-7 7-7-7"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                />
+                              </svg>
+                            </div>
+                          </button>
+                          {showDistrictDropdown &&
+                            districts.length > 0 &&
+                            selectedDivision && (
+                              <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                {districts.map((district) => (
+                                  <button
+                                    key={district.id}
+                                    className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 focus:outline-none"
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedDistrict(district.id);
+                                      setShowDistrictDropdown(false);
+                                    }}
+                                  >
+                                    {district.name}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                        </div>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2 py-2">
@@ -380,13 +474,74 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
 
                     <Divider className="my-5" />
 
-                    <Divider className="my-5" />
-                    <div className="flex justify-end">
-                      <Button color="danger" variant="light" onPress={onClose}>
+                    {/* Form Validation Status */}
+                    {/* {!isFormValid() && (
+                      <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                        <div className="flex items-start gap-2">
+                          <div className="flex-shrink-0 mt-0.5">
+                            <svg
+                              className="w-4 h-4 text-yellow-600 dark:text-yellow-400"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                clipRule="evenodd"
+                                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                fillRule="evenodd"
+                              />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                              Please complete all required fields:
+                            </p>
+                            <ul className="mt-1 text-xs text-yellow-700 dark:text-yellow-300 space-y-1">
+                              {!methods.watch("title") && (
+                                <li>• Title is required</li>
+                              )}
+                              {!methods.watch("crimeDate") && (
+                                <li>• Crime date is required</li>
+                              )}
+                              {!selectedDivision && (
+                                <li>• Division selection is required</li>
+                              )}
+                              {!selectedDistrict && (
+                                <li>• District selection is required</li>
+                              )}
+                              {imageFiles.length === 0 && (
+                                <li>• At least one image is required</li>
+                              )}
+                              {!methods.watch("description") && (
+                                <li>• Description is required</li>
+                              )}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    )} */}
+
+                    {/* Footer Buttons */}
+                    <div className="flex gap-4 justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <Button
+                        className="px-6 py-2 border-2 border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20 font-medium transition-all duration-200"
+                        size="lg"
+                        variant="bordered"
+                        onPress={onClose}
+                      >
                         Cancel
                       </Button>
-                      <Button size="lg" type="submit">
-                        Post
+                      <Button
+                        className={`px-6 py-2 font-medium transition-all duration-200 ${
+                          isFormValid()
+                            ? "bg-brand-gradient text-white shadow-lg hover:shadow-xl hover:scale-105"
+                            : "bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                        }`}
+                        isDisabled={!isFormValid() || createPostPending}
+                        isLoading={createPostPending}
+                        size="lg"
+                        type="submit"
+                      >
+                        {createPostPending ? "Posting..." : "Post Crime Report"}
                       </Button>
                     </div>
                   </form>

@@ -8,301 +8,471 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PostServices = void 0;
-/* eslint-disable @typescript-eslint/no-explicit-any */
+exports.PostService = void 0;
 const http_status_1 = __importDefault(require("http-status"));
+const client_1 = require("@prisma/client");
 const AppError_1 = __importDefault(require("../../errors/AppError"));
-const post_model_1 = require("./post.model");
-const user_model_1 = require("../User/user.model");
-const mongoose_1 = require("mongoose");
-const mongoose_2 = __importDefault(require("mongoose"));
-const createPostIntoDB = (payload, image) => __awaiter(void 0, void 0, void 0, function* () {
-    if (image) {
-        payload.image = image.path;
-    }
-    const user = yield user_model_1.User.findById(payload.author);
-    if (!user) {
-        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'User not found');
-    }
-    if (user.status == 'BAN') {
-        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'User is banned');
-    }
-    const result = (yield post_model_1.Post.create(payload)).populate('author');
-    yield user_model_1.User.findByIdAndUpdate(user === null || user === void 0 ? void 0 : user._id, { $inc: { postCount: 1 } });
-    return result;
+const prisma_1 = __importDefault(require("../../../shared/prisma"));
+const post_constant_1 = require("./post.constant");
+const createPost = (postData, imageFile, authorId) => __awaiter(void 0, void 0, void 0, function* () {
+    // Convert crimeDate string to Date
+    const crimeDate = new Date(postData.crimeDate);
+    const post = yield prisma_1.default.post.create({
+        data: {
+            title: postData.title,
+            description: postData.description,
+            image: imageFile.path,
+            location: postData.location,
+            district: postData.district,
+            division: postData.division,
+            crimeDate: crimeDate,
+            authorId: authorId,
+            status: client_1.PostStatus.PENDING,
+        },
+        include: {
+            author: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    profilePhoto: true,
+                },
+            },
+            votes: true,
+            comments: {
+                include: {
+                    author: {
+                        select: {
+                            id: true,
+                            name: true,
+                            profilePhoto: true,
+                        },
+                    },
+                },
+            },
+            _count: {
+                select: {
+                    votes: true,
+                    comments: true,
+                },
+            },
+        },
+    });
+    return post;
 });
-const getAllPostsFromDB = (query) => __awaiter(void 0, void 0, void 0, function* () {
-    const { sort, searchTerm, category, page = 1, limit = 10 } = query;
-    //console.log(query, 'Hello')
-    const pageNumber = Math.max(Number(page), 1);
-    const limitNumber = Math.max(Number(limit), 1);
-    const skip = (pageNumber - 1) * limitNumber;
-    const aggregationPipeline = [
-        {
-            $lookup: {
-                from: 'users',
-                localField: 'author',
-                foreignField: '_id',
-                as: 'author',
-            },
-        },
-        {
-            $unwind: {
-                path: '$author',
-                preserveNullAndEmptyArrays: true,
-            },
-        },
-        {
-            $addFields: {
-                upvoteCount: { $size: '$upVotes' },
-                downvoteCount: { $size: '$downVotes' },
-            },
-        },
-        {
-            $lookup: {
-                from: 'users',
-                localField: 'upVotes',
-                foreignField: '_id',
-                as: 'upVotes',
-            },
-        },
-        {
-            $lookup: {
-                from: 'users',
-                localField: 'downVotes',
-                foreignField: '_id',
-                as: 'downVotes',
-            },
-        }
-    ];
+const getAllPosts = (filters) => __awaiter(void 0, void 0, void 0, function* () {
+    const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc', searchTerm } = filters, filterData = __rest(filters, ["page", "limit", "sortBy", "sortOrder", "searchTerm"]);
+    const skip = (Number(page) - 1) * Number(limit);
+    const andConditions = [];
     if (searchTerm) {
-        const searchRegex = new RegExp(searchTerm, 'i');
-        aggregationPipeline.push({
-            $match: {
-                $or: [
-                    { title: searchRegex },
-                    { category: searchRegex },
-                    { 'author.name': searchRegex },
-                    { 'author.email': searchRegex },
-                ],
-            },
+        andConditions.push({
+            OR: post_constant_1.postSearchableFields.map((field) => ({
+                [field]: {
+                    contains: searchTerm,
+                    mode: 'insensitive',
+                },
+            })),
         });
     }
-    if (category) {
-        aggregationPipeline.push({
-            $match: { category },
+    if (Object.keys(filterData).length > 0) {
+        andConditions.push({
+            AND: Object.keys(filterData).map((key) => ({
+                [key]: {
+                    equals: filterData[key],
+                },
+            })),
         });
     }
-    if (sort === 'upvotes' || sort === 'downvotes') {
-        aggregationPipeline.push({
-            $sort: sort === 'upvotes' ? { upvoteCount: -1 } : { downvoteCount: -1 },
-        });
-    }
-    aggregationPipeline.push({ $skip: skip }, { $limit: limitNumber });
-    const result = yield post_model_1.Post.aggregate(aggregationPipeline);
-    const totalDocuments = yield post_model_1.Post.countDocuments();
-    const totalPage = Math.ceil(totalDocuments / limitNumber);
-    // Return result with meta information
-    return {
-        data: result,
-        meta: {
-            page: pageNumber,
-            limit: limitNumber,
-            total: totalDocuments,
-            totalPage,
+    andConditions.push({
+        isDeleted: false,
+        status: {
+            in: [client_1.PostStatus.APPROVED, client_1.PostStatus.PENDING],
         },
+    });
+    const whereConditions = andConditions.length > 0 ? { AND: andConditions } : {};
+    const posts = yield prisma_1.default.post.findMany({
+        where: whereConditions,
+        skip,
+        take: Number(limit),
+        orderBy: {
+            [sortBy]: sortOrder,
+        },
+        include: {
+            author: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    profilePhoto: true,
+                },
+            },
+            votes: {
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            name: true,
+                        },
+                    },
+                },
+            },
+            comments: {
+                where: {
+                    isDeleted: false,
+                },
+                include: {
+                    author: {
+                        select: {
+                            id: true,
+                            name: true,
+                            profilePhoto: true,
+                        },
+                    },
+                    votes: true,
+                },
+                orderBy: {
+                    createdAt: 'desc',
+                },
+            },
+            _count: {
+                select: {
+                    votes: true,
+                    comments: true,
+                },
+            },
+        },
+    });
+    const total = yield prisma_1.default.post.count({
+        where: whereConditions,
+    });
+    return {
+        meta: {
+            total,
+            page: Number(page),
+            limit: Number(limit),
+        },
+        data: posts,
     };
 });
-const getSinglePostFromDB = (id) => __awaiter(void 0, void 0, void 0, function* () {
-    const aggregationPipeline = [
-        {
-            $match: {
-                _id: new mongoose_1.Types.ObjectId(id),
+const getSinglePost = (id) => __awaiter(void 0, void 0, void 0, function* () {
+    const post = yield prisma_1.default.post.findUnique({
+        where: { id },
+        include: {
+            author: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    profilePhoto: true,
+                },
+            },
+            votes: {
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            name: true,
+                        },
+                    },
+                },
+            },
+            comments: {
+                where: {
+                    isDeleted: false,
+                },
+                include: {
+                    author: {
+                        select: {
+                            id: true,
+                            name: true,
+                            profilePhoto: true,
+                        },
+                    },
+                    votes: true,
+                },
+                orderBy: {
+                    createdAt: 'desc',
+                },
+            },
+            _count: {
+                select: {
+                    votes: true,
+                    comments: true,
+                },
             },
         },
-        {
-            $lookup: {
-                from: 'users',
-                localField: 'author',
-                foreignField: '_id',
-                as: 'author',
-            },
-        },
-        {
-            $unwind: {
-                path: '$author',
-                preserveNullAndEmptyArrays: true,
-            },
-        },
-        {
-            $addFields: {
-                upvoteCount: { $size: '$upVotes' },
-                downvoteCount: { $size: '$downVotes' },
-            },
-        },
-        {
-            $lookup: {
-                from: 'users',
-                localField: 'upVotes',
-                foreignField: '_id',
-                as: 'upVotes',
-            },
-        },
-        {
-            $lookup: {
-                from: 'users',
-                localField: 'downVotes',
-                foreignField: '_id',
-                as: 'downVotes',
-            },
-        }
-    ];
-    const result = yield post_model_1.Post.aggregate(aggregationPipeline);
-    return result.length > 0 ? result[0] : null;
-});
-const updatePostIntoDB = (id, payload, image) => __awaiter(void 0, void 0, void 0, function* () {
-    const postData = yield post_model_1.Post.findById(id);
-    if (!postData) {
+    });
+    if (!post || post.isDeleted) {
         throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Post not found');
     }
-    if (image) {
-        payload.image = image.path;
-    }
-    const result = yield post_model_1.Post.findByIdAndUpdate(id, payload, {
-        runValidators: true, new: true
+    return post;
+});
+const updatePost = (id, updateData, imageFile, userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const post = yield prisma_1.default.post.findUnique({
+        where: { id },
     });
-    return result;
-});
-const deletePostFromDB = (id) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield post_model_1.Post.findByIdAndDelete(id, { isDeleted: true });
-    return result;
-});
-const addPostUpvoteIntoDB = (postId, userData) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, _id } = userData;
-    const user = yield user_model_1.User.isUserExistsByEmail(email);
-    if (!user)
-        throw new AppError_1.default(http_status_1.default.NOT_FOUND, "User doesn't exist!");
-    const post = yield post_model_1.Post.findById(postId);
-    if (!post)
-        throw new AppError_1.default(http_status_1.default.NOT_FOUND, "Post doesn't exist!");
-    const userId = new mongoose_1.Types.ObjectId(_id);
-    if (post.upVotes.some((upvoteId) => upvoteId.equals(userId))) {
-        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'You already upvote this post!');
+    if (!post || post.isDeleted) {
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Post not found');
     }
-    const session = yield mongoose_2.default.startSession();
-    try {
-        session.startTransaction();
-        if (post.downVotes.some((downvoteId) => downvoteId.equals(userId))) {
-            yield post_model_1.Post.findByIdAndUpdate(postId, { $pull: { downVotes: _id } }, { new: true, runValidators: true, session });
+    if (post.authorId !== userId) {
+        throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'You can only update your own posts');
+    }
+    const updatePayload = Object.assign({}, updateData);
+    if (imageFile) {
+        updatePayload.image = imageFile.path;
+    }
+    if (updateData.crimeDate) {
+        updatePayload.crimeDate = new Date(updateData.crimeDate);
+    }
+    const updatedPost = yield prisma_1.default.post.update({
+        where: { id },
+        data: updatePayload,
+        include: {
+            author: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    profilePhoto: true,
+                },
+            },
+            votes: true,
+            comments: true,
+            _count: {
+                select: {
+                    votes: true,
+                    comments: true,
+                },
+            },
+        },
+    });
+    return updatedPost;
+});
+const deletePost = (id, userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const post = yield prisma_1.default.post.findUnique({
+        where: { id },
+    });
+    if (!post || post.isDeleted) {
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Post not found');
+    }
+    if (post.authorId !== userId) {
+        throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'You can only delete your own posts');
+    }
+    yield prisma_1.default.post.update({
+        where: { id },
+        data: {
+            isDeleted: true,
+        },
+    });
+    return { message: 'Post deleted successfully' };
+});
+// Upvote functionality
+const addPostUpvote = (postId, user) => __awaiter(void 0, void 0, void 0, function* () {
+    return yield addPostVote(postId, user.id, client_1.VoteType.UP);
+});
+// Downvote functionality
+const addPostDownvote = (postId, user) => __awaiter(void 0, void 0, void 0, function* () {
+    return yield addPostVote(postId, user.id, client_1.VoteType.DOWN);
+});
+// Remove upvote
+const removePostUpvote = (postId, user) => __awaiter(void 0, void 0, void 0, function* () {
+    const existingVote = yield prisma_1.default.postVote.findUnique({
+        where: {
+            userId_postId: {
+                userId: user.id,
+                postId,
+            },
+        },
+    });
+    if (existingVote && existingVote.type === client_1.VoteType.UP) {
+        yield prisma_1.default.postVote.delete({
+            where: {
+                userId_postId: {
+                    userId: user.id,
+                    postId,
+                },
+            },
+        });
+        return { message: 'Upvote removed successfully' };
+    }
+    throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'No upvote found to remove');
+});
+// Remove downvote
+const removePostDownvote = (postId, user) => __awaiter(void 0, void 0, void 0, function* () {
+    const existingVote = yield prisma_1.default.postVote.findUnique({
+        where: {
+            userId_postId: {
+                userId: user.id,
+                postId,
+            },
+        },
+    });
+    if (existingVote && existingVote.type === client_1.VoteType.DOWN) {
+        yield prisma_1.default.postVote.delete({
+            where: {
+                userId_postId: {
+                    userId: user.id,
+                    postId,
+                },
+            },
+        });
+        return { message: 'Downvote removed successfully' };
+    }
+    throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'No downvote found to remove');
+});
+// Generic vote function
+const addPostVote = (postId, userId, type) => __awaiter(void 0, void 0, void 0, function* () {
+    // Check if post exists
+    const post = yield prisma_1.default.post.findUnique({
+        where: { id: postId },
+    });
+    if (!post) {
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Post not found');
+    }
+    const existingVote = yield prisma_1.default.postVote.findUnique({
+        where: {
+            userId_postId: {
+                userId,
+                postId,
+            },
+        },
+    });
+    if (existingVote) {
+        if (existingVote.type === type) {
+            // If same vote type, remove it
+            yield prisma_1.default.postVote.delete({
+                where: {
+                    userId_postId: {
+                        userId,
+                        postId,
+                    },
+                },
+            });
+            return { message: 'Vote removed' };
         }
-        const result = yield post_model_1.Post.findByIdAndUpdate(postId, { $addToSet: { upVotes: _id } }, { new: true, runValidators: true, session }).populate('upVotes');
-        yield session.commitTransaction();
-        return result;
-    }
-    catch (error) {
-        yield session.abortTransaction();
-        throw error;
-    }
-    finally {
-        session.endSession();
-    }
-});
-const removePostUpvoteFromDB = (postId, userData) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, _id } = userData;
-    const user = yield user_model_1.User.isUserExistsByEmail(email);
-    if (!user)
-        throw new AppError_1.default(http_status_1.default.NOT_FOUND, "User doesn't exist!");
-    const post = yield post_model_1.Post.findById(postId);
-    if (!post)
-        throw new AppError_1.default(http_status_1.default.NOT_FOUND, "Post doesn't exist!");
-    const userId = new mongoose_1.Types.ObjectId(_id);
-    if (!post.upVotes.some((upvoteId) => upvoteId.equals(userId))) {
-        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, "You haven't upvote this post!");
-    }
-    const session = yield mongoose_2.default.startSession();
-    try {
-        session.startTransaction();
-        const result = yield post_model_1.Post.findByIdAndUpdate(postId, { $pull: { upVotes: _id } }, { new: true, runValidators: true, session }).populate('upVotes');
-        yield session.commitTransaction();
-        return result;
-    }
-    catch (error) {
-        yield session.abortTransaction();
-        throw error;
-    }
-    finally {
-        session.endSession();
-    }
-});
-const addPostDownvoteIntoDB = (postId, userData) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, _id } = userData;
-    const user = yield user_model_1.User.isUserExistsByEmail(email);
-    if (!user)
-        throw new AppError_1.default(http_status_1.default.NOT_FOUND, "User doesn't exist!");
-    const post = yield post_model_1.Post.findById(postId);
-    if (!post)
-        throw new AppError_1.default(http_status_1.default.NOT_FOUND, "Post doesn't exist!");
-    const userId = new mongoose_1.Types.ObjectId(_id);
-    if (post.downVotes.some((downvoteId) => downvoteId.equals(userId))) {
-        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'You already downvote this post!');
-    }
-    const session = yield mongoose_2.default.startSession();
-    try {
-        session.startTransaction();
-        if (post.upVotes.some((upvoteId) => upvoteId.equals(userId))) {
-            yield post_model_1.Post.findByIdAndUpdate(postId, { $pull: { upVotes: _id } }, { new: true, runValidators: true, session });
+        else {
+            // If different vote type, update it
+            yield prisma_1.default.postVote.update({
+                where: {
+                    userId_postId: {
+                        userId,
+                        postId,
+                    },
+                },
+                data: { type },
+            });
+            return { message: 'Vote updated' };
         }
-        const result = yield post_model_1.Post.findByIdAndUpdate(postId, { $addToSet: { downVotes: _id } }, { new: true, runValidators: true, session }).populate('downVotes');
-        yield session.commitTransaction();
-        return result;
     }
-    catch (error) {
-        yield session.abortTransaction();
-        throw error;
-    }
-    finally {
-        session.endSession();
-    }
-});
-const removePostDownvoteFromDB = (postId, userData) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, _id } = userData;
-    const user = yield user_model_1.User.isUserExistsByEmail(email);
-    if (!user)
-        throw new AppError_1.default(http_status_1.default.NOT_FOUND, "User doesn't exist!");
-    const post = yield post_model_1.Post.findById(postId);
-    if (!post)
-        throw new AppError_1.default(http_status_1.default.NOT_FOUND, "Post doesn't exist!");
-    const userId = new mongoose_1.Types.ObjectId(_id);
-    if (!post.downVotes.some((downvoteId) => downvoteId.equals(userId))) {
-        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, "You have't downvote this post!");
-    }
-    const session = yield mongoose_2.default.startSession();
-    try {
-        session.startTransaction();
-        const result = yield post_model_1.Post.findByIdAndUpdate(postId, { $pull: { downVotes: _id } }, { new: true, runValidators: true, session }).populate('downVotes');
-        yield session.commitTransaction();
-        return result;
-    }
-    catch (error) {
-        yield session.abortTransaction();
-        throw error;
-    }
-    finally {
-        session.endSession();
+    else {
+        // Create new vote
+        yield prisma_1.default.postVote.create({
+            data: {
+                userId,
+                postId,
+                type,
+            },
+        });
+        return { message: 'Vote added' };
     }
 });
-exports.PostServices = {
-    createPostIntoDB,
-    getAllPostsFromDB,
-    getSinglePostFromDB,
-    updatePostIntoDB,
-    deletePostFromDB,
-    addPostUpvoteIntoDB,
-    removePostUpvoteFromDB,
-    addPostDownvoteIntoDB,
-    removePostDownvoteFromDB,
+const createComment = (commentData, authorId) => __awaiter(void 0, void 0, void 0, function* () {
+    const comment = yield prisma_1.default.comment.create({
+        data: {
+            content: commentData.content,
+            image: commentData.image,
+            postId: commentData.postId,
+            authorId: authorId,
+        },
+        include: {
+            author: {
+                select: {
+                    id: true,
+                    name: true,
+                    profilePhoto: true,
+                },
+            },
+            post: {
+                select: {
+                    id: true,
+                    title: true,
+                },
+            },
+        },
+    });
+    return comment;
+});
+const updateComment = (id, updateData, userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const comment = yield prisma_1.default.comment.findUnique({
+        where: { id },
+    });
+    if (!comment || comment.isDeleted) {
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Comment not found');
+    }
+    if (comment.authorId !== userId) {
+        throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'You can only update your own comments');
+    }
+    const updatedComment = yield prisma_1.default.comment.update({
+        where: { id },
+        data: updateData,
+        include: {
+            author: {
+                select: {
+                    id: true,
+                    name: true,
+                    profilePhoto: true,
+                },
+            },
+            votes: true,
+        },
+    });
+    return updatedComment;
+});
+const deleteComment = (id, userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const comment = yield prisma_1.default.comment.findUnique({
+        where: { id },
+    });
+    if (!comment || comment.isDeleted) {
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Comment not found');
+    }
+    if (comment.authorId !== userId) {
+        throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'You can only delete your own comments');
+    }
+    yield prisma_1.default.comment.update({
+        where: { id },
+        data: {
+            isDeleted: true,
+        },
+    });
+    return { message: 'Comment deleted successfully' };
+});
+exports.PostService = {
+    createPost,
+    getAllPosts,
+    getSinglePost,
+    updatePost,
+    deletePost,
+    addPostUpvote,
+    addPostDownvote,
+    removePostUpvote,
+    removePostDownvote,
+    addPostVote,
+    createComment,
+    updateComment,
+    deleteComment,
 };

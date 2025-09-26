@@ -17,7 +17,8 @@ const config_1 = __importDefault(require("../config"));
 const AppError_1 = __importDefault(require("../errors/AppError"));
 const catchAsync_1 = require("../utils/catchAsync");
 const verifyJWT_1 = require("../utils/verifyJWT");
-const user_model_1 = require("../modules/User/user.model");
+const client_1 = require("@prisma/client");
+const prisma_1 = __importDefault(require("../../shared/prisma"));
 const auth = (...requiredRoles) => {
     return (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
         const token = req.headers.authorization;
@@ -25,19 +26,41 @@ const auth = (...requiredRoles) => {
         if (!token) {
             throw new AppError_1.default(http_status_1.default.UNAUTHORIZED, 'You are not authorized!');
         }
-        const decoded = (0, verifyJWT_1.verifyToken)(token, config_1.default.jwt_access_secret);
+        // Remove 'Bearer ' prefix if present
+        const cleanToken = token.startsWith('Bearer ') ? token.slice(7) : token;
+        const decoded = (0, verifyJWT_1.verifyToken)(cleanToken, config_1.default.jwt_access_secret);
         const { role, email, iat } = decoded;
         // checking if the user is exist
-        const user = yield user_model_1.User.isUserExistsByEmail(email);
+        const user = yield prisma_1.default.user.findUnique({
+            where: { email },
+            select: {
+                id: true,
+                email: true,
+                role: true,
+                status: true,
+                passwordChangedAt: true,
+                isVerified: true,
+            },
+        });
         if (!user) {
-            throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'This user is not found !');
+            throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'This user is not found!');
         }
+        // Check if user is blocked or deleted
+        if (user.status === client_1.UserStatus.BLOCKED) {
+            throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'This user is blocked!');
+        }
+        if (user.status === client_1.UserStatus.DELETED) {
+            throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'This user is deleted!');
+        }
+        // Check if JWT was issued before password change
         if (user.passwordChangedAt &&
-            user_model_1.User.isJWTIssuedBeforePasswordChanged(user.passwordChangedAt, iat)) {
-            throw new AppError_1.default(http_status_1.default.UNAUTHORIZED, 'You are not authorized !');
+            iat &&
+            new Date(iat * 1000) < user.passwordChangedAt) {
+            throw new AppError_1.default(http_status_1.default.UNAUTHORIZED, 'You are not authorized!');
         }
-        if (requiredRoles && !requiredRoles.includes(role)) {
-            throw new AppError_1.default(http_status_1.default.UNAUTHORIZED, 'You are not authorized');
+        // Check if user role is authorized
+        if (requiredRoles.length > 0 && !requiredRoles.includes(role)) {
+            throw new AppError_1.default(http_status_1.default.UNAUTHORIZED, 'You are not authorized!');
         }
         req.user = decoded;
         next();

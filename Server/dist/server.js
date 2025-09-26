@@ -12,7 +12,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const mongoose_1 = __importDefault(require("mongoose"));
 const app_1 = __importDefault(require("./app"));
 const config_1 = __importDefault(require("./app/config"));
 const seeding_1 = require("./app/utils/seeding");
@@ -36,15 +35,14 @@ process.on('unhandledRejection', (error) => {
 function bootstrap() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            yield mongoose_1.default.connect(config_1.default.db_url);
-            console.log('🛢 Database connected successfully');
+            console.log('🛢 Database connected successfully (Prisma with PostgreSQL)');
             yield (0, seeding_1.seed)();
             server = app_1.default.listen(config_1.default.port, () => {
                 console.log(`🚀 Application is running on port ${config_1.default.port}`);
             });
         }
         catch (err) {
-            console.error('Failed to connect to database:', err);
+            console.error('Failed to start server:', err);
             process.exit(1);
         }
     });
@@ -53,24 +51,6 @@ bootstrap();
 process.on('SIGTERM', () => {
     console.log('SIGTERM received');
     if (server) {
-        server.close(() => {
-            console.log('Server closed due to SIGTERM');
-            process.exit(0);
-        });
-    }
-    else {
-        process.exit(0);
-    }
-});
-process.on('SIGINT', () => {
-    console.log('SIGINT received');
-    if (server) {
-        server.close(() => {
-            console.log('Server closed due to SIGINT');
-            process.exit(0);
-        });
-    }
-    else {
-        process.exit(0);
+        server.close();
     }
 });
