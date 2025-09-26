@@ -16,25 +16,29 @@ import clsx from "clsx";
 import Image from "next/image";
 import { Button } from "@heroui/button";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 
 import { ThemeSwitch } from "../theme-switch";
 
 import NavbarDropdown from "./NavbarDropdown";
 
 import { siteConfig } from "@/src/config/site";
-import Logo from "@/src/assets/logo.png";
+import Logo_light from "@/src/assets/logo_light.png";
+import Logo_dark from "@/src/assets/logo_dark.png";
 import { useUser } from "@/src/context/user.provider";
 
 export const Navbar = () => {
   const { user } = useUser();
   const router = useRouter();
-  // 009688
+  const { theme } = useTheme()
+  
+  const Logo = (theme === "dark") ? Logo_dark : Logo_light;
 
   return (
     <NextUINavbar maxWidth="xl" position="sticky">
       <NavbarContent className="basis-1/5 flex sm:basis-full" justify="start">
         <NavbarBrand as="li" className="gap-3 max-w-fit">
-          <NextLink className="flex justify-start items-center gap-2" href="/">
+          <NextLink className="flex justify-start items-center gap-1" href="/">
             <Image
               alt="Logo"
               className="rounded-2xl"

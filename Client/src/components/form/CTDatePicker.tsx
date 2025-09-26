@@ -1,5 +1,5 @@
-import { DatePicker } from "@heroui/date-picker";
 import { Controller } from "react-hook-form";
+import { DatePicker } from "@heroui/react";
 
 import { IInput } from "@/src/types";
 

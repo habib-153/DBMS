@@ -75,7 +75,7 @@ export default function RegisterPage() {
       </div>
 
       {/* Gradient overlay for better contrast */}
-      {/* <div className="absolute inset-0 bg-gradient-to-br from-black/30 via-black/10 to-black/30" /> */}
+      <div className="absolute inset-0 bg-gradient-to-br from-black/10 via-black/5 to-black/10" />
 
       {/* Main Content Container */}
       <div className="relative z-10 min-h-[calc(100vh-100px)] flex items-center">
@@ -110,30 +110,38 @@ export default function RegisterPage() {
                   <div className="space-y-3">
                     <div>
                       <FXInput
+                        isRequired
                         label="Full Name"
                         name="name"
+                        placeholder="Enter your full name"
                         size="sm"
                       />
                     </div>
                     <div>
                       <FXInput
+                        isRequired
                         label="Email Address"
                         name="email"
+                        placeholder="Enter your email address"
                         size="sm"
                         type="email"
                       />
                     </div>
                     <div>
                       <FXInput
+                        isRequired
                         label="Mobile Number"
                         name="phone"
+                        placeholder="Enter your mobile number"
                         size="sm"
                       />
                     </div>
                     <div>
                       <FXInput
+                        isRequired
                         label="Password"
                         name="password"
+                        placeholder="Enter your password"
                         size="sm"
                         type="password"
                       />
