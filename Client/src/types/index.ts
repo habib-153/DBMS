@@ -41,7 +41,7 @@ export interface IInput {
 }
 
 export interface IUser {
-  _id: string;
+  id: string;
   name: string;
   role: string;
   email: string;

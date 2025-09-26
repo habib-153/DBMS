@@ -21,7 +21,7 @@ export const updateAccessTokenInCookies = (updatedUser: IUser) => {
   try {
     const newAccessToken = jwt.sign(
       {
-        _id: updatedUser._id,
+        _id: updatedUser.id,
         name: updatedUser.name,
         email: updatedUser.email,
         role: updatedUser.role,

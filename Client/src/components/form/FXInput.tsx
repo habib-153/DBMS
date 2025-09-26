@@ -71,30 +71,35 @@ export default function FXInput({
 
   const toggleVisibility = () => setIsVisible(!isVisible);
 
-  const finalEndContent = type === "password" ? (
-    <button
-      className="focus:outline-none"
-      type="button"
-      onClick={toggleVisibility}
-    >
-      {isVisible ? (
-        <EyeOff className="w-5 h-5 text-inherit/60 hover:text-inherit/80 transition-colors" />
-      ) : (
-        <Eye className="w-5 h-5 text-inherit/60 hover:text-inherit/80 transition-colors" />
-      )}
-    </button>
-  ) : endContent;
+  const finalEndContent =
+    type === "password" ? (
+      <button
+        className="focus:outline-none"
+        type="button"
+        onClick={toggleVisibility}
+      >
+        {isVisible ? (
+          <EyeOff className="w-5 h-5 text-inherit/60 hover:text-inherit/80 transition-colors" />
+        ) : (
+          <Eye className="w-5 h-5 text-inherit/60 hover:text-inherit/80 transition-colors" />
+        )}
+      </button>
+    ) : (
+      endContent
+    );
 
   return (
     <Input
       {...register(name)}
       classNames={{
         base: "bg-transparent",
-        mainWrapper: "bg-transparent",
-        input: "placeholder:text-gray border-0 focus:ring-0 focus-within:outline-none",
-        inputWrapper: "bg-white/10 border-white/20 hover:border-white/40 focus-within:border-brand-primary backdrop-blur-sm data-[hover=true]:border-white/40 shadow-none",
+        mainWrapper: "bg-transparent border-gray-400",
+        input:
+          "placeholder:text-gray-500 border-0 focus:ring-0 focus-within:outline-none",
+        inputWrapper:
+          "bg-gray-50 dark:bg-gray-800 border-1 border-gray-200 dark:border-gray-700 hover:border-brand-primary/50 focus-within:border-brand-primary shadow-sm",
         innerWrapper: "bg-transparent",
-        label: "text-white/90 font-medium drop-shadow-sm",
+        label: "text-gray-700 dark:text-gray-300 font-medium",
         errorMessage: "text-red-400 drop-shadow-sm",
         ...classNames,
       }}

@@ -9,13 +9,11 @@ import {
   NavbarItem,
   NavbarMenuItem,
 } from "@heroui/navbar";
-import { Link } from "@heroui/link";
-import { link as linkStyles } from "@heroui/theme";
 import NextLink from "next/link";
 import clsx from "clsx";
 import Image from "next/image";
 import { Button } from "@heroui/button";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 
 import { ThemeSwitch } from "../theme-switch";
@@ -30,45 +28,64 @@ import { useUser } from "@/src/context/user.provider";
 export const Navbar = () => {
   const { user } = useUser();
   const router = useRouter();
+  const pathname = usePathname();
   const { theme } = useTheme()
   
   const Logo = (theme === "dark") ? Logo_dark : Logo_light;
 
+  const isActiveLink = (href: string) => {
+    if (href === "/") {
+      return pathname === "/";
+    }
+
+    return pathname.startsWith(href);
+  };
+
   return (
-    <NextUINavbar maxWidth="xl" position="sticky">
-      <NavbarContent className="basis-1/5 flex sm:basis-full" justify="start">
+    <NextUINavbar className="border-b border-gray-200 dark:border-gray-700" maxWidth="xl" position="sticky">
+      {/* Left: Logo */}
+      <NavbarContent className="basis-1/5 sm:basis-1/4" justify="start">
         <NavbarBrand as="li" className="gap-3 max-w-fit">
-          <NextLink className="flex justify-start items-center gap-1" href="/">
+          <NextLink className="flex justify-start items-center gap-2" href="/">
             <Image
               alt="Logo"
               className="rounded-2xl"
-              height={50}
+              height={45}
               src={Logo}
-              width={50}
+              width={45}
             />
-            <p className="font-bold text-2xl text-brand-primary">Warden</p>
+            <p className="font-bold text-xl text-brand-primary">Warden</p>
           </NextLink>
         </NavbarBrand>
-        <ul className="hidden lg:flex gap-4 ml-2">
+      </NavbarContent>
+
+      {/* Center: Navigation Items */}
+      <NavbarContent className="hidden lg:flex basis-1/2" justify="center">
+        <div className="flex gap-8">
           {siteConfig.navItems.map((item) => (
             <NavbarItem key={item.href}>
               <NextLink
                 className={clsx(
-                  linkStyles({ color: "foreground" }),
-                  "data-[active=true]:text-primary data-[active=true]:font-medium"
+                  "relative px-4 py-2 rounded-full font-medium transition-all duration-300 hover:text-brand-primary",
+                  isActiveLink(item.href)
+                    ? "text-brand-primary bg-brand-primary/10 shadow-sm border border-brand-primary/20"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                 )}
-                color="foreground"
                 href={item.href}
               >
                 {item.label}
+                {isActiveLink(item.href) && (
+                  <span className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-brand-primary rounded-full" />
+                )}
               </NextLink>
             </NavbarItem>
           ))}
-        </ul>
+        </div>
       </NavbarContent>
 
-      <NavbarContent className="flex basis-1/5 sm:basis-full" justify="end">
-        <NavbarItem className="flex gap-2">
+      {/* Right: Theme Switch & User Actions */}
+      <NavbarContent className="basis-1/5 sm:basis-1/4" justify="end">
+        <NavbarItem className="flex gap-3">
           <ThemeSwitch className="hidden sm:block" />
         </NavbarItem>
         {user?.email ? (
@@ -78,29 +95,40 @@ export const Navbar = () => {
         ) : (
           <NavbarItem className="flex gap-2">
             <Button
-              className="relative text-[#A50034] font-semibold bg-white border-[#A50034] border-2 hover:text-white overflow-hidden transition-colors duration-300 ease-in-out group"
+              className="relative text-white font-semibold bg-brand-primary hover:bg-brand-primary/90 border border-brand-primary hover:border-brand-primary/90 overflow-hidden transition-all duration-300 ease-in-out shadow-md hover:shadow-lg"
+              size="sm"
               onClick={() => router.push("/login")}
             >
-              <span className="relative z-10">Login</span>
-              <div className="absolute inset-0 bg-[#A50034] -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-in-out" />
+              Login
             </Button>
           </NavbarItem>
         )}
         <NavbarMenuToggle className="lg:hidden" />
       </NavbarContent>
       <NavbarMenu>
-        <div className="mx-4 mt-2 flex text-black flex-col gap-2">
+        <div className="mx-4 mt-6 flex flex-col gap-4">
           {siteConfig.navMenuItems.map((item, index) => (
             <NavbarMenuItem key={`${item}-${index}`}>
-              <Link
-                color={index === 2 ? "primary" : "foreground"}
+              <NextLink
+                className={clsx(
+                  "block px-4 py-3 rounded-lg font-medium transition-all duration-300",
+                  isActiveLink(item.href)
+                    ? "text-brand-primary bg-brand-primary/10 border border-brand-primary/20"
+                    : "text-gray-700 dark:text-gray-300 hover:text-brand-primary hover:bg-gray-100 dark:hover:bg-gray-800"
+                )}
                 href={item.href}
-                size="lg"
               >
                 {item.label}
-              </Link>
+              </NextLink>
             </NavbarMenuItem>
           ))}
+          
+          {/* Mobile Theme Switch */}
+          <NavbarMenuItem>
+            <div className="px-4 py-3">
+              <ThemeSwitch />
+            </div>
+          </NavbarMenuItem>
         </div>
       </NavbarMenu>
     </NextUINavbar>

@@ -31,7 +31,7 @@ const AuthModal = ({ openAuthModal, setOpenAuthModal }: IAuthModalProps) => {
             </ModalHeader>
             <ModalBody>
               <p className="text-center text-sm text-default-500">
-                Please log in to share your travel stories and tips with the community.
+                Please log in to create a crime report.
               </p>
             </ModalBody>
             <ModalFooter className="flex justify-center gap-2">

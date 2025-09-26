@@ -44,7 +44,7 @@ const ProfilePage = ({ user }: { user: IUser }) => {
   const posts = postData?.data;
 
   const isFollowing = (followerId: string) => {
-    return following?.some((followedUser) => followedUser._id === followerId);
+    return following?.some((followedUser) => followeduser.id === followerId);
   };
 
   const handleFollow = (id: string, name: string) => {
