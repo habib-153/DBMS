@@ -92,7 +92,7 @@ export default function RegisterPage() {
                   <span className="text-brand-contrast">account</span>
                   <span className="text-inherit">.</span>
                 </h1>
-                <p className="text-inherit/90 text-lg lg:text-xl drop-shadow-md">
+                <p className="text-inherit/90 drop-shadow-md">
                   Join{" "}
                   <span className="text-brand-contrast font-semibold">
                     WARDEN
@@ -152,7 +152,7 @@ export default function RegisterPage() {
 
                   <div className="mt-6">
                     <Button
-                      className="w-full h-12 text-lg font-semibold bg-brand-primary hover:bg-brand-secondary text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
+                      className="w-full h-12  font-semibold bg-brand-primary hover:bg-brand-secondary text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
                       isLoading={isPending}
                       type="submit"
                     >
@@ -161,7 +161,7 @@ export default function RegisterPage() {
                   </div>
                 </FXForm>
 
-                <div className="text-center mt-4">
+                <div className="text-center text-sm mt-4">
                   <p className="text-inherit/80 drop-shadow-sm">
                     Already have an account?{" "}
                     <Link

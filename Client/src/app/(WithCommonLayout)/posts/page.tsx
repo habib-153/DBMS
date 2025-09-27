@@ -19,6 +19,7 @@ import PostHeader from "@/src/components/modules/Posts/PostHeader";
 import PostFilters from "@/src/components/modules/Posts/PostFilters";
 import PostGrid from "@/src/components/modules/Posts/PostGrid";
 import { IPost } from "@/src/types/post.types";
+import { transformPostsData } from "@/src/utils/transformPostData";
 
 export default function PostsPage() {
   const { user } = useUser();
@@ -105,11 +106,14 @@ export default function PostsPage() {
   // Update posts when data changes
   useEffect(() => {
     if (postData?.data) {
+      const transformedData = transformPostsData(postData.data);
+
       if (page === 1) {
-        setPosts(postData.data);
+        setPosts(transformedData);
       } else {
-        setPosts((prev) => [...prev, ...postData.data]);
+        setPosts((prev) => [...prev, ...transformedData]);
       }
+
       setHasMore(postData.data.length === 10);
     }
   }, [postData, page]);

@@ -78,7 +78,7 @@ const getAllPosts = async (
     searchTerm,
     ...filterData
   } = filters;
-
+console.log("filters:", filterData);
   const offset = (Number(page) - 1) * Number(limit);
   const conditions: string[] = [`p."isDeleted" = false`];
   const values: unknown[] = [];
@@ -105,7 +105,7 @@ const getAllPosts = async (
     values.push(filterData.division);
     paramIndex++;
   }
-
+console.log(conditions, 'conditions');
   if (filterData.status) {
     conditions.push(`p.status = $${paramIndex}`);
     values.push(filterData.status);
@@ -117,7 +117,7 @@ const getAllPosts = async (
 
   const whereClause =
     conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-
+console.log(whereClause)
   // Count query
   const countQuery = `
     SELECT COUNT(*) as total

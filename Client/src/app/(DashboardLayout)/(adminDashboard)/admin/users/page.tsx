@@ -93,7 +93,7 @@ const UserManagement = () => {
                   isIconOnly
                   size="sm"
                   variant="light"
-                  onPress={() => handleDeleteUser(singleUser?._id)}
+                  onPress={() => handleDeleteUser(singleUser?.id)}
                 >
                   <Trash2 className="h-4 w-4 text-danger" />
                 </Button>
@@ -111,7 +111,7 @@ const UserManagement = () => {
                   isDisabled={user?.email === singleUser?.email}
                   size="sm"
                   variant="light"
-                  onPress={() => handleUpdateUser(singleUser?._id, singleUser?.role)}
+                  onPress={() => handleUpdateUser(singleUser?.id, singleUser?.role)}
                 >
                   <UserCog
                     className={`h-4 w-4 ${
@@ -161,7 +161,7 @@ const UserManagement = () => {
               </TableHeader>
               <TableBody items={userData}>
                 {(item: IUser) => (
-                  <TableRow key={item._id}>
+                  <TableRow key={item.id}>
                     {(columnKey) => (
                       <TableCell key={columnKey}>
                         {renderCell(item, columnKey)}

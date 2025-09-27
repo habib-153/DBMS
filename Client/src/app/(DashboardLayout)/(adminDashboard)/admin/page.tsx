@@ -62,15 +62,11 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardBody>
             <Tabs aria-label="Activity options">
-              <Tab key="all" title="All Activity">
-
-              </Tab>
+              <Tab key="all" title="All Activity" />
               <Tab key="users" title="User Activity">
                 <UserActivity users={AllUsers?.data} />
               </Tab>
-              <Tab key="posts" title="Post Activity">
-
-              </Tab>
+              <Tab key="posts" title="Post Activity" />
             </Tabs>
           </CardBody>
         </Card>

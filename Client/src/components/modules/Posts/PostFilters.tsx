@@ -93,11 +93,11 @@ export default function PostFilters({
       {/* Division Select */}
       <Select
         className="lg:w-48"
-        label="Division"
         classNames={{
           trigger:
             "bg-gray-50 dark:bg-gray-800 border-1 border-gray-200 dark:border-gray-700 hover:border-brand-primary/50 data-[focus=true]:border-brand-primary",
         }}
+        label="Division"
         placeholder="Select Division"
         selectedKeys={selectedDivision ? [selectedDivision] : []}
         startContent={<Filter className="text-gray-400" size={16} />}
@@ -115,12 +115,12 @@ export default function PostFilters({
       {/* District Select */}
       <Select
         className="lg:w-48"
-        label="District"
         classNames={{
           trigger:
             "bg-gray-50 dark:bg-gray-800 border-1 border-gray-200 dark:border-gray-700 hover:border-brand-primary/50 data-[focus=true]:border-brand-primary",
         }}
         isDisabled={!selectedDivision}
+        label="District"
         placeholder="Select District"
         selectedKeys={selectedDistrict ? [selectedDistrict] : []}
         startContent={<Filter className="text-gray-400" size={16} />}

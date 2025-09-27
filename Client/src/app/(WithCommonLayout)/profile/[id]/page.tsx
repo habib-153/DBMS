@@ -13,6 +13,7 @@ import { IUser } from "@/src/types";
 import { useGetSingleUser } from "@/src/hooks/user.hook";
 import ProfileSkeleton from "@/src/components/UI/ProfileSkeleton";
 import PostCard from "@/src/components/modules/Posts/PostCard";
+import { transformPostsData } from "@/src/utils/transformPostData";
 
 const UserProfile = () => {
   const { id } = useParams();
@@ -120,14 +121,15 @@ const UserProfile = () => {
             }
           >
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-              {posts?.map((post: any, index: number) => (
-                <PostCard
-                  key={post.id || index}
-                  isVoting={false}
-                  post={post}
-                  onVote={async () => {}}
-                />
-              ))}
+              {posts &&
+                transformPostsData(posts).map((post: any, index: number) => (
+                  <PostCard
+                    key={post.id || index}
+                    isVoting={false}
+                    post={post}
+                    onVote={async () => {}}
+                  />
+                ))}
             </div>
           </Tab>
           <Tab

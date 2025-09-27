@@ -32,7 +32,19 @@ export default function RootLayout({
 }) {
   return (
     <html suppressHydrationWarning lang="en">
-      <head />
+      <head>
+        <link href="//fonts.googleapis.com" rel="dns-prefetch" />
+        <link
+          crossOrigin=""
+          href="https://fonts.googleapis.com"
+          rel="preconnect"
+        />
+        <link
+          crossOrigin=""
+          href="https://fonts.gstatic.com"
+          rel="preconnect"
+        />
+      </head>
       <body
         className={clsx(
           "min-h-screen bg-background font-sans antialiased",

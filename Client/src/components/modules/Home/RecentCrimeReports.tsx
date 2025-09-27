@@ -13,6 +13,7 @@ import AuthModal from "../../UI/modal/AuthModal/AuthModal";
 
 import { IPost } from "@/src/types/post.types";
 import { useUser } from "@/src/context/user.provider";
+import { transformPostsData } from "@/src/utils/transformPostData";
 
 interface RecentCrimeReportsProps {
   posts: IPost[];
@@ -168,7 +169,8 @@ export default function RecentCrimeReports({
   const [selectedDistrict, setSelectedDistrict] = useState("");
 
   // For home page, show only recent posts, for posts page show all
-  const displayPosts = isHome ? posts.slice(0, 6) : posts;
+  const transformedPosts = transformPostsData(posts);
+  const displayPosts = isHome ? transformedPosts.slice(0, 6) : transformedPosts;
 
   const clearFilters = () => {
     setSearchInput("");

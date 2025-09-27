@@ -82,17 +82,17 @@ const ResetPassword = () => {
             <FXForm defaultValues={defaultValues} onSubmit={onSubmit}>
               <div className="py-3">
                 <FXInput
+                  isRequired
                   label="Email"
                   name="email"
-                  required={true}
                   type="email"
                 />
               </div>
               <div className="py-3">
                 <FXInput
+                  isRequired
                   label="New Password"
                   name="newPassword"
-                  required={true}
                   type="password"
                 />
               </div>

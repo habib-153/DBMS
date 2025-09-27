@@ -82,7 +82,7 @@ export default function LoginPage() {
                   <span className="text-brand-contrast">back</span>
                   <span className="text-inherit">.</span>
                 </h1>
-                <p className="text-inherit/90 text-lg lg:text-xl drop-shadow-md">
+                <p className="text-inherit/90 drop-shadow-md">
                   Sign in to{" "}
                   <span className="text-brand-contrast font-semibold">
                     WARDEN
@@ -142,7 +142,7 @@ export default function LoginPage() {
                   </div>
                 </FXForm>
 
-                <div className="text-center mt-4">
+                <div className="text-center text-sm mt-4">
                   <p className="text-inherit/80 drop-shadow-sm">
                     Don&apos;t have an account?{" "}
                     <Link

@@ -65,7 +65,7 @@ export default function PostCard({
       return "Recently";
     }
   };
-
+  console.log(post);
   return (
     <Card className="w-full h-full hover:shadow-xl transition-all duration-300 border-1 border-gray-200 dark:border-gray-700 group">
       <CardBody className="p-0 h-full flex flex-col">
@@ -98,13 +98,13 @@ export default function PostCard({
           <div className="flex items-start gap-3 mb-3">
             <Avatar
               className="border-2 border-white shadow-sm flex-shrink-0"
-              name={post.author.name}
+              name={post.author?.name}
               size="sm"
-              src={post.author.profilePhoto}
+              src={post.author?.profilePhoto}
             />
             <div className="min-w-0 flex-1">
               <p className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
-                {post.author.name}
+                {post.author?.name}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 {formatDate(post.createdAt)}

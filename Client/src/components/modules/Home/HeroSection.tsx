@@ -36,7 +36,7 @@ export default function HeroSection({ onRegisterClick }: HeroSectionProps) {
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
             Stay Informed, Stay Safe
           </h1>
-          <p className="text-lg md:text-xl text-white/90 mb-6 drop-shadow-md">
+          <p className=" md:text-lg text-white/90 mb-6 drop-shadow-md">
             Join our community to report, verify, and stay updated on local
             crime incidents.
           </p>
@@ -61,7 +61,7 @@ export default function HeroSection({ onRegisterClick }: HeroSectionProps) {
               </>
             ) : (
               <Button
-                className="bg-brand-primary hover:bg-brand-secondary text-white font-semibold px-8 py-3 text-lg shadow-lg hover:shadow-xl transition-all"
+                className="bg-brand-primary hover:bg-brand-secondary text-white font-semibold px-8 py-3 shadow-lg hover:shadow-xl transition-all"
                 size="lg"
               >
                 <Link href="/posts">View All Reports</Link>

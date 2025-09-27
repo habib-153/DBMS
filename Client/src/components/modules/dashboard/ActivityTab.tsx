@@ -5,7 +5,8 @@ import { Activity, Clock, FileText, TrendingUp, User } from "lucide-react";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Table, TableHeader, TableBody, TableColumn, TableRow, TableCell } from "@heroui/table";
 
-import { IPost, IUser } from "@/src/types";
+import { IUser } from "@/src/types";
+import { IPost } from "@/src/types/post.types";
 
 export const AllActivity = ({ chartData } : {chartData: any}) => {
     return (
@@ -155,13 +156,13 @@ export const AllActivity = ({ chartData } : {chartData: any}) => {
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  <span>{new Date(post?.createdAt as string).toLocaleDateString()}</span>
+                  {/* <Clock className="h-4 w-4" />
+                  <span>{new Date(post?.createdAt as string).toLocaleDateString()}</span> */}
                 </div>
               </TableCell>
               <TableCell>
                 <Chip 
-                  color={post?.status === 'BASIC' ? 'success' : 'warning'} 
+                  color={post?.status === 'PENDING' ? 'success' : 'warning'} 
                   variant="flat"
                 >
                   {post.status}
