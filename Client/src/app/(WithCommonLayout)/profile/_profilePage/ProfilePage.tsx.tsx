@@ -8,14 +8,15 @@ import { Tab, Tabs } from "@heroui/tabs";
 import { BadgeCheck, BookOpen, Edit, KeySquare, Users } from "lucide-react";
 import { useState } from "react";
 
-import { IPost, IUser } from "@/src/types";
+import { IUser } from "@/src/types";
+import { IPost } from "@/src/types/post.types";
 import { useGetAllPosts } from "@/src/hooks/post.hook";
 import envConfig from "@/src/config/envConfig";
-import PostCard from "@/src/components/UI/PostCard";
 import VerifyModal from "@/src/components/UI/modal/ProfileVerify/ProfileVerify";
 import UpdateProfileModal from "@/src/components/UI/modal/ProfileVerify/UpdateProfileModal";
 import { useFollowUser, useUnfollowUser } from "@/src/hooks/user.hook";
 import ChangePassword from "@/src/components/UI/modal/ProfileVerify/ChangePassword";
+import { PostCard } from "@/src/components/modules/Posts";
 
 const ProfilePage = ({ user }: { user: IUser }) => {
   const [openEditProfileModal, setOpenEditProfileModal] = useState(false);
@@ -44,7 +45,7 @@ const ProfilePage = ({ user }: { user: IUser }) => {
   const posts = postData?.data;
 
   const isFollowing = (followerId: string) => {
-    return following?.some((followedUser) => followeduser.id === followerId);
+    return following?.some((followedUser) => followedUser.id === followerId);
   };
 
   const handleFollow = (id: string, name: string) => {
@@ -82,26 +83,24 @@ const ProfilePage = ({ user }: { user: IUser }) => {
           {/* Profile Info Section */}
           <div className="md:w-2/3 mx-auto space-y-6">
             <div className="flex justify-between items-start">
-              <div className="flex gap-2 items-center">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold">{name}</h1>
-                    {isVerified && (
-                      <BadgeCheck className="w-6 h-6 text-primary" />
-                    )}
-                  </div>
-                  <p className="text-gray-500">{email}</p>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold">{name}</h1>
+                  {isVerified && (
+                    <BadgeCheck className="w-6 h-6 text-primary" />
+                  )}
                 </div>
-                <div>
-                  <Button
-                    color="primary"
-                    startContent={<Edit className="w-4 h-4" />}
-                    variant="bordered"
-                    onPress={() => setOpenEditProfileModal(true)}
-                  >
-                    Edit Profile
-                  </Button>
-                </div>
+                <p className="text-gray-500">{email}</p>
+              </div>
+              <div>
+                <Button
+                  color="primary"
+                  startContent={<Edit className="w-4 h-4" />}
+                  variant="bordered"
+                  onPress={() => setOpenEditProfileModal(true)}
+                >
+                  Edit Profile
+                </Button>
               </div>
             </div>
 
@@ -163,10 +162,30 @@ const ProfilePage = ({ user }: { user: IUser }) => {
               </div>
             }
           >
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-              {posts?.map((post: IPost, index: number) => (
-                <PostCard key={index} full={false} post={post} />
-              ))}
+            <div className="mt-6">
+              {posts && posts.length > 0 ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {posts.map((post: IPost, index: number) => (
+                    <PostCard
+                      key={post.id || index}
+                      isVoting={false}
+                      post={post}
+                      userId={user?.id}
+                      onVote={() => Promise.resolve()}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400 mb-2">
+                    No Posts Yet
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-500">
+                    Start sharing your crime reports with the community.
+                  </p>
+                </div>
+              )}
             </div>
           </Tab>
           <Tab
@@ -178,38 +197,51 @@ const ProfilePage = ({ user }: { user: IUser }) => {
               </div>
             }
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-              {followers?.map((follower, index) => (
-                <Card key={index} className="p-4">
-                  <div className="flex items-center gap-3">
-                    <Avatar size="lg" src={follower?.profilePhoto} />
-                    <div>
-                      <p className="font-semibold flex gap-2 items-center">
-                        {follower?.name}
-
-                        {isVerified && (
-                          <BadgeCheck className="w-6 h-6 text-primary" />
-                        )}
-                      </p>
-                      {!isFollowing(follower?._id) && (
-                        <Button
-                          color="primary"
-                          size="sm"
-                          variant="flat"
-                          onClick={() =>
-                            handleFollow(
-                              follower?._id as string,
-                              follower?.name as string
-                            )
-                          }
-                        >
-                          Follow Back
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              ))}
+            <div className="mt-6">
+              {followers && followers.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {followers.map((follower, index) => (
+                    <Card key={follower?.id || index} className="p-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar size="lg" src={follower?.profilePhoto} />
+                        <div>
+                          <p className="font-semibold flex gap-2 items-center">
+                            {follower?.name}
+                            {follower?.isVerified && (
+                              <BadgeCheck className="w-6 h-6 text-primary" />
+                            )}
+                          </p>
+                          {!isFollowing(follower?.id) && (
+                            <Button
+                              color="primary"
+                              size="sm"
+                              variant="flat"
+                              onClick={() =>
+                                handleFollow(
+                                  follower?.id as string,
+                                  follower?.name as string
+                                )
+                              }
+                            >
+                              Follow Back
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400 mb-2">
+                    No Followers Yet
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-500">
+                    Share interesting content to gain followers.
+                  </p>
+                </div>
+              )}
             </div>
           </Tab>
           <Tab
@@ -221,34 +253,48 @@ const ProfilePage = ({ user }: { user: IUser }) => {
               </div>
             }
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-              {following?.map((followedUser, index) => (
-                <Card key={index} className="p-4">
-                  <div className="flex items-center gap-3">
-                    <Avatar size="lg" src={followedUser?.profilePhoto} />
-                    <div className="space-y-1">
-                      <p className="font-semibold flex gap-2 items-center">
-                        {followedUser?.name}
-                        {isVerified && (
-                          <BadgeCheck className="w-6 h-6 text-primary" />
-                        )}
-                      </p>
-                      <Button
-                        color="danger"
-                        size="sm"
-                        onClick={() =>
-                          handleUnFollow(
-                            followedUser?._id as string,
-                            followedUser?.name as string
-                          )
-                        }
-                      >
-                        Unfollow
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
+            <div className="mt-6">
+              {following && following.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {following.map((followedUser, index) => (
+                    <Card key={followedUser?.id || index} className="p-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar size="lg" src={followedUser?.profilePhoto} />
+                        <div className="space-y-1">
+                          <p className="font-semibold flex gap-2 items-center">
+                            {followedUser?.name}
+                            {followedUser?.isVerified && (
+                              <BadgeCheck className="w-6 h-6 text-primary" />
+                            )}
+                          </p>
+                          <Button
+                            color="danger"
+                            size="sm"
+                            onClick={() =>
+                              handleUnFollow(
+                                followedUser?.id as string,
+                                followedUser?.name as string
+                              )
+                            }
+                          >
+                            Unfollow
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400 mb-2">
+                    Not Following Anyone
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-500">
+                    Discover and follow users to see their content here.
+                  </p>
+                </div>
+              )}
             </div>
           </Tab>
         </Tabs>

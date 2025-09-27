@@ -19,6 +19,9 @@ interface RecentCrimeReportsProps {
   isLoading: boolean;
   showFilters?: boolean;
   showCreateButton?: boolean;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
+  isHome?: boolean;
 }
 
 const CrimeReportCard = ({ post }: { post: IPost }) => {
@@ -150,6 +153,9 @@ export default function RecentCrimeReports({
   isLoading,
   showFilters = false,
   showCreateButton = false,
+  hasMore = false,
+  onLoadMore,
+  isHome = false,
 }: RecentCrimeReportsProps) {
   const { user } = useUser();
   const [openModal, setOpenModal] = useState(false);
@@ -161,7 +167,8 @@ export default function RecentCrimeReports({
   const [selectedDivision, setSelectedDivision] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("");
 
-  const recentPosts = posts.slice(0, 6); // Show only recent 6 posts
+  // For home page, show only recent posts, for posts page show all
+  const displayPosts = isHome ? posts.slice(0, 6) : posts;
 
   const clearFilters = () => {
     setSearchInput("");
@@ -221,12 +228,35 @@ export default function RecentCrimeReports({
       )}
 
       <div className="space-y-4">
-        {isLoading ? (
+        {isLoading && posts.length === 0 ? (
           <LoadingSkeleton />
-        ) : recentPosts.length > 0 ? (
-          recentPosts.map((post) => (
-            <CrimeReportCard key={post.id} post={post} />
-          ))
+        ) : displayPosts.length > 0 ? (
+          <>
+            {displayPosts.map((post) => (
+              <CrimeReportCard key={post.id} post={post} />
+            ))}
+
+            {/* Load More Section for Infinite Scroll */}
+            {!isHome && hasMore && (
+              <div className="flex justify-center py-6">
+                <Button
+                  className="bg-brand-gradient text-white font-medium shadow-lg hover:shadow-xl transition-all"
+                  isLoading={isLoading}
+                  size="md"
+                  onClick={onLoadMore}
+                >
+                  {isLoading ? "Loading..." : "Load More Posts"}
+                </Button>
+              </div>
+            )}
+
+            {/* Loading indicator for infinite scroll */}
+            {isLoading && posts.length > 0 && (
+              <div className="space-y-4">
+                <LoadingSkeleton />
+              </div>
+            )}
+          </>
         ) : (
           <Card className="border border-gray-200 dark:border-gray-700">
             <CardBody className="text-center py-12">
