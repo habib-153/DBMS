@@ -1,5 +1,5 @@
 import { Button, Divider, Modal, ModalContent } from "@heroui/react";
-import React, { ChangeEvent, useState, useEffect } from "react";
+import React, { ChangeEvent, useState, useEffect, useCallback } from "react";
 import {
   FieldValues,
   FormProvider,
@@ -7,8 +7,6 @@ import {
   useForm,
 } from "react-hook-form";
 import { useRouter } from "next/navigation";
-
-import Loading from "../../Loading";
 
 import CTDatePicker from "@/src/components/form/CTDatePicker";
 import FXInput from "@/src/components/form/FXInput";
@@ -27,6 +25,7 @@ interface IPostModalProps {
 const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [imageFiles, setImageFiles] = useState<File[] | []>([]);
   const [imagePreviews, setImagePreviews] = useState<string[] | []>([]);
 
@@ -56,8 +55,10 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
   const [showDivisionDropdown, setShowDivisionDropdown] = useState(false);
   const [showDistrictDropdown, setShowDistrictDropdown] = useState(false);
 
-  // Load divisions on component mount
+  // Load divisions when modal opens
   useEffect(() => {
+    if (!isOpen || divisions.length > 0 || divisionsLoading) return;
+
     setDivisionsLoading(true);
 
     fetch("https://bdapi.vercel.app/api/v.1/division")
@@ -82,7 +83,7 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
       .finally(() => {
         setDivisionsLoading(false);
       });
-  }, []);
+  }, [isOpen]);
 
   useEffect(() => {
     if (selectedDivision) {
@@ -97,7 +98,14 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
 
   // Close dropdowns when clicking outside
   useEffect(() => {
-    const handleClickOutside = () => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+
+      // Don't close if clicking on the dropdown button or dropdown content
+      if (target.closest(".dropdown-container")) {
+        return;
+      }
+
       setShowDivisionDropdown(false);
       setShowDistrictDropdown(false);
     };
@@ -112,7 +120,7 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
   }, [showDivisionDropdown, showDistrictDropdown]);
 
   // Check if all required fields are filled
-  const isFormValid = () => {
+  const isFormValid = useCallback(() => {
     const formData = methods.watch();
 
     return (
@@ -125,7 +133,7 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
       formData.description &&
       formData.description.trim() !== ""
     );
-  };
+  }, [methods, selectedDivision, selectedDistrict, imageFiles.length]);
 
   const onSubmit: SubmitHandler<FieldValues> = (data) => {
     // Validation
@@ -168,26 +176,30 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
     handleCreatePost(formData);
   };
 
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
 
     if (!files || files.length === 0) return;
 
     // Clear previous images and set new ones
-    setImageFiles([]);
-    setImagePreviews([]);
+    const newFiles: File[] = [];
+    const newPreviews: string[] = [];
 
     Array.from(files).forEach((file) => {
-      setImageFiles((prev) => [...prev, file]);
+      newFiles.push(file);
 
       const reader = new FileReader();
 
       reader.onloadend = () => {
-        setImagePreviews((prev) => [...prev, reader.result as string]);
+        newPreviews.push(reader.result as string);
+        if (newPreviews.length === files.length) {
+          setImageFiles(newFiles);
+          setImagePreviews(newPreviews);
+        }
       };
       reader.readAsDataURL(file);
     });
-  };
+  }, []);
 
   const handleDescriptionGeneration = async () => {
     setIsLoading(true);
@@ -205,20 +217,39 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
     }
   };
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     methods.reset();
     setImageFiles([]);
     setImagePreviews([]);
     setSelectedDivision("");
     setSelectedDistrict("");
-    setDistricts([]); // Only clear districts, not divisions
+    setDistricts([]);
     setError("");
+    setSuccessMessage("");
+    setShowDivisionDropdown(false);
+    setShowDistrictDropdown(false);
+  }, [methods]);
+
+  // Clear messages when user starts interacting
+  const clearMessages = () => {
+    if (error) setError("");
+    if (successMessage) setSuccessMessage("");
   };
 
-  // Clear error when user starts interacting
-  const clearError = () => {
-    if (error) setError("");
-  };
+  // Handle post creation success
+  useEffect(() => {
+    if (!createPostPending && isSuccess) {
+      setSuccessMessage("Crime report posted successfully!");
+      setError("");
+      // Small delay to show success before closing
+      setTimeout(() => {
+        resetForm();
+        setSuccessMessage("");
+        setIsOpen(false);
+        // router.push("/posts");
+      }, 1500);
+    }
+  }, [createPostPending, isSuccess, router, setIsOpen, resetForm]);
 
   const handleModalClose = (open: boolean) => {
     if (!open) {
@@ -226,11 +257,6 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
     }
     setIsOpen(open);
   };
-
-  if (!createPostPending && isSuccess) {
-    resetForm();
-    router.push("/posts");
-  }
 
   return (
     <>
@@ -243,20 +269,31 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
         <ModalContent>
           {(onClose) => (
             <>
-              {createPostPending && <Loading />}
-              <div className="h-full rounded-xl bg-gradient-to-b from-default-100 px-[50px] py-6">
+              <div
+                className={`h-full rounded-xl bg-gradient-to-b from-default-100 px-[50px] py-6 ${createPostPending ? "pointer-events-none opacity-75" : ""}`}
+              >
                 <h1 className="text-2xl font-semibold">Post a Crime</h1>
                 <Divider className="mb-5 mt-3" />
 
                 {/* Error Display */}
                 {error && (
-                  <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-                    {error}
+                  <div className="mb-4 p-4 bg-red-100 dark:bg-red-900/20 border-2 border-red-400 dark:border-red-600 text-red-700 dark:text-red-300 rounded-lg font-semibold">
+                    ⚠️ Error: {error}
+                  </div>
+                )}
+
+                {/* Success Display */}
+                {successMessage && (
+                  <div className="mb-4 p-4 bg-green-100 dark:bg-green-900/20 border-2 border-green-400 dark:border-green-600 text-green-700 dark:text-green-300 rounded-lg font-semibold">
+                    ✅ {successMessage}
                   </div>
                 )}
 
                 <FormProvider {...methods}>
-                  <form onChange={clearError} onSubmit={handleSubmit(onSubmit)}>
+                  <form
+                    onChange={clearMessages}
+                    onSubmit={handleSubmit(onSubmit)}
+                  >
                     <div className="flex flex-wrap gap-2 py-2">
                       <div className="min-w-fit flex-1">
                         <FXInput isRequired label="Title" name="title" />
@@ -271,7 +308,7 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
                     </div>
                     <div className="flex flex-wrap gap-2 py-2">
                       <div className="min-w-fit flex-1">
-                        <div className="relative">
+                        <div className="relative dropdown-container">
                           <div className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Division
                           </div>
@@ -293,9 +330,11 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
                               >
                                 {divisionsLoading
                                   ? "Loading divisions..."
-                                  : divisions.find(
-                                      (div) => div.id === selectedDivision
-                                    )?.name || "Select Division"}
+                                  : divisions.length === 0
+                                    ? "No divisions available"
+                                    : divisions.find(
+                                        (div) => div.id === selectedDivision
+                                      )?.name || "Select Division"}
                               </span>
                               <svg
                                 className={`w-4 h-4 transition-transform ${showDivisionDropdown ? "rotate-180" : ""}`}
@@ -313,11 +352,11 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
                             </div>
                           </button>
                           {showDivisionDropdown && divisions.length > 0 && (
-                            <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                            <div className="absolute z-[9999] w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl max-h-60 overflow-y-auto animate-fade-in">
                               {divisions.map((division) => (
                                 <button
                                   key={division.id}
-                                  className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 focus:outline-none"
+                                  className="w-full px-3 py-2 text-left text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-brand-primary/10 dark:focus:bg-brand-primary/20 focus:outline-none transition-colors duration-200"
                                   type="button"
                                   onClick={() => {
                                     setSelectedDivision(division.id);
@@ -333,7 +372,7 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
                         </div>
                       </div>
                       <div className="min-w-fit flex-1">
-                        <div className="relative">
+                        <div className="relative dropdown-container">
                           <div className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             District
                           </div>
@@ -377,7 +416,7 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
                           {showDistrictDropdown &&
                             districts.length > 0 &&
                             selectedDivision && (
-                              <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                              <div className="absolute z-[9999] w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl max-h-60 overflow-y-auto animate-fade-in">
                                 {districts.map((district) => (
                                   <button
                                     key={district.id}
