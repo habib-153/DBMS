@@ -9,10 +9,10 @@ import { Chip } from "@heroui/chip";
 
 import { useGetAllPosts } from "@/src/hooks/post.hook";
 import envConfig from "@/src/config/envConfig";
-import { IPost, IUser } from "@/src/types";
+import { IUser } from "@/src/types";
 import { useGetSingleUser } from "@/src/hooks/user.hook";
-import PostCard from "@/src/components/UI/PostCard";
 import ProfileSkeleton from "@/src/components/UI/ProfileSkeleton";
+import PostCard from "@/src/components/modules/Posts/PostCard";
 
 const UserProfile = () => {
   const { id } = useParams();
@@ -120,8 +120,13 @@ const UserProfile = () => {
             }
           >
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-              {posts?.map((post: IPost, index: number) => (
-                <PostCard key={index} full={false} post={post} />
+              {posts?.map((post: any, index: number) => (
+                <PostCard
+                  key={post.id || index}
+                  isVoting={false}
+                  post={post}
+                  onVote={async () => {}}
+                />
               ))}
             </div>
           </Tab>

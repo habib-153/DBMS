@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserController = void 0;
 const http_status_1 = __importDefault(require("http-status"));
 const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
-const user_service_1 = require("./user.service");
+const user_service_raw_1 = require("./user.service.raw");
 const catchAsync_1 = require("../../utils/catchAsync");
 const user_constant_1 = require("./user.constant");
 const pick_1 = __importDefault(require("../../../shared/pick"));
@@ -27,7 +27,9 @@ const getAllUsers = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0,
         'sortBy',
         'sortOrder',
     ]);
-    const result = yield user_service_1.UserService.getAllUsers(filters, paginationOptions);
+    // Combine filters and pagination for raw service
+    const queryParams = Object.assign(Object.assign({}, filters), paginationOptions);
+    const result = yield user_service_raw_1.UserService.getAllUsers(queryParams);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
@@ -38,7 +40,7 @@ const getAllUsers = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0,
 }));
 const getUserById = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    const result = yield user_service_1.UserService.getUserById(id);
+    const result = yield user_service_raw_1.UserService.getSingleUser(id);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
@@ -48,7 +50,7 @@ const getUserById = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0,
 }));
 const updateUser = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    const result = yield user_service_1.UserService.updateUser(id, req.body);
+    const result = yield user_service_raw_1.UserService.updateUser(id, req.body, req.file);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
@@ -58,7 +60,7 @@ const updateUser = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, 
 }));
 const deleteUser = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    const result = yield user_service_1.UserService.deleteUser(id);
+    const result = yield user_service_raw_1.UserService.deleteUser(id);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,

@@ -36,35 +36,45 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.seed = void 0;
-const client_1 = require("@prisma/client");
-const prisma_1 = __importDefault(require("../../shared/prisma"));
+/* eslint-disable no-console */
 const bcrypt = __importStar(require("bcryptjs"));
 const config_1 = __importDefault(require("../config"));
+const database_1 = __importDefault(require("../../shared/database"));
 const seed = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const isExistSuperAdmin = yield prisma_1.default.user.findFirst({
-            where: {
-                role: client_1.UserRole.SUPER_ADMIN,
-            },
-        });
-        if (isExistSuperAdmin) {
+        // Check if super admin already exists
+        const existingAdminQuery = `
+      SELECT id FROM users 
+      WHERE role = 'SUPER_ADMIN' 
+      LIMIT 1
+    `;
+        const existingAdmin = yield database_1.default.query(existingAdminQuery);
+        if (existingAdmin.rows.length > 0) {
             console.log('Super admin already exists!');
             return;
         }
         const hashedPassword = yield bcrypt.hash(config_1.default.admin_password, Number(config_1.default.bcrypt_salt_rounds));
-        const superAdminData = yield prisma_1.default.user.create({
-            data: {
-                name: 'Super Admin',
-                email: config_1.default.admin_email,
-                password: hashedPassword,
-                phone: config_1.default.admin_mobile_number,
-                profilePhoto: config_1.default.admin_profile_photo,
-                role: client_1.UserRole.SUPER_ADMIN,
-                isVerified: true,
-                needPasswordChange: false,
-            },
-        });
-        console.log('Super Admin Created Successfully!', superAdminData);
+        // Create super admin user
+        const insertAdminQuery = `
+      INSERT INTO users (
+        name, email, password, phone, profile_photo, 
+        role, is_verified, need_password_change, status, created_at, updated_at
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW()
+      ) RETURNING *
+    `;
+        const superAdminData = yield database_1.default.query(insertAdminQuery, [
+            'Super Admin',
+            config_1.default.admin_email,
+            hashedPassword,
+            config_1.default.admin_mobile_number,
+            config_1.default.admin_profile_photo,
+            'SUPER_ADMIN',
+            true,
+            false,
+            'ACTIVE',
+        ]);
+        console.log('Super Admin Created Successfully!', superAdminData.rows[0]);
     }
     catch (err) {
         console.error('Error in seeding:', err);

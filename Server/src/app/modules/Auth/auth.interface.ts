@@ -1,4 +1,8 @@
-import { UserRole } from '@prisma/client';
+const UserRole = {
+  USER: 'USER',
+  ADMIN: 'ADMIN',
+  SUPER_ADMIN: 'SUPER_ADMIN',
+} as const;
 
 export type TLoginUser = {
   email: string;
@@ -19,7 +23,7 @@ export interface TAuthUser {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
+  role: keyof typeof UserRole;
   phone: string;
   isVerified: boolean;
 }
@@ -40,5 +44,5 @@ export interface TVerifyOTP {
 }
 
 export interface TSendOTP {
-  phone: string;
+  email: string;
 }

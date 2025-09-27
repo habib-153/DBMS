@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import { Request, Response } from 'express';
 import sendResponse from '../../utils/sendResponse';
-import { UserService } from './user.service';
+import { UserService } from './user.service.raw';
 import { catchAsync } from '../../utils/catchAsync';
 import { userSearchableFields } from './user.constant';
 import pick from '../../../shared/pick';
@@ -15,7 +15,9 @@ const getAllUsers = catchAsync(async (req: Request, res: Response) => {
     'sortOrder',
   ]);
 
-  const result = await UserService.getAllUsers(filters, paginationOptions);
+  // Combine filters and pagination for raw service
+  const queryParams = { ...filters, ...paginationOptions };
+  const result = await UserService.getAllUsers(queryParams);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -28,7 +30,7 @@ const getAllUsers = catchAsync(async (req: Request, res: Response) => {
 
 const getUserById = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const result = await UserService.getUserById(id);
+  const result = await UserService.getSingleUser(id);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -40,7 +42,7 @@ const getUserById = catchAsync(async (req: Request, res: Response) => {
 
 const updateUser = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const result = await UserService.updateUser(id, req.body);
+  const result = await UserService.updateUser(id, req.body, req.file);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

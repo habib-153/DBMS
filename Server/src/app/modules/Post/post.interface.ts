@@ -1,6 +1,20 @@
-import { Post, PostStatus } from '@prisma/client';
+export type PostStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
-export type TPost = Post;
+export interface TPost {
+  id: string;
+  title: string;
+  description: string;
+  location: string;
+  district: string;
+  division: string;
+  crimeDate: Date;
+  image?: string;
+  authorId: string;
+  status: PostStatus;
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export interface TCreatePost {
   title: string;

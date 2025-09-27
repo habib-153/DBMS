@@ -8,7 +8,7 @@ import handleCastError from '../errors/handleCastError';
 import handleValidationError from '../errors/handleValidationError';
 import handleZodError from '../errors/handleZodError';
 import handleDuplicateError from '../errors/handlerDuplicateError';
-import handlePrismaError from '../errors/handlePrismaError';
+import handlePostgresError from '../errors/handlePostgresError';
 import { TErrorSources } from '../interfaces/error.interface';
 import { TImageFiles } from '../interfaces/image.interface';
 import { deleteImageFromCloudinary } from '../utils/deleteImage';
@@ -34,14 +34,22 @@ const globalErrorHandler: ErrorRequestHandler = async (err, req, res, next) => {
     statusCode = simplifiedError?.statusCode;
     message = simplifiedError?.message;
     errorSources = simplifiedError?.errorSources;
-  } else if (err?.code && err?.code.startsWith('P')) {
-    // Handle Prisma errors (they start with P)
-    const simplifiedError = handlePrismaError(err);
+  } else if (
+    err?.code &&
+    (err.code.startsWith('23') || // PostgreSQL integrity constraints
+      err.code.startsWith('42') || // PostgreSQL syntax/structure errors
+      err.code.startsWith('28') || // PostgreSQL auth errors
+      err.code.startsWith('3D') || // PostgreSQL database errors
+      err.code === 'ECONNREFUSED' || // Connection errors
+      err.code === 'ETIMEDOUT')
+  ) {
+    // Handle PostgreSQL errors
+    const simplifiedError = handlePostgresError(err);
     statusCode = simplifiedError?.statusCode;
     message = simplifiedError?.message;
     errorSources = simplifiedError?.errorSources;
-  } else if (err?.code === 'P2002') {
-    // Prisma unique constraint error
+  } else if (err?.code === '23505') {
+    // PostgreSQL unique constraint error
     const simplifiedError = handleDuplicateError(err);
     statusCode = simplifiedError?.statusCode;
     message = simplifiedError?.message;

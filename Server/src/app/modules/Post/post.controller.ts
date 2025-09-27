@@ -3,8 +3,9 @@ import AppError from '../../errors/AppError';
 import { TImageFile } from '../../interfaces/image.interface';
 import { catchAsync } from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
-import { PostService } from './post.service';
+// import { PostService } from './post.service';
 import { TUser } from '../User/user.interface';
+import { PostService } from './post.service.raw';
 
 const createPost = catchAsync(async (req, res) => {
   if (!req.file) {

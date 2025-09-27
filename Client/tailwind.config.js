@@ -1,4 +1,4 @@
-import {heroui} from "@heroui/theme"
+const { heroui } = require("@heroui/theme");
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -11,9 +11,13 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: ["var(--font-sans)"],
-        mono: ["var(--font-mono)"],
+        exo: ["var(--font-exo)"],
       },
       colors: {
+        brand: {
+          primary: "#0070f3",
+          secondary: "#7928ca",
+        },
       },
     },
   },

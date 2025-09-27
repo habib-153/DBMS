@@ -5,20 +5,21 @@ import config from '../config';
 import AppError from '../errors/AppError';
 import { catchAsync } from '../utils/catchAsync';
 import { verifyToken } from '../utils/verifyJWT';
-import { UserRole, UserStatus } from '@prisma/client';
-import prisma from '../../shared/prisma';
+import database from '../../shared/database';
 
-const auth = (...requiredRoles: (keyof typeof UserRole)[]) => {
+type UserRoleType = 'USER' | 'ADMIN' | 'SUPER_ADMIN';
+
+const auth = (...requiredRoles: UserRoleType[]) => {
   return catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-   const token = req.headers.authorization;
+    const token = req.headers.authorization;
 
-   // checking if the token is missing
-   if (!token) {
-     throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
-   }
+    // checking if the token is missing
+    if (!token) {
+      throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
+    }
 
-   // Remove 'Bearer ' prefix if present
-   const cleanToken = token.startsWith('Bearer ') ? token.slice(7) : token;
+    // Remove 'Bearer ' prefix if present
+    const cleanToken = token.startsWith('Bearer ') ? token.slice(7) : token;
 
     const decoded = verifyToken(
       cleanToken,
@@ -27,29 +28,34 @@ const auth = (...requiredRoles: (keyof typeof UserRole)[]) => {
 
     const { role, email, iat } = decoded;
 
-    // checking if the user is exist
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        status: true,
-        passwordChangedAt: true,
-        isVerified: true,
-      },
-    });
+    // checking if the user exists using raw SQL
+    const userQuery = `
+      SELECT id, email, role, status, "passwordChangedAt", "isVerified"
+      FROM users 
+      WHERE email = $1
+    `;
+
+    const result = await database.query<{
+      id: string;
+      email: string;
+      role: string;
+      status: string;
+      passwordChangedAt?: Date;
+      isVerified: boolean;
+    }>(userQuery, [email]);
+
+    const user = result.rows[0];
 
     if (!user) {
       throw new AppError(httpStatus.NOT_FOUND, 'This user is not found!');
     }
 
     // Check if user is blocked or deleted
-    if (user.status === UserStatus.BLOCKED) {
+    if (user.status === 'BLOCKED') {
       throw new AppError(httpStatus.FORBIDDEN, 'This user is blocked!');
     }
 
-    if (user.status === UserStatus.DELETED) {
+    if (user.status === 'DELETED') {
       throw new AppError(httpStatus.FORBIDDEN, 'This user is deleted!');
     }
 

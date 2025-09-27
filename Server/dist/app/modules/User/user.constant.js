@@ -4,10 +4,12 @@ exports.userFilterableFields = exports.userSearchableFields = exports.DEFAULT_PR
 exports.USER_ROLE = {
     ADMIN: 'ADMIN',
     USER: 'USER',
+    SUPER_ADMIN: 'SUPER_ADMIN',
 };
 exports.USER_STATUS = {
     ACTIVE: 'ACTIVE',
-    BAN: 'BAN',
+    BLOCKED: 'BLOCKED',
+    DELETED: 'DELETED',
 };
 exports.DEFAULT_PROFILE_URL = 'https://www.pngall.com/wp-content/uploads/5/Profile-PNG-Free-Download.png';
 exports.userSearchableFields = ['name', 'email', 'phone'];

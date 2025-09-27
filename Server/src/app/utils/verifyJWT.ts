@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import AppError from '../errors/AppError';
-import { UserRole, UserStatus } from '@prisma/client';
 
 export const createToken = (
   jwtPayload: {
@@ -10,8 +9,8 @@ export const createToken = (
     name: string;
     email: string;
     phone: string;
-    role: keyof typeof UserRole;
-    status: keyof typeof UserStatus;
+    role: 'USER' | 'ADMIN' | 'SUPER_ADMIN';
+    status: 'ACTIVE' | 'BLOCKED' | 'DELETED';
   },
   secret: string,
   expiresIn: string

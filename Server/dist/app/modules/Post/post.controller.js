@@ -17,12 +17,12 @@ const http_status_1 = __importDefault(require("http-status"));
 const AppError_1 = __importDefault(require("../../errors/AppError"));
 const catchAsync_1 = require("../../utils/catchAsync");
 const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
-const post_service_1 = require("./post.service");
+const post_service_raw_1 = require("./post.service.raw");
 const createPost = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     if (!req.file) {
         throw new AppError_1.default(400, 'Please upload an image');
     }
-    const result = yield post_service_1.PostService.createPost(req.body, req.file, req.user.id // Pass the user ID from the authenticated user
+    const result = yield post_service_raw_1.PostService.createPost(req.body, req.file, req.user.id // Pass the user ID from the authenticated user
     );
     (0, sendResponse_1.default)(res, {
         success: true,
@@ -32,7 +32,7 @@ const createPost = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, 
     });
 }));
 const getAllPost = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield post_service_1.PostService.getAllPosts(req.query);
+    const result = yield post_service_raw_1.PostService.getAllPosts(req.query);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
@@ -43,7 +43,7 @@ const getAllPost = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, 
 }));
 const getSinglePost = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const id = req.params.id;
-    const result = yield post_service_1.PostService.getSinglePost(id);
+    const result = yield post_service_raw_1.PostService.getSinglePost(id);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
@@ -53,7 +53,7 @@ const getSinglePost = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 
 }));
 const updatePost = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    const result = yield post_service_1.PostService.updatePost(id, req.body, req.file, req.user.id);
+    const result = yield post_service_raw_1.PostService.updatePost(id, req.body, req.file, req.user.id);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
@@ -63,7 +63,7 @@ const updatePost = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, 
 }));
 const deletePost = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    const result = yield post_service_1.PostService.deletePost(id, req.user.id);
+    const result = yield post_service_raw_1.PostService.deletePost(id, req.user.id);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
@@ -72,7 +72,7 @@ const deletePost = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, 
     });
 }));
 const addPostUpvote = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield post_service_1.PostService.addPostUpvote(req.params.postId, req.user);
+    const result = yield post_service_raw_1.PostService.addPostUpvote(req.params.postId, req.user);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
@@ -81,7 +81,7 @@ const addPostUpvote = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 
     });
 }));
 const addPostDownvote = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield post_service_1.PostService.addPostDownvote(req.params.postId, req.user);
+    const result = yield post_service_raw_1.PostService.addPostDownvote(req.params.postId, req.user);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
@@ -90,7 +90,7 @@ const addPostDownvote = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(voi
     });
 }));
 const removePostUpvote = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield post_service_1.PostService.removePostUpvote(req.params.postId, req.user);
+    const result = yield post_service_raw_1.PostService.removePostUpvote(req.params.postId, req.user);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
@@ -99,7 +99,7 @@ const removePostUpvote = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(vo
     });
 }));
 const removePostDownvote = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield post_service_1.PostService.removePostDownvote(req.params.postId, req.user);
+    const result = yield post_service_raw_1.PostService.removePostDownvote(req.params.postId, req.user);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
@@ -109,7 +109,7 @@ const removePostDownvote = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(
 }));
 // Comment controllers
 const createComment = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield post_service_1.PostService.createComment(req.body, req.user.id);
+    const result = yield post_service_raw_1.PostService.createComment(req.body, req.user.id);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.CREATED,
@@ -119,7 +119,7 @@ const createComment = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 
 }));
 const updateComment = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    const result = yield post_service_1.PostService.updateComment(id, req.body, req.user.id);
+    const result = yield post_service_raw_1.PostService.updateComment(id, req.body, req.user.id);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
@@ -129,7 +129,7 @@ const updateComment = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 
 }));
 const deleteComment = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    const result = yield post_service_1.PostService.deleteComment(id, req.user.id);
+    const result = yield post_service_raw_1.PostService.deleteComment(id, req.user.id);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,

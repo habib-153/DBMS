@@ -1,11 +1,13 @@
 export const USER_ROLE = {
   ADMIN: 'ADMIN',
   USER: 'USER',
+  SUPER_ADMIN: 'SUPER_ADMIN',
 } as const;
 
 export const USER_STATUS = {
   ACTIVE: 'ACTIVE',
-  BAN: 'BAN',
+  BLOCKED: 'BLOCKED',
+  DELETED: 'DELETED',
 } as const;
 
 export const DEFAULT_PROFILE_URL =

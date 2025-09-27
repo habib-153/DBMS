@@ -3,7 +3,6 @@ import auth from '../../middlewares/auth';
 import validateRequest, {
   validateRequestCookies,
 } from '../../middlewares/validateRequest';
-import { UserRole } from '@prisma/client';
 import { AuthControllers } from './auth.controller';
 import { AuthValidation } from './auth.validation';
 
@@ -23,7 +22,7 @@ router.post(
 
 router.post(
   '/change-password',
-  auth(UserRole.USER, UserRole.ADMIN, UserRole.SUPER_ADMIN),
+  auth('USER', 'ADMIN', 'SUPER_ADMIN'),
   validateRequest(AuthValidation.changePasswordValidationSchema),
   AuthControllers.changePassword
 );

@@ -1,5 +1,5 @@
-/* eslint-disable no-unused-vars */
-import { UserRole, UserStatus } from '@prisma/client';
+export type UserRole = 'USER' | 'ADMIN' | 'SUPER_ADMIN';
+export type UserStatus = 'ACTIVE' | 'BLOCKED' | 'DELETED';
 
 export interface TUser {
   id: string;
@@ -18,7 +18,6 @@ export interface TUser {
   createdAt: Date;
   updatedAt: Date;
 }
-
 
 export interface TUserFilterableFields {
   name?: string;

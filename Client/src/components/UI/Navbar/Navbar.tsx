@@ -15,6 +15,7 @@ import Image from "next/image";
 import { Button } from "@heroui/button";
 import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 import { ThemeSwitch } from "../theme-switch";
 
@@ -29,9 +30,17 @@ export const Navbar = () => {
   const { user } = useUser();
   const router = useRouter();
   const pathname = usePathname();
-  const { theme } = useTheme()
+
+  const { theme, resolvedTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
   
-  const Logo = (theme === "dark") ? Logo_dark : Logo_light;
+    // Ensure component is mounted before accessing theme
+    useEffect(() => {
+      setMounted(true);
+    }, []);
+
+    const currentTheme = mounted ? theme : "light";
+  const Logo = currentTheme === "dark" ? Logo_dark : Logo_light;
 
   const isActiveLink = (href: string) => {
     if (href === "/") {

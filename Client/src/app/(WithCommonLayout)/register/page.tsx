@@ -75,7 +75,9 @@ export default function RegisterPage() {
       </div>
 
       {/* Gradient overlay for better contrast */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black/10 via-black/5 to-black/10" />
+      {currentTheme === "light" ? (
+        <div className="absolute inset-0 bg-gradient-to-br from-black/10 via-black/5 to-black/10" />
+      ) : null}
 
       {/* Main Content Container */}
       <div className="relative z-10 min-h-[calc(100vh-100px)] flex items-center">

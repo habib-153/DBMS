@@ -19,7 +19,7 @@ const handleCastError_1 = __importDefault(require("../errors/handleCastError"));
 const handleValidationError_1 = __importDefault(require("../errors/handleValidationError"));
 const handleZodError_1 = __importDefault(require("../errors/handleZodError"));
 const handlerDuplicateError_1 = __importDefault(require("../errors/handlerDuplicateError"));
-const handlePrismaError_1 = __importDefault(require("../errors/handlePrismaError"));
+const handlePostgresError_1 = __importDefault(require("../errors/handlePostgresError"));
 const deleteImage_1 = require("../utils/deleteImage");
 const globalErrorHandler = (err, req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     //setting default values
@@ -41,15 +41,21 @@ const globalErrorHandler = (err, req, res, next) => __awaiter(void 0, void 0, vo
         message = simplifiedError === null || simplifiedError === void 0 ? void 0 : simplifiedError.message;
         errorSources = simplifiedError === null || simplifiedError === void 0 ? void 0 : simplifiedError.errorSources;
     }
-    else if ((err === null || err === void 0 ? void 0 : err.code) && (err === null || err === void 0 ? void 0 : err.code.startsWith('P'))) {
-        // Handle Prisma errors (they start with P)
-        const simplifiedError = (0, handlePrismaError_1.default)(err);
+    else if ((err === null || err === void 0 ? void 0 : err.code) &&
+        (err.code.startsWith('23') || // PostgreSQL integrity constraints
+            err.code.startsWith('42') || // PostgreSQL syntax/structure errors
+            err.code.startsWith('28') || // PostgreSQL auth errors
+            err.code.startsWith('3D') || // PostgreSQL database errors
+            err.code === 'ECONNREFUSED' || // Connection errors
+            err.code === 'ETIMEDOUT')) {
+        // Handle PostgreSQL errors
+        const simplifiedError = (0, handlePostgresError_1.default)(err);
         statusCode = simplifiedError === null || simplifiedError === void 0 ? void 0 : simplifiedError.statusCode;
         message = simplifiedError === null || simplifiedError === void 0 ? void 0 : simplifiedError.message;
         errorSources = simplifiedError === null || simplifiedError === void 0 ? void 0 : simplifiedError.errorSources;
     }
-    else if ((err === null || err === void 0 ? void 0 : err.code) === 'P2002') {
-        // Prisma unique constraint error
+    else if ((err === null || err === void 0 ? void 0 : err.code) === '23505') {
+        // PostgreSQL unique constraint error
         const simplifiedError = (0, handlerDuplicateError_1.default)(err);
         statusCode = simplifiedError === null || simplifiedError === void 0 ? void 0 : simplifiedError.statusCode;
         message = simplifiedError === null || simplifiedError === void 0 ? void 0 : simplifiedError.message;

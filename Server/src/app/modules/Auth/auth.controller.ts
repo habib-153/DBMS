@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import config from '../../config';
 import sendResponse from '../../utils/sendResponse';
-import { AuthServices } from './auth.service';
+import { AuthServices } from './auth.service.raw';
 import { catchAsync } from '../../utils/catchAsync';
 
 const registerUser = catchAsync(async (req, res) => {
@@ -26,7 +26,8 @@ const registerUser = catchAsync(async (req, res) => {
 });
 
 const loginUser = catchAsync(async (req, res) => {
-  const result = await AuthServices.loginUser(req.body);
+  const payload = req.body
+  const result = await AuthServices.loginUser(payload);
   const { refreshToken, accessToken } = result;
 
   res.cookie('refreshToken', refreshToken, {
@@ -46,7 +47,6 @@ const loginUser = catchAsync(async (req, res) => {
 });
 
 const changePassword = catchAsync(async (req, res) => {
-
   const result = await AuthServices.changePassword(req.user, req.body);
   sendResponse(res, {
     statusCode: httpStatus.OK,
