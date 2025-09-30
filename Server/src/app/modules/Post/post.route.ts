@@ -5,6 +5,7 @@ import { parseBody } from '../../middlewares/bodyParser';
 import { multerUpload } from '../../config/multer.config';
 import { PostValidation } from './post.validation';
 import validateRequest from '../../middlewares/validateRequest';
+import { CommentControllers } from '../Comment/comment.controller';
 
 const router = express.Router();
 
@@ -21,6 +22,8 @@ router.post(
 router.get('/', PostControllers.getAllPost);
 
 router.get('/:id', PostControllers.getSinglePost);
+
+router.get('/:id/comments', CommentControllers.getCommentsByPost);
 
 router.patch(
   '/:id',

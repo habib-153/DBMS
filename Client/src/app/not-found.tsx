@@ -1,24 +1,27 @@
-'use client';
-import { Button } from "@heroui/button";
-import { FileQuestion } from "lucide-react";
+"use client";
+
+import { Button, Card, CardBody } from "@heroui/react";
+import { FileQuestion, ArrowLeft, LifeBuoy } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function NotFoundPage() {
   const router = useRouter();
 
   return (
-    <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="container px-4 mx-auto">
-        <div className="max-w-lg mx-auto text-center">
-          <FileQuestion className="mx-auto mb-4 w-24 h-24 text-gray-400" />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-6">
+      <Card className="max-w-2xl w-full">
+        <CardBody className="text-center py-12">
+          <div className="mx-auto mb-4 w-28 h-28 rounded-full bg-rose-50 flex items-center justify-center">
+            <FileQuestion className="w-12 h-12 text-rose-600" />
+          </div>
 
-          <h1 className="mb-3 text-4xl font-bold text-gray-800 dark:text-gray-200">
-            Page Not Found
+          <h1 className="mb-3 text-3xl font-bold text-gray-800 dark:text-gray-100">
+            Report not found
           </h1>
 
-          <p className="mb-6 text-lg text-gray-500 dark:text-gray-400">
-            Oops! The page you&apos;re looking for seems to have vanished into
-            thin air.
+          <p className="mb-6 text-gray-600 dark:text-gray-400">
+            The incident report you tried to access does not exist or has been
+            removed. You can create a new report or return to the homepage.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -29,7 +32,8 @@ export default function NotFoundPage() {
               variant="solid"
               onClick={() => router.push("/")}
             >
-              Go Home
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Home
             </Button>
 
             <Button
@@ -37,43 +41,21 @@ export default function NotFoundPage() {
               color="default"
               size="lg"
               variant="bordered"
-              onClick={() => router.back()}
+              onClick={() => router.push("/reports/create")}
             >
-              Go Back
+              Report an incident
             </Button>
           </div>
-        </div>
 
-        <div className="mt-12 text-center">
-          <p className="text-gray-500 dark:text-gray-400">
-            Need assistance?{" "}
-            <Button
-              className="font-medium"
-              color="primary"
-              variant="light"
-              onClick={() => router.push("/contact")}
-            >
-              Contact Support
+          <div className="mt-8 text-sm text-gray-500 dark:text-gray-400">
+            <LifeBuoy className="inline mr-2 w-4 h-4 text-rose-500" />
+            Need help? Visit our{" "}
+            <Button variant="light" onClick={() => router.push("/contact")}>
+              Contact page
             </Button>
-          </p>
-        </div>
-      </div>
-
-      {/* Optional: Animated background elements */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div
-          aria-hidden="true"
-          className="absolute left-[calc(50%-4rem)] top-10 -z-10 transform-gpu blur-3xl sm:left-[calc(50%-18rem)] lg:left-48 lg:top-[calc(50%-30rem)] xl:left-[calc(50%-24rem)]"
-        >
-          <div
-            className="aspect-[1108/632] w-[69.25rem] bg-gradient-to-r from-primary-200 to-primary-500 opacity-20"
-            style={{
-              clipPath:
-                "polygon(73.6% 51.7%, 91.7% 11.8%, 100% 46.4%, 97.4% 82.2%, 92.5% 84.9%, 75.7% 64%, 55.3% 47.5%, 46.5% 49.4%, 45% 62.9%, 50.3% 87.2%, 21.3% 64.1%, 0.1% 100%, 5.4% 51.1%, 21.4% 63.9%, 58.9% 0.2%, 73.6% 51.7%)",
-            }}
-          />
-        </div>
-      </div>
+          </div>
+        </CardBody>
+      </Card>
     </div>
   );
 }

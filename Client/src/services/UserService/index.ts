@@ -1,7 +1,5 @@
 "use server";
 
-import { revalidateTag } from "next/cache";
-
 import axiosInstance from "@/src/libs/AxiosInstance";
 
 export const getAllUsers = async (query?: string) => {
@@ -24,12 +22,9 @@ export const getSingleUser = async (id: string) => {
   }
 };
 
-
 export const updateUserRole = async (id: string, payload: any) => {
   try {
     const { data } = await axiosInstance.put(`/users/${id}`, payload);
-
-    revalidateTag("users");
 
     return data;
   } catch (error: any) {
@@ -40,8 +35,6 @@ export const updateUserRole = async (id: string, payload: any) => {
 export const deleteUser = async (id: string): Promise<any> => {
   try {
     const { data } = await axiosInstance.delete(`/users/${id}`);
-
-    revalidateTag("users");
 
     return data;
   } catch (error: any) {
@@ -57,10 +50,6 @@ export const deleteUser = async (id: string): Promise<any> => {
 export const followUser = async (followedId: string): Promise<any> => {
   try {
     const { data } = await axiosInstance.post(`/users/follow/${followedId}`);
-
-    revalidateTag("follow");
-    revalidateTag('users');
-    revalidateTag("posts");
 
     return data.data;
   } catch (error: any) {
@@ -78,9 +67,6 @@ export const unFollowUser = async (followedId: string): Promise<any> => {
     const { data } = await axiosInstance.delete(
       `/users/unfollow/${followedId}`
     );
-
-    revalidateTag("follow");
-    revalidateTag("posts");
 
     return data.data;
   } catch (error: any) {

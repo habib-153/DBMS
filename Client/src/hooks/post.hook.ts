@@ -1,8 +1,17 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { addDownvote, addUpvote, createPost, deletePost, getAllPosts, getSinglePost, removeDownvote, removeUpvote, updatePost } from "../services/PostServices";
-
+import {
+  addDownvote,
+  addUpvote,
+  createPost,
+  deletePost,
+  getAllPosts,
+  getSinglePost,
+  removeDownvote,
+  removeUpvote,
+  updatePost,
+} from "../services/PostServices";
 
 export const useCreatePost = () => {
   return useMutation<any, Error, FormData>({
@@ -29,7 +38,6 @@ export const useGetSinglePost = (id: string) => {
     queryKey: ["singlePost", id],
     queryFn: async () => await getSinglePost(id),
     enabled: !!id,
-    refetchInterval: 1500,
   });
 };
 

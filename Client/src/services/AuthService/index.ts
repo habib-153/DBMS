@@ -3,7 +3,6 @@
 import { cookies } from "next/headers";
 import { FieldValues } from "react-hook-form";
 import { jwtDecode } from "jwt-decode";
-import { revalidateTag } from "next/cache";
 
 import axiosInstance from "@/src/libs/AxiosInstance";
 import envConfig from "@/src/config/envConfig";
@@ -108,8 +107,6 @@ export const getMyProfile = async () => {
 export const getVerified = async (payload: any) => {
   try {
     const { data } = await axiosInstance.put("/users/get-verified", payload);
-
-    revalidateTag("posts");
 
     return data;
   } catch (error: any) {

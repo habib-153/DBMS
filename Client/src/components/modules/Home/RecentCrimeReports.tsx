@@ -103,7 +103,7 @@ const CrimeReportCard = ({ post }: { post: IPost }) => {
               </div>
 
               <Link
-                className="text-brand-primary hover:text-brand-secondary font-medium transition-colors"
+                className="text-brand-primary hover:text-brand-secondary p-3 hover:bg-brand-primary/20 rounded-3xl font-medium transition-colors"
                 href={`/posts/${post.id}`}
               >
                 View Details

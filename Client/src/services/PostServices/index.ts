@@ -1,7 +1,5 @@
 "use server";
 
-import { revalidateTag } from "next/cache";
-
 import { getCurrentUser } from "../AuthService";
 
 import axiosInstance from "@/src/libs/AxiosInstance";
@@ -13,8 +11,6 @@ export const createPost = async (formData: FormData): Promise<any> => {
         "Content-Type": "multipart/form-data",
       },
     });
-
-    revalidateTag("posts");
 
     return data;
   } catch (error: any) {
@@ -52,8 +48,6 @@ export const addUpvote = async (postId: string): Promise<any> => {
   try {
     const { data } = await axiosInstance.post(`/posts/${postId}/upvote`);
 
-    revalidateTag("posts");
-
     return data;
   } catch (error: any) {
     const errorMessage =
@@ -68,8 +62,6 @@ export const addUpvote = async (postId: string): Promise<any> => {
 export const removeUpvote = async (postId: string): Promise<any> => {
   try {
     const { data } = await axiosInstance.delete(`/posts/${postId}/upvote`);
-
-    revalidateTag("posts");
 
     return data;
   } catch (error: any) {
@@ -86,8 +78,6 @@ export const addDownvote = async (postId: string): Promise<any> => {
   try {
     const { data } = await axiosInstance.post(`/posts/${postId}/downvote`);
 
-    revalidateTag("posts");
-
     return data;
   } catch (error: any) {
     const errorMessage =
@@ -102,8 +92,6 @@ export const addDownvote = async (postId: string): Promise<any> => {
 export const removeDownvote = async (postId: string): Promise<any> => {
   try {
     const { data } = await axiosInstance.delete(`/posts/${postId}/downvote`);
-
-    revalidateTag("posts");
 
     return data;
   } catch (error: any) {
@@ -135,8 +123,6 @@ export const updatePost = async (payload: FormData, id: string) => {
       },
     });
 
-    revalidateTag("posts");
-
     return data;
   } catch (error: any) {
     const errorMessage =
@@ -152,8 +138,6 @@ export const updatePost = async (payload: FormData, id: string) => {
 export const deletePost = async (id: string): Promise<any> => {
   try {
     const { data } = await axiosInstance.delete(`/posts/${id}`);
-
-    revalidateTag("posts");
 
     return data;
   } catch (error: any) {

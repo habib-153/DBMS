@@ -28,6 +28,7 @@ export default function PostCard({
   const isDownvoted = downVotes.some((vote) => vote.userId === userId);
   const voteCount = upVotes.length - downVotes.length;
 
+console.log(post)
   const handleVote = async (voteType: "up" | "down") => {
     if (!userId) {
       toast.error("Please login to vote");
@@ -65,7 +66,9 @@ export default function PostCard({
       return "Recently";
     }
   };
+
   console.log(post);
+
   return (
     <Card className="w-full h-full hover:shadow-xl transition-all duration-300 border-1 border-gray-200 dark:border-gray-700 group">
       <CardBody className="p-0 h-full flex flex-col">

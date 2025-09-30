@@ -1,6 +1,4 @@
-'use server';
 import axios from "axios";
-import { cookies } from "next/headers";
 
 import envConfig from "@/src/config/envConfig";
 
@@ -9,12 +7,38 @@ const axiosInstance = axios.create({
 });
 
 axiosInstance.interceptors.request.use(
-  function (config) {
-    const cookieStore = cookies();
-    const accessToken = cookieStore.get("accessToken")?.value;
+  async function (config) {
+    try {
+      // Server-side (Next.js) - dynamically import next/headers only on server
+      if (typeof window === "undefined") {
+        try {
+          const nh = await import("next/headers");
+          const cookieStore = nh.cookies();
+          const accessToken = cookieStore.get("accessToken")?.value;
 
-    if (accessToken) {
-      config.headers.Authorization = accessToken;
+          if (accessToken) {
+            config.headers = config.headers || {};
+            // @ts-ignore
+            config.headers["Authorization"] = accessToken;
+          }
+        } catch (e) {
+          // dynamic import failed; ignore
+        }
+      } else {
+        // Client-side - read from document.cookie
+        const match = document.cookie.match(
+          new RegExp("(^| )" + "accessToken" + "=([^;]+)")
+        );
+        const accessToken = match ? match[2] : null;
+
+        if (accessToken) {
+          config.headers = config.headers || {};
+          // @ts-ignore
+          config.headers["Authorization"] = accessToken;
+        }
+      }
+    } catch (e) {
+      // ignore and continue
     }
 
     return config;

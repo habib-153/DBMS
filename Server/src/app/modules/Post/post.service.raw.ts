@@ -78,7 +78,7 @@ const getAllPosts = async (
     searchTerm,
     ...filterData
   } = filters;
-console.log("filters:", filterData);
+  console.log('filters:', filterData);
   const offset = (Number(page) - 1) * Number(limit);
   const conditions: string[] = [`p."isDeleted" = false`];
   const values: unknown[] = [];
@@ -105,7 +105,7 @@ console.log("filters:", filterData);
     values.push(filterData.division);
     paramIndex++;
   }
-console.log(conditions, 'conditions');
+  console.log(conditions, 'conditions');
   if (filterData.status) {
     conditions.push(`p.status = $${paramIndex}`);
     values.push(filterData.status);
@@ -117,7 +117,7 @@ console.log(conditions, 'conditions');
 
   const whereClause =
     conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-console.log(whereClause)
+  console.log(whereClause);
   // Count query
   const countQuery = `
     SELECT COUNT(*) as total
@@ -130,6 +130,14 @@ console.log(whereClause)
     values
   );
   const total = parseInt(countResult.rows[0].total, 10);
+  console.log(sortBy, 'sortBy', sortOrder, 'sortOrder');
+  // Determine ORDER BY clause
+  let orderByClause = '';
+  if (sortBy === 'votes') {
+    orderByClause = `ORDER BY (COALESCE(vote_counts.up_votes, 0) + COALESCE(vote_counts.down_votes, 0)) ${sortOrder}`;
+  } else {
+    orderByClause = `ORDER BY p."${sortBy as string}" ${sortOrder}`;
+  }
 
   // Main query with pagination
   const mainQuery = `
@@ -160,13 +168,44 @@ console.log(whereClause)
       GROUP BY "postId"
     ) comment_counts ON p.id = comment_counts."postId"
     ${whereClause}
-    ORDER BY p."${sortBy as string}" ${sortOrder as string}
+    ${orderByClause}
     LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
   `;
 
   values.push(Number(limit), offset);
 
   const result = await database.query<DbPostWithAuthor>(mainQuery, values);
+  const posts = result.rows;
+  const postIds = posts.map((post) => post.id);
+
+  // Fetch votes for all posts in this page
+  let votesByPost: Record<string, (DbPostVote & { userName: string })[]> = {};
+  if (postIds.length > 0) {
+    const votesQuery = `
+      SELECT 
+        pv.*,
+        u.name as "userName"
+      FROM post_votes pv
+      INNER JOIN users u ON pv."userId" = u.id
+      WHERE pv."postId" = ANY($1)
+      ORDER BY pv."createdAt" DESC
+    `;
+    const votesResult = await database.query<DbPostVote & { userName: string }>(
+      votesQuery,
+      [postIds]
+    );
+    votesByPost = votesResult.rows.reduce((acc, vote) => {
+      if (!acc[vote.postId]) acc[vote.postId] = [];
+      acc[vote.postId].push(vote);
+      return acc;
+    }, {} as Record<string, (DbPostVote & { userName: string })[]>);
+  }
+
+  // Attach votes array to each post
+  const postsWithVotes = posts.map((post) => ({
+    ...post,
+    votes: votesByPost[post.id] || [],
+  }));
 
   return {
     meta: {
@@ -174,7 +213,7 @@ console.log(whereClause)
       page: Number(page),
       limit: Number(limit),
     },
-    data: result.rows,
+    data: postsWithVotes,
   };
 };
 
@@ -405,7 +444,6 @@ const addPostVote = async (
     if (postResult.rows.length === 0) {
       throw new AppError(httpStatus.NOT_FOUND, 'Post not found');
     }
-
     // Check if user already voted
     const existingVoteQuery = `
       SELECT * FROM post_votes 

@@ -39,6 +39,8 @@ import {
 } from "@/src/hooks/post.hook";
 import { useUser } from "@/src/context/user.provider";
 import AuthModal from "@/src/components/UI/modal/AuthModal/AuthModal";
+import { usePostAComment, useGetPostComments } from "@/src/hooks/comment.hook";
+import CommentVoteButtons from "@/src/components/Comment/CommentVoteButtons";
 
 const PostDetails = () => {
   const { id } = useParams();
@@ -50,6 +52,8 @@ const PostDetails = () => {
   const [isVoting, setIsVoting] = useState(false);
   const [openAuthModal, setOpenAuthModal] = useState(false);
   const [comment, setComment] = useState("");
+  const { mutateAsync: postComment } = usePostAComment();
+  const { data: commentsData } = useGetPostComments(id as string);
 
   // Voting hooks
   const { mutate: addUpvote } = useAddUpVotePost();
@@ -173,17 +177,19 @@ const PostDetails = () => {
     }
   };
 
-  const handleCommentSubmit = () => {
+  const handleCommentSubmit = async () => {
     if (!user) {
       setOpenAuthModal(true);
 
       return;
     }
     if (!comment.trim()) return;
-
-    // TODO: Implement comment submission
-    toast.success("Comment feature coming soon!");
-    setComment("");
+    try {
+      await postComment({ postId: id as string, content: comment });
+      setComment("");
+    } catch (err) {
+      // error handled by hook onError (toast), keep input intact
+    }
   };
 
   return (
@@ -238,13 +244,13 @@ const PostDetails = () => {
               <div className="flex items-center gap-3">
                 <Avatar
                   className="border-2 border-white shadow-sm"
-                  name={postData.author.name}
+                  name={postData.authorName}
                   size="md"
-                  src={postData.author.profilePhoto}
+                  src={postData.authorProfilePhoto}
                 />
                 <div>
                   <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                    {postData.author.name}
+                    {postData.authorName}
                   </h3>
                   <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                     <Clock size={14} />
@@ -396,7 +402,7 @@ const PostDetails = () => {
           <div className="flex items-center gap-2">
             <MessageCircle className="text-brand-primary" size={20} />
             <h3 className="text-lg font-semibold">
-              Comments ({postData._count.comments})
+              Comments ({postData.commentCounts})
             </h3>
           </div>
         </CardHeader>
@@ -434,11 +440,48 @@ const PostDetails = () => {
             </div>
           )}
 
-          {/* Comments List Placeholder */}
-          <div className="mt-6">
-            <p className="text-center text-gray-500 dark:text-gray-400">
-              Comments section coming soon...
-            </p>
+          {/* Comments List */}
+          <div className="mt-6 space-y-4">
+            {commentsData &&
+            commentsData.data &&
+            commentsData.data.length > 0 ? (
+              commentsData.data.map((c: any) => (
+                <div
+                  key={c.id}
+                  className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                >
+                  <div className="flex items-start gap-3">
+                    <Avatar
+                      name={c.authorName}
+                      size="sm"
+                      src={c.authorProfilePhoto}
+                    />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium">{c.authorName}</h4>
+                        <span className="text-sm text-gray-500">
+                          {format(new Date(c.createdAt), "PPp")}
+                        </span>
+                      </div>
+                      <p className="text-gray-700 dark:text-gray-300">
+                        {c.content}
+                      </p>
+                    </div>
+                    <div className="ml-auto">
+                      <CommentVoteButtons
+                        commentId={c.id}
+                        postId={id as string}
+                        votes={c.votes}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-gray-500 dark:text-gray-400">
+                No comments yet. Be the first to comment!
+              </p>
+            )}
           </div>
         </CardBody>
       </Card>
