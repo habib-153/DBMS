@@ -24,7 +24,7 @@ process.on('unhandledRejection', (error) => {
 
 async function bootstrap() {
   try {
-    console.log('🛢 Database connected successfully (Prisma with PostgreSQL)');
+    console.log('🛢 Database connected successfully (With PostgreSQL)');
     await seed();
     server = app.listen(config.port, () => {
       console.log(`🚀 Application is running on port ${config.port}`);

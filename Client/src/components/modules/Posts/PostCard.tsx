@@ -8,6 +8,7 @@ import Image from "next/image";
 import { toast } from "sonner";
 
 import { IPost } from "@/src/types/post.types";
+import { FollowButton } from "@/src/components/modules/Shared";
 
 interface PostCardProps {
   post: IPost;
@@ -28,7 +29,7 @@ export default function PostCard({
   const isDownvoted = downVotes.some((vote) => vote.userId === userId);
   const voteCount = upVotes.length - downVotes.length;
 
-console.log(post)
+  console.log(post);
   const handleVote = async (voteType: "up" | "down") => {
     if (!userId) {
       toast.error("Please login to vote");
@@ -67,7 +68,6 @@ console.log(post)
     }
   };
 
-  console.log(post);
 
   return (
     <Card className="w-full h-full hover:shadow-xl transition-all duration-300 border-1 border-gray-200 dark:border-gray-700 group">
@@ -98,20 +98,35 @@ console.log(post)
         {/* Content */}
         <div className="p-4 flex-1 flex flex-col">
           {/* Header */}
-          <div className="flex items-start gap-3 mb-3">
-            <Avatar
-              className="border-2 border-white shadow-sm flex-shrink-0"
-              name={post.author?.name}
-              size="sm"
-              src={post.author?.profilePhoto}
-            />
+          <div className="flex items-start gap-2 mb-3">
+            <Link href={`/profile/${post.author.id}`}>
+              <Avatar
+                className="border-2 border-white shadow-sm flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                name={post.author?.name}
+                size="sm"
+                src={post.author?.profilePhoto}
+              />
+            </Link>
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
-                {post.author?.name}
-              </p>
+              <Link
+                className="hover:underline"
+                href={`/profile/${post.author.id}`}
+              >
+                <p className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
+                  {post.author?.name}
+                </p>
+              </Link>
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 {formatDate(post.createdAt)}
               </p>
+            </div>
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+              <FollowButton
+                size="sm"
+                userId={post.author.id}
+                userName={post.author?.name || "User"}
+                variant="light"
+              />
             </div>
           </div>
 

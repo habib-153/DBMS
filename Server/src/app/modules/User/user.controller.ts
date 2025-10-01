@@ -5,6 +5,7 @@ import { UserService } from './user.service.raw';
 import { catchAsync } from '../../utils/catchAsync';
 import { userSearchableFields } from './user.constant';
 import pick from '../../../shared/pick';
+import { FollowService } from '../Follow/follow.service';
 
 const getAllUsers = catchAsync(async (req: Request, res: Response) => {
   const filters = pick(req.query, userSearchableFields);
@@ -88,9 +89,39 @@ const deleteUser = catchAsync(async (req: Request, res: Response) => {
 //   });
 // });
 
+const followUser = catchAsync(async (req: Request, res: Response) => {
+  const followerId = req.user.id;
+  const followingId = req.params.followedId;
+
+  const result = await FollowService.followUser(followerId, followingId);
+
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: 'Successfully followed user',
+    data: result,
+  });
+});
+
+const unfollowUser = catchAsync(async (req: Request, res: Response) => {
+  const followerId = req.user.id;
+  const followingId = req.params.followedId;
+
+  const result = await FollowService.unfollowUser(followerId, followingId);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: result.message,
+    data: result,
+  });
+});
+
 export const UserController = {
   getAllUsers,
   getUserById,
   updateUser,
   deleteUser,
+  followUser,
+  unfollowUser,
 };

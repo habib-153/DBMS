@@ -11,7 +11,7 @@ import {
   DbComment,
   PaginatedResult,
 } from '../../interfaces/database.types';
-import { TCreatePost, TUpdatePost, TCreateComment } from './post.interface';
+import { TCreatePost, TUpdatePost } from './post.interface';
 import { TUser } from '../User/user.interface';
 import { TImageFile } from '../../interfaces/image.interface';
 
@@ -512,137 +512,6 @@ const removePostDownvote = async (postId: string, user: TUser) => {
   return await removePostVote(postId, user.id);
 };
 
-const createComment = async (
-  commentData: TCreateComment,
-  authorId: string
-): Promise<DbComment> => {
-  const commentId = generateUuid();
-  const now = new Date();
-
-  const query = `
-    INSERT INTO comments (id, content, image, "postId", "authorId", "isDeleted", "createdAt", "updatedAt")
-    VALUES ($1, $2, $3, $4, $5, false, $6, $7)
-    RETURNING *
-  `;
-
-  const values = [
-    commentId,
-    commentData.content,
-    commentData.image || null,
-    commentData.postId,
-    authorId,
-    now,
-    now,
-  ];
-
-  const result = await database.query<DbComment>(query, values);
-  const createdComment = result.rows[0];
-
-  if (!createdComment) {
-    throw new AppError(
-      httpStatus.INTERNAL_SERVER_ERROR,
-      'Failed to create comment'
-    );
-  }
-
-  return createdComment;
-};
-
-const updateComment = async (
-  id: string,
-  updateData: Partial<TCreateComment>,
-  userId: string
-): Promise<DbComment> => {
-  // Check if comment exists and user owns it
-  const checkQuery = `
-    SELECT * FROM comments 
-    WHERE id = $1 AND "isDeleted" = false
-  `;
-
-  const checkResult = await database.query<DbComment>(checkQuery, [id]);
-  const comment = checkResult.rows[0];
-
-  if (!comment) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
-  }
-
-  if (comment.authorId !== userId) {
-    throw new AppError(
-      httpStatus.FORBIDDEN,
-      'You are not authorized to update this comment'
-    );
-  }
-
-  // Build update query
-  const updateFields: string[] = [];
-  const values: unknown[] = [];
-  let paramIndex = 1;
-
-  if (updateData.content !== undefined) {
-    updateFields.push(`content = $${paramIndex}`);
-    values.push(updateData.content);
-    paramIndex++;
-  }
-
-  if (updateData.image !== undefined) {
-    updateFields.push(`image = $${paramIndex}`);
-    values.push(updateData.image);
-    paramIndex++;
-  }
-
-  updateFields.push(`"updatedAt" = $${paramIndex}`);
-  values.push(new Date());
-  paramIndex++;
-
-  values.push(id);
-
-  const updateQuery = `
-    UPDATE comments 
-    SET ${updateFields.join(', ')}
-    WHERE id = $${paramIndex}
-    RETURNING *
-  `;
-
-  const result = await database.query<DbComment>(updateQuery, values);
-  return result.rows[0];
-};
-
-const deleteComment = async (
-  id: string,
-  userId: string
-): Promise<{ message: string }> => {
-  // Check if comment exists and user owns it
-  const checkQuery = `
-    SELECT * FROM comments 
-    WHERE id = $1 AND "isDeleted" = false
-  `;
-
-  const checkResult = await database.query<DbComment>(checkQuery, [id]);
-  const comment = checkResult.rows[0];
-
-  if (!comment) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
-  }
-
-  if (comment.authorId !== userId) {
-    throw new AppError(
-      httpStatus.FORBIDDEN,
-      'You are not authorized to delete this comment'
-    );
-  }
-
-  // Soft delete the comment
-  const deleteQuery = `
-    UPDATE comments 
-    SET "isDeleted" = true, "updatedAt" = $1
-    WHERE id = $2
-  `;
-
-  await database.query(deleteQuery, [new Date(), id]);
-
-  return { message: 'Comment deleted successfully' };
-};
-
 export const PostService = {
   createPost,
   getAllPosts,
@@ -654,7 +523,4 @@ export const PostService = {
   removePostUpvote,
   removePostDownvote,
   addPostVote,
-  createComment,
-  updateComment,
-  deleteComment,
 };

@@ -35,23 +35,6 @@ export interface TUpdatePost {
   status?: PostStatus;
 }
 
-export interface TComment {
-  id: string;
-  content: string;
-  image?: string;
-  postId: string;
-  authorId: string;
-  isDeleted: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface TCreateComment {
-  content: string;
-  image?: string;
-  postId: string;
-}
-
 export interface TPostFilterableFields {
   title?: string;
   location?: string;

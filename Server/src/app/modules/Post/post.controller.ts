@@ -81,7 +81,10 @@ const deletePost = catchAsync(async (req, res) => {
 });
 
 const addPostUpvote = catchAsync(async (req, res) => {
-  const result = await PostService.addPostUpvote(req.params.postId, req.user as TUser);
+  const result = await PostService.addPostUpvote(
+    req.params.postId,
+    req.user as TUser
+  );
 
   sendResponse(res, {
     success: true,
@@ -92,7 +95,10 @@ const addPostUpvote = catchAsync(async (req, res) => {
 });
 
 const addPostDownvote = catchAsync(async (req, res) => {
-  const result = await PostService.addPostDownvote(req.params.postId, req.user as TUser);
+  const result = await PostService.addPostDownvote(
+    req.params.postId,
+    req.user as TUser
+  );
 
   sendResponse(res, {
     success: true,
@@ -130,42 +136,6 @@ const removePostDownvote = catchAsync(async (req, res) => {
   });
 });
 
-// Comment controllers
-const createComment = catchAsync(async (req, res) => {
-  const result = await PostService.createComment(req.body, req.user.id);
-
-  sendResponse(res, {
-    success: true,
-    statusCode: httpStatus.CREATED,
-    message: 'Comment created successfully',
-    data: result,
-  });
-});
-
-const updateComment = catchAsync(async (req, res) => {
-  const { id } = req.params;
-  const result = await PostService.updateComment(id, req.body, req.user.id);
-
-  sendResponse(res, {
-    success: true,
-    statusCode: httpStatus.OK,
-    message: 'Comment updated successfully',
-    data: result,
-  });
-});
-
-const deleteComment = catchAsync(async (req, res) => {
-  const { id } = req.params;
-  const result = await PostService.deleteComment(id, req.user.id);
-
-  sendResponse(res, {
-    success: true,
-    statusCode: httpStatus.OK,
-    message: 'Comment deleted successfully',
-    data: result,
-  });
-});
-
 export const PostControllers = {
   createPost,
   getAllPost,
@@ -176,7 +146,4 @@ export const PostControllers = {
   addPostDownvote,
   removePostUpvote,
   removePostDownvote,
-  createComment,
-  updateComment,
-  deleteComment,
 };

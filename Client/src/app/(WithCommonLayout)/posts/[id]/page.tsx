@@ -41,6 +41,7 @@ import { useUser } from "@/src/context/user.provider";
 import AuthModal from "@/src/components/UI/modal/AuthModal/AuthModal";
 import { usePostAComment, useGetPostComments } from "@/src/hooks/comment.hook";
 import CommentVoteButtons from "@/src/components/Comment/CommentVoteButtons";
+import { FollowButton } from "@/src/components/modules/Shared";
 
 const PostDetails = () => {
   const { id } = useParams();
@@ -241,7 +242,10 @@ const PostDetails = () => {
           <div className="p-6">
             {/* Header */}
             <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
+              <Link
+                className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer"
+                href={`/profile/${postData.authorId}`}
+              >
                 <Avatar
                   className="border-2 border-white shadow-sm"
                   name={postData.authorName}
@@ -259,7 +263,14 @@ const PostDetails = () => {
                     </span>
                   </div>
                 </div>
-              </div>
+              </Link>
+              <FollowButton
+                className="ml-auto"
+                size="sm"
+                userId={postData.authorId}
+                userName={postData.authorName}
+                variant="bordered"
+              />
             </div>
 
             {/* Title */}
@@ -448,20 +459,36 @@ const PostDetails = () => {
               commentsData.data.map((c: any) => (
                 <div
                   key={c.id}
-                  className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                  className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
                 >
                   <div className="flex items-start gap-3">
-                    <Avatar
-                      name={c.authorName}
-                      size="sm"
-                      src={c.authorProfilePhoto}
-                    />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium">{c.authorName}</h4>
+                    <Link href={`/profile/${c.authorId}`}>
+                      <Avatar
+                        className="cursor-pointer hover:opacity-80 transition-opacity"
+                        name={c.authorName}
+                        size="sm"
+                        src={c.authorProfilePhoto}
+                      />
+                    </Link>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Link
+                          className="hover:underline"
+                          href={`/profile/${c.authorId}`}
+                        >
+                          <h4 className="font-medium">{c.authorName}</h4>
+                        </Link>
                         <span className="text-sm text-gray-500">
                           {format(new Date(c.createdAt), "PPp")}
                         </span>
+                        <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <FollowButton
+                            size="sm"
+                            userId={c.authorId}
+                            userName={c.authorName}
+                            variant="light"
+                          />
+                        </div>
                       </div>
                       <p className="text-gray-700 dark:text-gray-300">
                         {c.content}

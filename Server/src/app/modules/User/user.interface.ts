@@ -27,3 +27,20 @@ export interface TUserFilterableFields {
   status?: UserStatus;
   searchTerm?: string;
 }
+
+export interface TUserProfile extends TUser {
+  followers: Array<{
+    id: string;
+    name: string;
+    email: string;
+    profilePhoto?: string;
+  }>;
+  following: Array<{
+    id: string;
+    name: string;
+    email: string;
+    profilePhoto?: string;
+  }>;
+  totalUpVotes: number;
+  postCount: number;
+}

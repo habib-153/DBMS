@@ -51,7 +51,7 @@ export const followUser = async (followedId: string): Promise<any> => {
   try {
     const { data } = await axiosInstance.post(`/users/follow/${followedId}`);
 
-    return data.data;
+    return data;
   } catch (error: any) {
     const errorMessage =
       error?.response?.data?.message ||
@@ -68,7 +68,67 @@ export const unFollowUser = async (followedId: string): Promise<any> => {
       `/users/unfollow/${followedId}`
     );
 
-    return data.data;
+    return data;
+  } catch (error: any) {
+    const errorMessage =
+      error?.response?.data?.message ||
+      error?.message ||
+      "Unknown error occurred";
+
+    throw new Error(errorMessage);
+  }
+};
+
+export const getFollowers = async (userId: string): Promise<any> => {
+  try {
+    const { data } = await axiosInstance.get(`/follows/${userId}/followers`);
+
+    return data;
+  } catch (error: any) {
+    const errorMessage =
+      error?.response?.data?.message ||
+      error?.message ||
+      "Unknown error occurred";
+
+    throw new Error(errorMessage);
+  }
+};
+
+export const getFollowing = async (userId: string): Promise<any> => {
+  try {
+    const { data } = await axiosInstance.get(`/follows/${userId}/following`);
+
+    return data;
+  } catch (error: any) {
+    const errorMessage =
+      error?.response?.data?.message ||
+      error?.message ||
+      "Unknown error occurred";
+
+    throw new Error(errorMessage);
+  }
+};
+
+export const getFollowStats = async (userId: string): Promise<any> => {
+  try {
+    const { data } = await axiosInstance.get(`/follows/${userId}/stats`);
+
+    return data;
+  } catch (error: any) {
+    const errorMessage =
+      error?.response?.data?.message ||
+      error?.message ||
+      "Unknown error occurred";
+
+    throw new Error(errorMessage);
+  }
+};
+
+export const checkFollowStatus = async (userId: string): Promise<any> => {
+  try {
+    const { data } = await axiosInstance.get(`/follows/${userId}/status`);
+
+    return data;
   } catch (error: any) {
     const errorMessage =
       error?.response?.data?.message ||

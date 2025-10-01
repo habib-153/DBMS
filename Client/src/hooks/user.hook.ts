@@ -5,7 +5,18 @@ import { IUser } from "../types";
 import { getVerified, updateUser } from "../services/AuthService";
 import { useUser } from "../context/user.provider";
 import { updateAccessTokenInCookies } from "../utils/updateAccessToken";
-import { deleteUser, followUser, getAllUsers, getSingleUser, unFollowUser, updateUserRole } from "../services/UserService";
+import {
+  deleteUser,
+  followUser,
+  getAllUsers,
+  getSingleUser,
+  unFollowUser,
+  updateUserRole,
+  getFollowers,
+  getFollowing,
+  getFollowStats,
+  checkFollowStatus,
+} from "../services/UserService";
 
 export const useGetAllUsers = (query?: string) => {
   const { data, refetch, isLoading } = useQuery({
@@ -21,7 +32,7 @@ export const useGetSingleUser = (id: string) => {
   return useQuery({
     queryKey: ["singleUser", id],
     queryFn: async () => await getSingleUser(id),
-    enabled: !!id, 
+    enabled: !!id,
     refetchInterval: 2000,
   });
 };
@@ -89,7 +100,7 @@ export const useUpdateUser = () => {
 };
 
 export const useUpdateUserRole = () => {
-  return useMutation<any, Error, { payload : any; id: string }>({
+  return useMutation<any, Error, { payload: any; id: string }>({
     mutationKey: ["UPDATE_USER_ROLE"],
     mutationFn: async ({ payload, id }) => {
       return toast.promise(updateUserRole(id, payload), {
@@ -111,5 +122,38 @@ export const useDeleteUser = () => {
         error: "Error when deleting user.",
       });
     },
+  });
+};
+
+export const useGetFollowers = (userId: string) => {
+  return useQuery({
+    queryKey: ["followers", userId],
+    queryFn: async () => await getFollowers(userId),
+    enabled: !!userId,
+  });
+};
+
+export const useGetFollowing = (userId: string) => {
+  return useQuery({
+    queryKey: ["following", userId],
+    queryFn: async () => await getFollowing(userId),
+    enabled: !!userId,
+  });
+};
+
+export const useGetFollowStats = (userId: string) => {
+  return useQuery({
+    queryKey: ["followStats", userId],
+    queryFn: async () => await getFollowStats(userId),
+    enabled: !!userId,
+    refetchInterval: 3000,
+  });
+};
+
+export const useCheckFollowStatus = (userId: string) => {
+  return useQuery({
+    queryKey: ["followStatus", userId],
+    queryFn: async () => await checkFollowStatus(userId),
+    enabled: !!userId,
   });
 };

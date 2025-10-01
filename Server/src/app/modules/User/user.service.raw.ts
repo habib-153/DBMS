@@ -5,7 +5,7 @@ import httpStatus from 'http-status';
 import database from '../../../shared/database';
 import AppError from '../../errors/AppError';
 import { DbUser, PaginatedResult } from '../../interfaces/database.types';
-import { TUser } from './user.interface';
+import { TUser, TUserProfile } from './user.interface';
 import { TImageFile } from '../../interfaces/image.interface';
 
 // Simple UUID generator
@@ -70,7 +70,7 @@ const getAllUsers = async (
   } = filters;
 
   const offset = (Number(page) - 1) * Number(limit);
-  const conditions: string[] = [`status != 'DELETED'`];
+  const conditions: string[] = [`status IN ('ACTIVE', 'BLOCKED')`];
   const values: unknown[] = [];
   let paramIndex = 1;
 
@@ -141,11 +141,11 @@ const getAllUsers = async (
   };
 };
 
-const getSingleUser = async (id: string): Promise<DbUser> => {
+const getSingleUser = async (id: string): Promise<TUserProfile> => {
   const query = `
     SELECT *
     FROM users
-    WHERE id = $1 AND status != 'DELETED'
+    WHERE id = $1 AND status IN ('ACTIVE', 'BLOCKED')
   `;
 
   const result = await database.query<DbUser>(query, [id]);
@@ -155,14 +155,53 @@ const getSingleUser = async (id: string): Promise<DbUser> => {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  return user;
+  // Get user stats
+  const stats = await getUserStats(id);
+
+  // Get followers
+  const followersQuery = `
+    SELECT u.id, u.name, u.email, u."profilePhoto"
+    FROM users u
+    INNER JOIN follows f ON u.id = f."followerId"
+    WHERE f."followingId" = $1 AND u.status IN ('ACTIVE', 'BLOCKED')
+    ORDER BY f."createdAt" DESC
+  `;
+  const followersResult = await database.query<{
+    id: string;
+    name: string;
+    email: string;
+    profilePhoto?: string;
+  }>(followersQuery, [id]);
+
+  // Get following
+  const followingQuery = `
+    SELECT u.id, u.name, u.email, u."profilePhoto"
+    FROM users u
+    INNER JOIN follows f ON u.id = f."followingId"
+    WHERE f."followerId" = $1 AND u.status IN ('ACTIVE', 'BLOCKED')
+    ORDER BY f."createdAt" DESC
+  `;
+  const followingResult = await database.query<{
+    id: string;
+    name: string;
+    email: string;
+    profilePhoto?: string;
+  }>(followingQuery, [id]);
+
+  return {
+    ...user,
+    followers: followersResult.rows,
+    following: followingResult.rows,
+    totalUpVotes: stats.totalUpVotes,
+    postCount: stats.postCount,
+  };
 };
 
 const getUserByEmail = async (email: string): Promise<DbUser> => {
   const query = `
     SELECT *
     FROM users
-    WHERE email = $1 AND status != 'DELETED'
+    WHERE email = $1 AND status IN ('ACTIVE', 'BLOCKED')
   `;
 
   const result = await database.query<DbUser>(query, [email]);
@@ -183,7 +222,7 @@ const updateUser = async (
   // Check if user exists
   const checkQuery = `
     SELECT id FROM users 
-    WHERE id = $1 AND status != 'DELETED'
+    WHERE id = $1 AND status IN ('ACTIVE', 'BLOCKED')
   `;
 
   const checkResult = await database.query<{ id: string }>(checkQuery, [id]);
@@ -273,7 +312,7 @@ const deleteUser = async (id: string): Promise<{ message: string }> => {
   // Check if user exists
   const checkQuery = `
     SELECT id FROM users 
-    WHERE id = $1 AND status != 'DELETED'
+    WHERE id = $1 AND status IN ('ACTIVE', 'BLOCKED')
   `;
 
   const checkResult = await database.query<{ id: string }>(checkQuery, [id]);
@@ -377,7 +416,7 @@ const getUserFollowers = async (userId: string): Promise<DbUser[]> => {
   // Check if user exists
   const userCheckQuery = `
     SELECT id FROM users 
-    WHERE id = $1 AND status != 'DELETED'
+    WHERE id = $1 AND status IN ('ACTIVE', 'BLOCKED')
   `;
 
   const userResult = await database.query<{ id: string }>(userCheckQuery, [
@@ -404,7 +443,7 @@ const getUserFollowing = async (userId: string): Promise<DbUser[]> => {
   // Check if user exists
   const userCheckQuery = `
     SELECT id FROM users 
-    WHERE id = $1 AND status != 'DELETED'
+    WHERE id = $1 AND status IN ('ACTIVE', 'BLOCKED')
   `;
 
   const userResult = await database.query<{ id: string }>(userCheckQuery, [
@@ -438,7 +477,7 @@ const getUserStats = async (
   // Check if user exists
   const userCheckQuery = `
     SELECT id FROM users 
-    WHERE id = $1 AND status != 'DELETED'
+    WHERE id = $1 AND status IN ('ACTIVE', 'BLOCKED')
   `;
 
   const userResult = await database.query<{ id: string }>(userCheckQuery, [

@@ -17,7 +17,24 @@ export const UserRoutes = router;
 // router.post('/verify-otp', UserController.verifyOTPController);
 
 router.get('/', auth(USER_ROLE.ADMIN), UserController.getAllUsers);
-router.get('/:id', UserController.getUserById);
-router.put('/:id', auth(USER_ROLE.ADMIN, USER_ROLE.USER), UserController.updateUser);
-router.delete('/:id', auth(USER_ROLE.ADMIN), UserController.deleteUser);
 
+// Follow routes integrated with user routes - MUST be before /:id routes
+router.post(
+  '/follow/:followedId',
+  auth(USER_ROLE.USER, USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN),
+  UserController.followUser
+);
+router.delete(
+  '/unfollow/:followedId',
+  auth(USER_ROLE.USER, USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN),
+  UserController.unfollowUser
+);
+
+// Generic :id routes - MUST be after specific routes like /follow
+router.get('/:id', UserController.getUserById);
+router.put(
+  '/:id',
+  auth(USER_ROLE.ADMIN, USER_ROLE.USER),
+  UserController.updateUser
+);
+router.delete('/:id', auth(USER_ROLE.ADMIN), UserController.deleteUser);
