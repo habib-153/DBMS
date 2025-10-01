@@ -50,12 +50,12 @@ const CrimeReportCard = ({ post }: { post: IPost }) => {
   };
 
   return (
-    <Card className="hover:shadow-lg h-40 transition-all duration-300 border border-gray-200 dark:border-gray-700">
+    <Card className="hover:shadow-lg h-42 transition-all duration-300 border border-gray-200 dark:border-gray-700">
       <CardBody className="p-0">
         <div className="flex">
           {/* Image */}
           {post.image && (
-            <div className="relative w-32 h-[156px] flex-shrink-0 overflow-hidden rounded-l-lg">
+            <div className="relative w-32  flex-shrink-0 overflow-hidden rounded-l-lg">
               <Image
                 fill
                 alt={post.title}

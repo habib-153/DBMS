@@ -68,6 +68,7 @@ const createPost = (postData, imageFile, authorId) => __awaiter(void 0, void 0, 
 });
 const getAllPosts = (filters) => __awaiter(void 0, void 0, void 0, function* () {
     const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc', searchTerm } = filters, filterData = __rest(filters, ["page", "limit", "sortBy", "sortOrder", "searchTerm"]);
+    console.log('filters:', filterData);
     const offset = (Number(page) - 1) * Number(limit);
     const conditions = [`p."isDeleted" = false`];
     const values = [];
@@ -89,6 +90,7 @@ const getAllPosts = (filters) => __awaiter(void 0, void 0, void 0, function* () 
         values.push(filterData.division);
         paramIndex++;
     }
+    console.log(conditions, 'conditions');
     if (filterData.status) {
         conditions.push(`p.status = $${paramIndex}`);
         values.push(filterData.status);
@@ -99,6 +101,7 @@ const getAllPosts = (filters) => __awaiter(void 0, void 0, void 0, function* () 
         conditions.push(`p.status IN ('APPROVED', 'PENDING')`);
     }
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    console.log(whereClause);
     // Count query
     const countQuery = `
     SELECT COUNT(*) as total
@@ -107,6 +110,15 @@ const getAllPosts = (filters) => __awaiter(void 0, void 0, void 0, function* () 
   `;
     const countResult = yield database_1.default.query(countQuery, values);
     const total = parseInt(countResult.rows[0].total, 10);
+    console.log(sortBy, 'sortBy', sortOrder, 'sortOrder');
+    // Determine ORDER BY clause
+    let orderByClause = '';
+    if (sortBy === 'votes') {
+        orderByClause = `ORDER BY (COALESCE(vote_counts.up_votes, 0) + COALESCE(vote_counts.down_votes, 0)) ${sortOrder}`;
+    }
+    else {
+        orderByClause = `ORDER BY p."${sortBy}" ${sortOrder}`;
+    }
     // Main query with pagination
     const mainQuery = `
     SELECT 
@@ -136,18 +148,42 @@ const getAllPosts = (filters) => __awaiter(void 0, void 0, void 0, function* () 
       GROUP BY "postId"
     ) comment_counts ON p.id = comment_counts."postId"
     ${whereClause}
-    ORDER BY p."${sortBy}" ${sortOrder}
+    ${orderByClause}
     LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
   `;
     values.push(Number(limit), offset);
     const result = yield database_1.default.query(mainQuery, values);
+    const posts = result.rows;
+    const postIds = posts.map((post) => post.id);
+    // Fetch votes for all posts in this page
+    let votesByPost = {};
+    if (postIds.length > 0) {
+        const votesQuery = `
+      SELECT 
+        pv.*,
+        u.name as "userName"
+      FROM post_votes pv
+      INNER JOIN users u ON pv."userId" = u.id
+      WHERE pv."postId" = ANY($1)
+      ORDER BY pv."createdAt" DESC
+    `;
+        const votesResult = yield database_1.default.query(votesQuery, [postIds]);
+        votesByPost = votesResult.rows.reduce((acc, vote) => {
+            if (!acc[vote.postId])
+                acc[vote.postId] = [];
+            acc[vote.postId].push(vote);
+            return acc;
+        }, {});
+    }
+    // Attach votes array to each post
+    const postsWithVotes = posts.map((post) => (Object.assign(Object.assign({}, post), { votes: votesByPost[post.id] || [] })));
     return {
         meta: {
             total,
             page: Number(page),
             limit: Number(limit),
         },
-        data: result.rows,
+        data: postsWithVotes,
     };
 });
 const getSinglePost = (id) => __awaiter(void 0, void 0, void 0, function* () {

@@ -22,9 +22,12 @@ class Database {
             ssl: process.env.NODE_ENV === 'production'
                 ? { rejectUnauthorized: false }
                 : false,
-            max: 20,
+            // Optimized for serverless (Vercel)
+            max: process.env.NODE_ENV === 'production' ? 1 : 20,
             idleTimeoutMillis: 30000,
-            connectionTimeoutMillis: 2000,
+            connectionTimeoutMillis: 10000,
+            // Allow graceful shutdown
+            allowExitOnIdle: true,
         });
         // Handle pool errors
         this.pool.on('error', (err) => {

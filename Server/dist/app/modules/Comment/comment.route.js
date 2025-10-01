@@ -1,0 +1,19 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.CommentRoutes = void 0;
+const express_1 = __importDefault(require("express"));
+const auth_1 = __importDefault(require("../../middlewares/auth"));
+const comment_controller_1 = require("./comment.controller");
+const bodyParser_1 = require("../../middlewares/bodyParser");
+const router = express_1.default.Router();
+router.post('/', (0, auth_1.default)('USER', 'ADMIN', 'SUPER_ADMIN'), bodyParser_1.parseBody, comment_controller_1.CommentControllers.createComment);
+router.patch('/:id', (0, auth_1.default)('USER', 'ADMIN', 'SUPER_ADMIN'), bodyParser_1.parseBody, comment_controller_1.CommentControllers.updateComment);
+router.delete('/:id', (0, auth_1.default)('USER', 'ADMIN', 'SUPER_ADMIN'), comment_controller_1.CommentControllers.deleteComment);
+router.post('/:commentId/upvote', (0, auth_1.default)('USER', 'ADMIN', 'SUPER_ADMIN'), comment_controller_1.CommentControllers.addCommentUpvote);
+router.post('/:commentId/downvote', (0, auth_1.default)('USER', 'ADMIN', 'SUPER_ADMIN'), comment_controller_1.CommentControllers.addCommentDownvote);
+router.delete('/:commentId/upvote', (0, auth_1.default)('USER', 'ADMIN', 'SUPER_ADMIN'), comment_controller_1.CommentControllers.removeCommentUpvote);
+router.delete('/:commentId/downvote', (0, auth_1.default)('USER', 'ADMIN', 'SUPER_ADMIN'), comment_controller_1.CommentControllers.removeCommentDownvote);
+exports.CommentRoutes = router;

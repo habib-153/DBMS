@@ -16,9 +16,24 @@ exports.parseBody = void 0;
 const AppError_1 = __importDefault(require("../errors/AppError"));
 const catchAsync_1 = require("../utils/catchAsync");
 exports.parseBody = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    if (!req.body.data) {
-        throw new AppError_1.default(400, 'Please provide data in the body under data key');
+    // Support two request shapes:
+    // 1) FormData uploads where the JSON payload is sent as a string under `data` (e.g., multipart/form-data)
+    // 2) Regular JSON requests (application/json) where the body already contains the parsed object
+    // If body contains a `data` field (stringified JSON), parse it and replace req.body
+    if (req.body && req.body.data) {
+        try {
+            req.body = JSON.parse(req.body.data);
+            return next();
+        }
+        catch (_a) {
+            throw new AppError_1.default(400, 'Invalid JSON in body.data');
+        }
     }
-    req.body = JSON.parse(req.body.data);
-    next();
+    // If req.body is already an object with keys, assume it's a normal JSON request and continue
+    if (req.body &&
+        typeof req.body === 'object' &&
+        Object.keys(req.body).length > 0) {
+        return next();
+    }
+    throw new AppError_1.default(400, 'Please provide data in the body under data key');
 }));
