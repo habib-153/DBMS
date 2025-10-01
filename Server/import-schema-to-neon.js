@@ -3,8 +3,7 @@ import { Client } from 'pg';
 import fs from 'fs';
 
 async function importSchema() {
-  const neonUrl =
-    'postgresql://neondb_owner:npg_8ogDZIa5TijF@ep-cold-wildflower-adoir18w-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require';
+  const neonUrl = process.env.DB_URL;
 
   const client = new Client({
     connectionString: neonUrl,
