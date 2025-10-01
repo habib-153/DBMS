@@ -11,5 +11,13 @@
       "src": "/(.*)",
       "dest": "dist/server.js"
     }
-  ]
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "functions": {
+    "dist/server.js": {
+      "maxDuration": 10
+    }
+  }
 }
