@@ -47,6 +47,7 @@ const ProfilePage = ({ user }: { user: IUser }) => {
     following,
     totalUpVotes,
   } = user as IUser;
+  console.log("user data in profile page:", user);
 
   const apiUrl = `${envConfig.baseApi}/posts?${new URLSearchParams({
     ...{ authorEmail: email },

@@ -86,15 +86,23 @@ export const useUpdateUser = () => {
   return useMutation<any, Error, FormData>({
     mutationKey: ["UPDATE_USER"],
     mutationFn: async (userData) => await updateUser(userData),
-    onSuccess: (_data) => {
-      toast.success("Profile updated successfully!");
-      // console.log(_data?.data)
-      updateProfile(_data?.data);
-      updateAccessTokenInCookies(_data?.data);
-      // }
+    onSuccess: async (response) => {
+      const updatedUser = response?.data;
+
+      if (updatedUser && updatedUser.id) {
+        updateProfile(updatedUser);
+
+        await updateAccessTokenInCookies(updatedUser);
+
+        toast.success("Profile updated successfully!");
+      } else {
+        toast.error("Profile updated but failed to refresh session");
+      }
     },
-    onError: (error) => {
-      toast.error(`Failed to update profile ${error?.message}`);
+    onError: (error: any) => {
+      toast.error(
+        `Failed to update profile: ${error?.message || "Unknown error"}`
+      );
     },
   });
 };

@@ -22,7 +22,7 @@ export const updateAccessTokenInCookies = (updatedUser: IUser) => {
     // @ts-ignore
     const newAccessToken = jwt.sign(
       {
-        _id: updatedUser.id,
+        id: updatedUser.id,
         name: updatedUser.name,
         email: updatedUser.email,
         role: updatedUser.role,

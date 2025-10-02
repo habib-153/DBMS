@@ -29,7 +29,6 @@ export default function PostCard({
   const isDownvoted = downVotes.some((vote) => vote.userId === userId);
   const voteCount = upVotes.length - downVotes.length;
 
-  console.log(post);
   const handleVote = async (voteType: "up" | "down") => {
     if (!userId) {
       toast.error("Please login to vote");
