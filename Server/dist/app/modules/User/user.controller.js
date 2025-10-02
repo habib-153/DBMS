@@ -19,6 +19,7 @@ const user_service_raw_1 = require("./user.service.raw");
 const catchAsync_1 = require("../../utils/catchAsync");
 const user_constant_1 = require("./user.constant");
 const pick_1 = __importDefault(require("../../../shared/pick"));
+const follow_service_1 = require("../Follow/follow.service");
 const getAllUsers = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const filters = (0, pick_1.default)(req.query, user_constant_1.userSearchableFields);
     const paginationOptions = (0, pick_1.default)(req.query, [
@@ -41,6 +42,7 @@ const getAllUsers = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0,
 const getUserById = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const result = yield user_service_raw_1.UserService.getSingleUser(id);
+    console.log(id);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
@@ -78,19 +80,56 @@ const deleteUser = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, 
 //     data: result,
 //   });
 // });
-// const getMe = catchAsync(async (req: Request, res: Response) => {
-//   const userId = req.user?.id;
-//   const result = await UserService.getMe(userId);
-//   sendResponse(res, {
-//     statusCode: httpStatus.OK,
-//     success: true,
-//     message: 'User profile retrieved successfully',
-//     data: result,
-//   });
-// });
+const getMyProfile = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const userId = req.user.id;
+    const result = yield user_service_raw_1.UserService.getSingleUser(userId);
+    console.log(userId);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: 'Profile retrieved successfully',
+        data: result,
+    });
+}));
+const updateMyProfile = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const userId = req.user.id;
+    const result = yield user_service_raw_1.UserService.updateUser(userId, req.body, req.file);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: 'Profile updated successfully',
+        data: result,
+    });
+}));
+const followUser = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const followerId = req.user.id;
+    const followingId = req.params.followedId;
+    const result = yield follow_service_1.FollowService.followUser(followerId, followingId);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.CREATED,
+        success: true,
+        message: 'Successfully followed user',
+        data: result,
+    });
+}));
+const unfollowUser = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const followerId = req.user.id;
+    const followingId = req.params.followedId;
+    const result = yield follow_service_1.FollowService.unfollowUser(followerId, followingId);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: result.message,
+        data: result,
+    });
+}));
 exports.UserController = {
     getAllUsers,
     getUserById,
     updateUser,
     deleteUser,
+    followUser,
+    unfollowUser,
+    getMyProfile,
+    updateMyProfile,
 };

@@ -107,36 +107,6 @@ const removePostDownvote = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(
         data: result,
     });
 }));
-// Comment controllers
-const createComment = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield post_service_raw_1.PostService.createComment(req.body, req.user.id);
-    (0, sendResponse_1.default)(res, {
-        success: true,
-        statusCode: http_status_1.default.CREATED,
-        message: 'Comment created successfully',
-        data: result,
-    });
-}));
-const updateComment = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { id } = req.params;
-    const result = yield post_service_raw_1.PostService.updateComment(id, req.body, req.user.id);
-    (0, sendResponse_1.default)(res, {
-        success: true,
-        statusCode: http_status_1.default.OK,
-        message: 'Comment updated successfully',
-        data: result,
-    });
-}));
-const deleteComment = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { id } = req.params;
-    const result = yield post_service_raw_1.PostService.deleteComment(id, req.user.id);
-    (0, sendResponse_1.default)(res, {
-        success: true,
-        statusCode: http_status_1.default.OK,
-        message: 'Comment deleted successfully',
-        data: result,
-    });
-}));
 exports.PostControllers = {
     createPost,
     getAllPost,
@@ -147,7 +117,4 @@ exports.PostControllers = {
     addPostDownvote,
     removePostUpvote,
     removePostDownvote,
-    createComment,
-    updateComment,
-    deleteComment,
 };

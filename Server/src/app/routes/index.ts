@@ -7,6 +7,8 @@ import { FollowRoutes } from '../modules/Follow/follow.route';
 import auth from '../middlewares/auth';
 import { USER_ROLE } from '../modules/User/user.constant';
 import { UserController } from '../modules/User/user.controller';
+import { multerUpload } from '../config/multer.config';
+import { parseBody } from '../middlewares/bodyParser';
 
 const router = express.Router();
 
@@ -42,6 +44,8 @@ router.get(
 router.patch(
   '/profile',
   auth(USER_ROLE.USER, USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN),
+  multerUpload.single('profilePhoto'),
+  parseBody,
   UserController.updateMyProfile
 );
 

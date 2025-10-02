@@ -43,6 +43,7 @@ console.log(id)
 
 const updateUser = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
+
   const result = await UserService.updateUser(id, req.body, req.file);
 
   sendResponse(res, {
@@ -80,7 +81,7 @@ const deleteUser = catchAsync(async (req: Request, res: Response) => {
 const getMyProfile = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.id; 
   const result = await UserService.getSingleUser(userId);
-
+console.log(userId)
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
@@ -89,9 +90,9 @@ const getMyProfile = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// NEW: Update current logged-in user's profile
 const updateMyProfile = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.id;
+
   const result = await UserService.updateUser(userId, req.body, req.file);
 
   sendResponse(res, {

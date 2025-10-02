@@ -70,7 +70,7 @@ const createUser = (userData) => __awaiter(void 0, void 0, void 0, function* () 
 const getAllUsers = (filters) => __awaiter(void 0, void 0, void 0, function* () {
     const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc', searchTerm } = filters, filterData = __rest(filters, ["page", "limit", "sortBy", "sortOrder", "searchTerm"]);
     const offset = (Number(page) - 1) * Number(limit);
-    const conditions = [`status != 'DELETED'`];
+    const conditions = [`status IN ('ACTIVE', 'BLOCKED')`];
     const values = [];
     let paramIndex = 1;
     // Add search conditions
@@ -127,20 +127,40 @@ const getSingleUser = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const query = `
     SELECT *
     FROM users
-    WHERE id = $1 AND status != 'DELETED'
+    WHERE id = $1 AND status IN ('ACTIVE', 'BLOCKED')
   `;
     const result = yield database_1.default.query(query, [id]);
     const user = result.rows[0];
     if (!user) {
         throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'User not found');
     }
-    return user;
+    // Get user stats
+    const stats = yield getUserStats(id);
+    // Get followers
+    const followersQuery = `
+    SELECT u.id, u.name, u.email, u."profilePhoto"
+    FROM users u
+    INNER JOIN follows f ON u.id = f."followerId"
+    WHERE f."followingId" = $1 AND u.status IN ('ACTIVE', 'BLOCKED')
+    ORDER BY f."createdAt" DESC
+  `;
+    const followersResult = yield database_1.default.query(followersQuery, [id]);
+    // Get following
+    const followingQuery = `
+    SELECT u.id, u.name, u.email, u."profilePhoto"
+    FROM users u
+    INNER JOIN follows f ON u.id = f."followingId"
+    WHERE f."followerId" = $1 AND u.status IN ('ACTIVE', 'BLOCKED')
+    ORDER BY f."createdAt" DESC
+  `;
+    const followingResult = yield database_1.default.query(followingQuery, [id]);
+    return Object.assign(Object.assign({}, user), { followers: followersResult.rows, following: followingResult.rows, totalUpVotes: stats.totalUpVotes, postCount: stats.postCount });
 });
 const getUserByEmail = (email) => __awaiter(void 0, void 0, void 0, function* () {
     const query = `
     SELECT *
     FROM users
-    WHERE email = $1 AND status != 'DELETED'
+    WHERE email = $1 AND status IN ('ACTIVE', 'BLOCKED')
   `;
     const result = yield database_1.default.query(query, [email]);
     const user = result.rows[0];
@@ -153,7 +173,7 @@ const updateUser = (id, updateData, imageFile) => __awaiter(void 0, void 0, void
     // Check if user exists
     const checkQuery = `
     SELECT id FROM users 
-    WHERE id = $1 AND status != 'DELETED'
+    WHERE id = $1 AND status IN ('ACTIVE', 'BLOCKED')
   `;
     const checkResult = yield database_1.default.query(checkQuery, [id]);
     if (checkResult.rows.length === 0) {
@@ -223,7 +243,7 @@ const deleteUser = (id) => __awaiter(void 0, void 0, void 0, function* () {
     // Check if user exists
     const checkQuery = `
     SELECT id FROM users 
-    WHERE id = $1 AND status != 'DELETED'
+    WHERE id = $1 AND status IN ('ACTIVE', 'BLOCKED')
   `;
     const checkResult = yield database_1.default.query(checkQuery, [id]);
     if (checkResult.rows.length === 0) {
@@ -301,7 +321,7 @@ const getUserFollowers = (userId) => __awaiter(void 0, void 0, void 0, function*
     // Check if user exists
     const userCheckQuery = `
     SELECT id FROM users 
-    WHERE id = $1 AND status != 'DELETED'
+    WHERE id = $1 AND status IN ('ACTIVE', 'BLOCKED')
   `;
     const userResult = yield database_1.default.query(userCheckQuery, [
         userId,
@@ -324,7 +344,7 @@ const getUserFollowing = (userId) => __awaiter(void 0, void 0, void 0, function*
     // Check if user exists
     const userCheckQuery = `
     SELECT id FROM users 
-    WHERE id = $1 AND status != 'DELETED'
+    WHERE id = $1 AND status IN ('ACTIVE', 'BLOCKED')
   `;
     const userResult = yield database_1.default.query(userCheckQuery, [
         userId,
@@ -347,7 +367,7 @@ const getUserStats = (userId) => __awaiter(void 0, void 0, void 0, function* () 
     // Check if user exists
     const userCheckQuery = `
     SELECT id FROM users 
-    WHERE id = $1 AND status != 'DELETED'
+    WHERE id = $1 AND status IN ('ACTIVE', 'BLOCKED')
   `;
     const userResult = yield database_1.default.query(userCheckQuery, [
         userId,

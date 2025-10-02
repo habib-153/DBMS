@@ -67,7 +67,7 @@ const createPost = (postData, imageFile, authorId) => __awaiter(void 0, void 0, 
     return postWithDetails;
 });
 const getAllPosts = (filters) => __awaiter(void 0, void 0, void 0, function* () {
-    const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc', searchTerm } = filters, filterData = __rest(filters, ["page", "limit", "sortBy", "sortOrder", "searchTerm"]);
+    const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc', searchTerm, authorEmail } = filters, filterData = __rest(filters, ["page", "limit", "sortBy", "sortOrder", "searchTerm", "authorEmail"]);
     console.log('filters:', filterData);
     const offset = (Number(page) - 1) * Number(limit);
     const conditions = [`p."isDeleted" = false`];
@@ -77,6 +77,11 @@ const getAllPosts = (filters) => __awaiter(void 0, void 0, void 0, function* () 
     if (searchTerm) {
         conditions.push(`(p.title ILIKE $${paramIndex} OR p.description ILIKE $${paramIndex} OR p.location ILIKE $${paramIndex})`);
         values.push(`%${searchTerm}%`);
+        paramIndex++;
+    }
+    if (authorEmail) {
+        conditions.push(`u.email = $${paramIndex}`);
+        values.push(authorEmail);
         paramIndex++;
     }
     // Add filter conditions
@@ -106,6 +111,7 @@ const getAllPosts = (filters) => __awaiter(void 0, void 0, void 0, function* () 
     const countQuery = `
     SELECT COUNT(*) as total
     FROM posts p
+    INNER JOIN users u ON p."authorId" = u.id
     ${whereClause}
   `;
     const countResult = yield database_1.default.query(countQuery, values);
@@ -390,94 +396,6 @@ const removePostUpvote = (postId, user) => __awaiter(void 0, void 0, void 0, fun
 const removePostDownvote = (postId, user) => __awaiter(void 0, void 0, void 0, function* () {
     return yield removePostVote(postId, user.id);
 });
-const createComment = (commentData, authorId) => __awaiter(void 0, void 0, void 0, function* () {
-    const commentId = generateUuid();
-    const now = new Date();
-    const query = `
-    INSERT INTO comments (id, content, image, "postId", "authorId", "isDeleted", "createdAt", "updatedAt")
-    VALUES ($1, $2, $3, $4, $5, false, $6, $7)
-    RETURNING *
-  `;
-    const values = [
-        commentId,
-        commentData.content,
-        commentData.image || null,
-        commentData.postId,
-        authorId,
-        now,
-        now,
-    ];
-    const result = yield database_1.default.query(query, values);
-    const createdComment = result.rows[0];
-    if (!createdComment) {
-        throw new AppError_1.default(http_status_1.default.INTERNAL_SERVER_ERROR, 'Failed to create comment');
-    }
-    return createdComment;
-});
-const updateComment = (id, updateData, userId) => __awaiter(void 0, void 0, void 0, function* () {
-    // Check if comment exists and user owns it
-    const checkQuery = `
-    SELECT * FROM comments 
-    WHERE id = $1 AND "isDeleted" = false
-  `;
-    const checkResult = yield database_1.default.query(checkQuery, [id]);
-    const comment = checkResult.rows[0];
-    if (!comment) {
-        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Comment not found');
-    }
-    if (comment.authorId !== userId) {
-        throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'You are not authorized to update this comment');
-    }
-    // Build update query
-    const updateFields = [];
-    const values = [];
-    let paramIndex = 1;
-    if (updateData.content !== undefined) {
-        updateFields.push(`content = $${paramIndex}`);
-        values.push(updateData.content);
-        paramIndex++;
-    }
-    if (updateData.image !== undefined) {
-        updateFields.push(`image = $${paramIndex}`);
-        values.push(updateData.image);
-        paramIndex++;
-    }
-    updateFields.push(`"updatedAt" = $${paramIndex}`);
-    values.push(new Date());
-    paramIndex++;
-    values.push(id);
-    const updateQuery = `
-    UPDATE comments 
-    SET ${updateFields.join(', ')}
-    WHERE id = $${paramIndex}
-    RETURNING *
-  `;
-    const result = yield database_1.default.query(updateQuery, values);
-    return result.rows[0];
-});
-const deleteComment = (id, userId) => __awaiter(void 0, void 0, void 0, function* () {
-    // Check if comment exists and user owns it
-    const checkQuery = `
-    SELECT * FROM comments 
-    WHERE id = $1 AND "isDeleted" = false
-  `;
-    const checkResult = yield database_1.default.query(checkQuery, [id]);
-    const comment = checkResult.rows[0];
-    if (!comment) {
-        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Comment not found');
-    }
-    if (comment.authorId !== userId) {
-        throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'You are not authorized to delete this comment');
-    }
-    // Soft delete the comment
-    const deleteQuery = `
-    UPDATE comments 
-    SET "isDeleted" = true, "updatedAt" = $1
-    WHERE id = $2
-  `;
-    yield database_1.default.query(deleteQuery, [new Date(), id]);
-    return { message: 'Comment deleted successfully' };
-});
 exports.PostService = {
     createPost,
     getAllPosts,
@@ -489,7 +407,4 @@ exports.PostService = {
     removePostUpvote,
     removePostDownvote,
     addPostVote,
-    createComment,
-    updateComment,
-    deleteComment,
 };
