@@ -30,7 +30,6 @@ router.delete(
   UserController.unfollowUser
 );
 
-// Generic :id routes - MUST be after specific routes like /follow
 router.get('/:id', UserController.getUserById);
 router.put(
   '/:id',

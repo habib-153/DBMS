@@ -76,6 +76,7 @@ const getAllPosts = async (
     sortBy = 'createdAt',
     sortOrder = 'desc',
     searchTerm,
+    authorEmail,
     ...filterData
   } = filters;
   console.log('filters:', filterData);
@@ -90,6 +91,12 @@ const getAllPosts = async (
       `(p.title ILIKE $${paramIndex} OR p.description ILIKE $${paramIndex} OR p.location ILIKE $${paramIndex})`
     );
     values.push(`%${searchTerm}%`);
+    paramIndex++;
+  }
+
+  if (authorEmail) {
+    conditions.push(`u.email = $${paramIndex}`);
+    values.push(authorEmail);
     paramIndex++;
   }
 
@@ -122,6 +129,7 @@ const getAllPosts = async (
   const countQuery = `
     SELECT COUNT(*) as total
     FROM posts p
+    INNER JOIN users u ON p."authorId" = u.id
     ${whereClause}
   `;
 
