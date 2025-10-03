@@ -12,7 +12,13 @@ exports.USER_STATUS = {
     DELETED: 'DELETED',
 };
 exports.DEFAULT_PROFILE_URL = 'https://www.pngall.com/wp-content/uploads/5/Profile-PNG-Free-Download.png';
-exports.userSearchableFields = ['name', 'email', 'phone'];
+exports.userSearchableFields = [
+    'name',
+    'email',
+    'role',
+    'status',
+    'searchTerm',
+];
 exports.userFilterableFields = [
     'name',
     'email',

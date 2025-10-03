@@ -21,6 +21,7 @@ const user_constant_1 = require("./user.constant");
 const pick_1 = __importDefault(require("../../../shared/pick"));
 const follow_service_1 = require("../Follow/follow.service");
 const getAllUsers = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log('Query params:', req.query); // Debug log
     const filters = (0, pick_1.default)(req.query, user_constant_1.userSearchableFields);
     const paginationOptions = (0, pick_1.default)(req.query, [
         'limit',
@@ -28,7 +29,8 @@ const getAllUsers = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0,
         'sortBy',
         'sortOrder',
     ]);
-    // Combine filters and pagination for raw service
+    console.log('Filters:', filters);
+    console.log('Pagination:', paginationOptions);
     const queryParams = Object.assign(Object.assign({}, filters), paginationOptions);
     const result = yield user_service_raw_1.UserService.getAllUsers(queryParams);
     (0, sendResponse_1.default)(res, {
@@ -42,7 +44,6 @@ const getAllUsers = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0,
 const getUserById = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const result = yield user_service_raw_1.UserService.getSingleUser(id);
-    console.log(id);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
@@ -83,7 +84,6 @@ const deleteUser = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, 
 const getMyProfile = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const userId = req.user.id;
     const result = yield user_service_raw_1.UserService.getSingleUser(userId);
-    console.log(userId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,

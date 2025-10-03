@@ -8,17 +8,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __rest = (this && this.__rest) || function (s, e) {
-    var t = {};
-    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-        t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === "function")
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-                t[p[i]] = s[p[i]];
-        }
-    return t;
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -68,34 +57,41 @@ const createUser = (userData) => __awaiter(void 0, void 0, void 0, function* () 
     return createdUser;
 });
 const getAllUsers = (filters) => __awaiter(void 0, void 0, void 0, function* () {
-    const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc', searchTerm } = filters, filterData = __rest(filters, ["page", "limit", "sortBy", "sortOrder", "searchTerm"]);
+    const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc', searchTerm, role, status, isVerified, } = filters;
+    console.log('Received filters:', filters);
     const offset = (Number(page) - 1) * Number(limit);
-    const conditions = [`status IN ('ACTIVE', 'BLOCKED')`];
+    const conditions = [];
     const values = [];
     let paramIndex = 1;
+    // Always exclude DELETED users
+    conditions.push(`status != 'DELETED'`);
     // Add search conditions
     if (searchTerm) {
         conditions.push(`(name ILIKE $${paramIndex} OR email ILIKE $${paramIndex})`);
         values.push(`%${searchTerm}%`);
         paramIndex++;
     }
-    // Add filter conditions
-    if (filterData.role) {
+    // Add role filter (if not "ALL")
+    if (role && role !== 'ALL') {
         conditions.push(`role = $${paramIndex}`);
-        values.push(filterData.role);
+        values.push(role);
         paramIndex++;
     }
-    if (filterData.status) {
+    // Add status filter (if not "ALL")
+    if (status && status !== 'ALL') {
         conditions.push(`status = $${paramIndex}`);
-        values.push(filterData.status);
+        values.push(status);
         paramIndex++;
     }
-    if (filterData.isVerified !== undefined) {
+    // Add isVerified filter
+    if (isVerified !== undefined) {
         conditions.push(`"isVerified" = $${paramIndex}`);
-        values.push(filterData.isVerified);
+        values.push(isVerified);
         paramIndex++;
     }
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    console.log('WHERE clause:', whereClause); // Debug log
+    console.log('Values:', values); // Debug log
     // Count query
     const countQuery = `
     SELECT COUNT(*) as total
@@ -114,6 +110,7 @@ const getAllUsers = (filters) => __awaiter(void 0, void 0, void 0, function* () 
   `;
     values.push(Number(limit), offset);
     const result = yield database_1.default.query(mainQuery, values);
+    console.log('Results count:', result.rows.length); // Debug log
     return {
         meta: {
             total,

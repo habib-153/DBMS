@@ -66,9 +66,8 @@ const createPost = (postData, imageFile, authorId) => __awaiter(void 0, void 0, 
     const postWithDetails = yield getSinglePost(createdPost.id);
     return postWithDetails;
 });
-const getAllPosts = (filters) => __awaiter(void 0, void 0, void 0, function* () {
+const getAllPosts = (filters, user) => __awaiter(void 0, void 0, void 0, function* () {
     const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc', searchTerm, authorEmail } = filters, filterData = __rest(filters, ["page", "limit", "sortBy", "sortOrder", "searchTerm", "authorEmail"]);
-    console.log('filters:', filterData);
     const offset = (Number(page) - 1) * Number(limit);
     const conditions = [`p."isDeleted" = false`];
     const values = [];
@@ -95,18 +94,19 @@ const getAllPosts = (filters) => __awaiter(void 0, void 0, void 0, function* () 
         values.push(filterData.division);
         paramIndex++;
     }
-    console.log(conditions, 'conditions');
     if (filterData.status) {
         conditions.push(`p.status = $${paramIndex}`);
         values.push(filterData.status);
         paramIndex++;
     }
-    else {
-        // Default: show only APPROVED and PENDING posts
-        conditions.push(`p.status IN ('APPROVED', 'PENDING')`);
+    console.log('User in getAllPosts:', user);
+    const isAdmin = (user === null || user === void 0 ? void 0 : user.role) === 'ADMIN' || (user === null || user === void 0 ? void 0 : user.role) === 'SUPER_ADMIN';
+    const isViewingOwnPosts = authorEmail && (user === null || user === void 0 ? void 0 : user.email) === authorEmail;
+    if (!isAdmin && !isViewingOwnPosts && !filterData.status) {
+        // Regular users only see APPROVED posts 
+        conditions.push(`p.status = 'APPROVED'`);
     }
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    console.log(whereClause);
     // Count query
     const countQuery = `
     SELECT COUNT(*) as total
@@ -116,7 +116,6 @@ const getAllPosts = (filters) => __awaiter(void 0, void 0, void 0, function* () 
   `;
     const countResult = yield database_1.default.query(countQuery, values);
     const total = parseInt(countResult.rows[0].total, 10);
-    console.log(sortBy, 'sortBy', sortOrder, 'sortOrder');
     // Determine ORDER BY clause
     let orderByClause = '';
     if (sortBy === 'votes') {
@@ -238,7 +237,7 @@ const getSinglePost = (id) => __awaiter(void 0, void 0, void 0, function* () {
     return Object.assign(Object.assign({}, post), { upVotes,
         downVotes, voteCount: upVotes + downVotes, commentCount: commentsResult.rows.length, votes: votesResult.rows, comments: commentsResult.rows });
 });
-const updatePost = (id, updateData, imageFile, userId) => __awaiter(void 0, void 0, void 0, function* () {
+const updatePost = (id, updateData, imageFile, user) => __awaiter(void 0, void 0, void 0, function* () {
     // First, check if post exists and user owns it
     const checkQuery = `
     SELECT * FROM posts 
@@ -249,7 +248,9 @@ const updatePost = (id, updateData, imageFile, userId) => __awaiter(void 0, void
     if (!post) {
         throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Post not found');
     }
-    if (post.authorId !== userId) {
+    const isOwner = post.authorId === user.id;
+    const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+    if (!isOwner && !isAdmin) {
         throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'You are not authorized to update this post');
     }
     // Build update query dynamically
@@ -286,6 +287,12 @@ const updatePost = (id, updateData, imageFile, userId) => __awaiter(void 0, void
         values.push(new Date(updateData.crimeDate));
         paramIndex++;
     }
+    // Allow admin to update post status
+    if (updateData.status !== undefined && isAdmin) {
+        updateFields.push(`status = $${paramIndex}`);
+        values.push(updateData.status);
+        paramIndex++;
+    }
     if (imageFile) {
         updateFields.push(`image = $${paramIndex}`);
         values.push(imageFile.path);
@@ -313,7 +320,7 @@ const updatePost = (id, updateData, imageFile, userId) => __awaiter(void 0, void
     // Return post with details
     return yield getSinglePost(updatedPost.id);
 });
-const deletePost = (id, userId) => __awaiter(void 0, void 0, void 0, function* () {
+const deletePost = (id, user) => __awaiter(void 0, void 0, void 0, function* () {
     // Check if post exists and user owns it
     const checkQuery = `
     SELECT * FROM posts 
@@ -324,8 +331,10 @@ const deletePost = (id, userId) => __awaiter(void 0, void 0, void 0, function* (
     if (!post) {
         throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Post not found');
     }
-    if (post.authorId !== userId) {
-        throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'You are not authorized to delete this post');
+    const isOwner = post.authorId === user.id;
+    const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+    if (!isOwner && !isAdmin) {
+        throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'You are not authorized to update this post');
     }
     // Soft delete the post
     const deleteQuery = `

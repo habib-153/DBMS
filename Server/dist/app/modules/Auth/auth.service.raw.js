@@ -85,6 +85,7 @@ const registerUser = (payload) => __awaiter(void 0, void 0, void 0, function* ()
         phone: newUser.phone,
         role: newUser.role,
         status: newUser.status,
+        profilePhoto: newUser.profilePhoto,
     };
     // Generate tokens
     const accessToken = (0, verifyJWT_1.createToken)(jwtPayload, config_1.default.jwt_access_secret, config_1.default.jwt_access_expires_in);
@@ -97,7 +98,7 @@ const registerUser = (payload) => __awaiter(void 0, void 0, void 0, function* ()
 });
 const loginUser = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const userQuery = `
-    SELECT id, name, email, password, phone, role, status
+    SELECT id, name, email, password, phone, role, status, "profilePhoto"
     FROM users
     WHERE email = $1
   `;
@@ -123,7 +124,9 @@ const loginUser = (payload) => __awaiter(void 0, void 0, void 0, function* () {
         phone: user.phone,
         role: user.role,
         status: user.status,
+        profilePhoto: user.profilePhoto,
     };
+    console.log(jwtPayload);
     const accessToken = (0, verifyJWT_1.createToken)(jwtPayload, config_1.default.jwt_access_secret, config_1.default.jwt_access_expires_in);
     const refreshToken = (0, verifyJWT_1.createToken)(jwtPayload, config_1.default.jwt_refresh_secret, config_1.default.jwt_refresh_expires_in);
     return {
@@ -196,6 +199,7 @@ const refreshToken = (token) => __awaiter(void 0, void 0, void 0, function* () {
         phone: user.phone,
         role: user.role,
         status: user.status,
+        profilePhoto: user.profilePhoto,
     };
     const accessToken = (0, verifyJWT_1.createToken)(jwtPayload, config_1.default.jwt_access_secret, config_1.default.jwt_access_expires_in);
     return {
@@ -226,6 +230,7 @@ const forgetPassword = (email) => __awaiter(void 0, void 0, void 0, function* ()
         phone: user.phone,
         role: user.role,
         status: user.status,
+        profilePhoto: user.profilePhoto,
     };
     const resetToken = (0, verifyJWT_1.createToken)(jwtPayload, config_1.default.jwt_access_secret, '10m');
     const resetUILink = `${config_1.default.jwt_refresh_expires_in}/reset-password?id=${user.id}&token=${resetToken}`;

@@ -17,10 +17,9 @@ exports.UserRoutes = router;
 // );
 // router.post('/send-otp', UserController.sendOTPController);
 // router.post('/verify-otp', UserController.verifyOTPController);
-router.get('/', (0, auth_1.default)(user_constant_1.USER_ROLE.ADMIN), user_controller_1.UserController.getAllUsers);
-// Follow routes integrated with user routes - MUST be before /:id routes
+router.get('/', (0, auth_1.default)(user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.SUPER_ADMIN), user_controller_1.UserController.getAllUsers);
 router.post('/follow/:followedId', (0, auth_1.default)(user_constant_1.USER_ROLE.USER, user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.SUPER_ADMIN), user_controller_1.UserController.followUser);
 router.delete('/unfollow/:followedId', (0, auth_1.default)(user_constant_1.USER_ROLE.USER, user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.SUPER_ADMIN), user_controller_1.UserController.unfollowUser);
 router.get('/:id', user_controller_1.UserController.getUserById);
-router.put('/:id', (0, auth_1.default)(user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.USER), user_controller_1.UserController.updateUser);
-router.delete('/:id', (0, auth_1.default)(user_constant_1.USER_ROLE.ADMIN), user_controller_1.UserController.deleteUser);
+router.put('/:id', (0, auth_1.default)(user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.USER, user_constant_1.USER_ROLE.SUPER_ADMIN), user_controller_1.UserController.updateUser);
+router.delete('/:id', (0, auth_1.default)(user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.SUPER_ADMIN), user_controller_1.UserController.deleteUser);

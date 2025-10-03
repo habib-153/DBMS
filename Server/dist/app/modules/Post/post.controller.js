@@ -32,7 +32,7 @@ const createPost = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, 
     });
 }));
 const getAllPost = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield post_service_raw_1.PostService.getAllPosts(req.query);
+    const result = yield post_service_raw_1.PostService.getAllPosts(req.query, req.user);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
@@ -53,7 +53,7 @@ const getSinglePost = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 
 }));
 const updatePost = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    const result = yield post_service_raw_1.PostService.updatePost(id, req.body, req.file, req.user.id);
+    const result = yield post_service_raw_1.PostService.updatePost(id, req.body, req.file, req.user);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
@@ -63,7 +63,7 @@ const updatePost = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, 
 }));
 const deletePost = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    const result = yield post_service_raw_1.PostService.deletePost(id, req.user.id);
+    const result = yield post_service_raw_1.PostService.deletePost(id, req.user);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,

@@ -21,6 +21,14 @@ const updatePostValidationSchema = zod_1.z.object({
             .optional(),
         image: zod_1.z.string().optional(),
         isDeleted: zod_1.z.boolean().optional(),
+        location: zod_1.z.string().optional(),
+        division: zod_1.z.string().optional(),
+        district: zod_1.z.string().optional(),
+        status: zod_1.z.enum(['PENDING', 'APPROVED', 'REJECTED']).optional(),
+        crimeDate: zod_1.z
+            .string()
+            .transform((str) => new Date(str))
+            .optional(),
     }),
 });
 exports.PostValidation = {

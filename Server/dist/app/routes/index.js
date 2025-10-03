@@ -9,6 +9,7 @@ const user_route_1 = require("../modules/User/user.route");
 const post_route_1 = require("../modules/Post/post.route");
 const comment_route_1 = require("../modules/Comment/comment.route");
 const follow_route_1 = require("../modules/Follow/follow.route");
+const admin_route_1 = require("../modules/Admin/admin.route");
 const auth_1 = __importDefault(require("../middlewares/auth"));
 const user_constant_1 = require("../modules/User/user.constant");
 const user_controller_1 = require("../modules/User/user.controller");
@@ -35,6 +36,10 @@ const moduleRoutes = [
     {
         path: '/follows',
         route: follow_route_1.FollowRoutes,
+    },
+    {
+        path: '/admin',
+        route: admin_route_1.AdminRoutes,
     },
 ];
 router.get('/profile', (0, auth_1.default)(user_constant_1.USER_ROLE.USER, user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.SUPER_ADMIN), user_controller_1.UserController.getMyProfile);
