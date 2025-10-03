@@ -28,7 +28,7 @@ export const getAllPosts = async (apiUrl: string) => {
   try {
     // Extract the path from the full URL since axiosInstance has baseURL configured
     const url = new URL(apiUrl);
-    const pathWithQuery = url.pathname.replace('/api/v1', '') + url.search;
+    const pathWithQuery = url.pathname.replace("/api/v1", "") + url.search;
 
     const { data } = await axiosInstance.get(pathWithQuery);
 
@@ -153,6 +153,42 @@ export const deletePost = async (id: string): Promise<any> => {
       error?.response?.data?.message ||
       error?.message ||
       "Unknown error occurred";
+
+    throw new Error(errorMessage);
+  }
+};
+
+export const reportPost = async (
+  postId: string,
+  reportData: { reason: string; description?: string }
+): Promise<any> => {
+  try {
+    const { data } = await axiosInstance.post(
+      `/posts/${postId}/report`,
+      reportData
+    );
+
+    return data;
+  } catch (error: any) {
+    const errorMessage =
+      error?.response?.data?.message ||
+      error?.message ||
+      "Failed to report post";
+
+    throw new Error(errorMessage);
+  }
+};
+
+export const getPostReports = async (postId: string): Promise<any> => {
+  try {
+    const { data } = await axiosInstance.get(`/posts/${postId}/reports`);
+
+    return data;
+  } catch (error: any) {
+    const errorMessage =
+      error?.response?.data?.message ||
+      error?.message ||
+      "Failed to fetch post reports";
 
     throw new Error(errorMessage);
   }

@@ -36,7 +36,7 @@ export default function HeroSection({ onRegisterClick }: HeroSectionProps) {
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
             Stay Informed, Stay Safe
           </h1>
-          <p className=" md:text-lg text-white/90 mb-6 drop-shadow-md">
+          <p className=" text-white/90 mb-6 drop-shadow-md">
             Join our community to report, verify, and stay updated on local
             crime incidents.
           </p>

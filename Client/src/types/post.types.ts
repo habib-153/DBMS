@@ -8,9 +8,11 @@ export interface IPost {
   division: string;
   postDate: Date;
   crimeDate: Date;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: "PENDING" | "APPROVED" | "REJECTED";
   isDeleted: boolean;
   authorId: string;
+  verificationScore: number;
+  reportCount: number;
   createdAt: Date;
   updatedAt: Date;
   author: {
@@ -21,6 +23,7 @@ export interface IPost {
   };
   votes: IPostVote[];
   comments: IComment[];
+  reports?: IPostReport[];
   _count: {
     votes: number;
     comments: number;
@@ -31,7 +34,7 @@ export interface IPostVote {
   id: string;
   userId: string;
   postId: string;
-  type: 'UP' | 'DOWN';
+  type: "UP" | "DOWN";
   createdAt: Date;
   user: {
     id: string;
@@ -60,8 +63,20 @@ export interface ICommentVote {
   id: string;
   userId: string;
   commentId: string;
-  type: 'UP' | 'DOWN';
+  type: "UP" | "DOWN";
   createdAt: Date;
+}
+
+export interface IPostReport {
+  id: string;
+  postId: string;
+  userId: string;
+  reason: string;
+  description?: string;
+  createdAt: Date;
+  userName?: string;
+  userEmail?: string;
+  userProfilePhoto?: string;
 }
 
 export interface IPostsResponse {

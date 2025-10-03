@@ -29,6 +29,11 @@ export default function AdminDashboardLayout({
       href: "/admin/posts",
       icon: <FileText size={18} />,
     },
+    {
+      label: "Report Management",
+      href: "/admin/reports",
+      icon: <FileText size={18} />,
+    }
   ];
 
   return (

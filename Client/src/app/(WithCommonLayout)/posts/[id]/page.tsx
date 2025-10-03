@@ -24,6 +24,7 @@ import {
   AlertTriangle,
   Clock,
   Eye,
+  Flag,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -36,12 +37,15 @@ import {
   useAddDownVotePost,
   useRemoveUpVoteFromPost,
   useRemoveDownVoteFromPost,
+  useReportPost,
 } from "@/src/hooks/post.hook";
 import { useUser } from "@/src/context/user.provider";
 import AuthModal from "@/src/components/UI/modal/AuthModal/AuthModal";
 import { usePostAComment, useGetPostComments } from "@/src/hooks/comment.hook";
 import CommentVoteButtons from "@/src/components/Comment/CommentVoteButtons";
 import { FollowButton } from "@/src/components/modules/Shared";
+import ReportPostModal from "@/src/components/UI/modal/ReportPostModal";
+import VerificationScoreBadge from "@/src/components/UI/VerificationScoreBadge";
 
 const PostDetails = () => {
   const { id } = useParams();
@@ -49,10 +53,11 @@ const PostDetails = () => {
   const { data, isLoading } = useGetSinglePost(id as string);
   const postData = data?.data;
   const { user } = useUser();
-
+console.log(postData)
   const [isVoting, setIsVoting] = useState(false);
   const [openAuthModal, setOpenAuthModal] = useState(false);
   const [comment, setComment] = useState("");
+  const [showReportModal, setShowReportModal] = useState(false);
   const { mutateAsync: postComment } = usePostAComment();
   const { data: commentsData } = useGetPostComments(id as string);
 
@@ -61,6 +66,8 @@ const PostDetails = () => {
   const { mutate: removeUpvote } = useRemoveUpVoteFromPost();
   const { mutate: addDownvote } = useAddDownVotePost();
   const { mutate: removeDownvote } = useRemoveDownVoteFromPost();
+  const { mutate: reportPostMutation, isPending: isReporting } =
+    useReportPost();
 
   if (isLoading) {
     return (
@@ -193,6 +200,24 @@ const PostDetails = () => {
     }
   };
 
+  const handleReport = (reason: string, description?: string) => {
+    if (!user?.id) {
+      setOpenAuthModal(true);
+
+      return;
+    }
+
+    reportPostMutation(
+      { postId: id as string, reason, description },
+      {
+        onSuccess: () => {
+          toast.success("Post reported successfully");
+          setShowReportModal(false);
+        },
+      }
+    );
+  };
+
   return (
     <div className="max-w-4xl mx-auto py-6 px-4">
       {/* Back Button */}
@@ -206,6 +231,17 @@ const PostDetails = () => {
           Back to Reports
         </Button>
       </div>
+
+      {/* Verification Score Badge */}
+      {postData && (
+        <div className="mb-4 ">
+          <VerificationScoreBadge
+            reportCount={postData.reportCount || 0}
+            score={postData.verificationScore || 50}
+            showLabel={true}
+          />
+        </div>
+      )}
 
       {/* Main Post Card */}
       <Card className="mb-6">
@@ -264,13 +300,31 @@ const PostDetails = () => {
                   </div>
                 </div>
               </Link>
-              <FollowButton
-                className="ml-auto"
-                size="sm"
-                userId={postData.authorId}
-                userName={postData.authorName}
-                variant="bordered"
-              />
+              <div className="flex items-center gap-2 ml-auto">
+                <Button
+                  isIconOnly
+                  className="text-danger-500"
+                  size="sm"
+                  title="Report post"
+                  variant="light"
+                  onPress={() => {
+                    if (!user?.id) {
+                      setOpenAuthModal(true);
+
+                      return;
+                    }
+                    setShowReportModal(true);
+                  }}
+                >
+                  <Flag size={18} />
+                </Button>
+                <FollowButton
+                  size="sm"
+                  userId={postData.authorId}
+                  userName={postData.authorName}
+                  variant="bordered"
+                />
+              </div>
             </div>
 
             {/* Title */}
@@ -398,6 +452,14 @@ const PostDetails = () => {
                   color="warning"
                   startContent={<AlertTriangle size={16} />}
                   variant="light"
+                  onPress={() => {
+                    if (!user?.id) {
+                      setOpenAuthModal(true);
+
+                      return;
+                    }
+                    setShowReportModal(true);
+                  }}
                 >
                   Report
                 </Button>
@@ -413,7 +475,7 @@ const PostDetails = () => {
           <div className="flex items-center gap-2">
             <MessageCircle className="text-brand-primary" size={20} />
             <h3 className="text-lg font-semibold">
-              Comments ({postData.commentCounts})
+              Comments ({postData.commentCount})
             </h3>
           </div>
         </CardHeader>
@@ -516,13 +578,13 @@ const PostDetails = () => {
       {/* Related Posts */}
       <Card className="mt-6">
         <CardHeader>
-          <h3 className="text-lg font-semibold">Related Reports</h3>
+          <h3 className="text-lg font-semibold">Related Posts</h3>
         </CardHeader>
         <CardBody>
           <div className="text-center py-8">
             <Eye className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500 dark:text-gray-400">
-              Related reports feature coming soon...
+              Related posts feature coming soon...
             </p>
             <Link href="/posts">
               <Button className="mt-4" color="primary" variant="light">
@@ -537,6 +599,14 @@ const PostDetails = () => {
       <AuthModal
         openAuthModal={openAuthModal}
         setOpenAuthModal={setOpenAuthModal}
+      />
+
+      {/* Report Modal */}
+      <ReportPostModal
+        isLoading={isReporting}
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        onReport={handleReport}
       />
     </div>
   );

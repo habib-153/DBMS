@@ -11,6 +11,8 @@ import {
   removeDownvote,
   removeUpvote,
   updatePost,
+  reportPost,
+  getPostReports,
 } from "../services/PostServices";
 
 export const useCreatePost = () => {
@@ -122,6 +124,35 @@ export const useDeletePost = () => {
     onError: (error) => {
       toast.error(error.message || "Error when deleting post.");
     },
+  });
+};
+
+export const useReportPost = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    any,
+    Error,
+    { postId: string; reason: string; description?: string }
+  >({
+    mutationKey: ["REPORT_POST"],
+    mutationFn: async ({ postId, reason, description }) =>
+      await reportPost(postId, { reason, description }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      toast.success("Post reported successfully!");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Error when reporting post.");
+    },
+  });
+};
+
+export const useGetPostReports = (postId: string) => {
+  return useQuery({
+    queryKey: ["postReports", postId],
+    queryFn: async () => await getPostReports(postId),
+    enabled: !!postId,
   });
 };
 
