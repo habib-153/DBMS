@@ -77,28 +77,32 @@ const registerUser = (payload) => __awaiter(void 0, void 0, void 0, function* ()
     if (!newUser) {
         throw new AppError_1.default(http_status_1.default.INTERNAL_SERVER_ERROR, 'Failed to create user');
     }
-    // Create JWT payload
-    const jwtPayload = {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-        phone: newUser.phone,
-        role: newUser.role,
-        status: newUser.status,
-        profilePhoto: newUser.profilePhoto,
-    };
-    // Generate tokens
-    const accessToken = (0, verifyJWT_1.createToken)(jwtPayload, config_1.default.jwt_access_secret, config_1.default.jwt_access_expires_in);
-    const refreshToken = (0, verifyJWT_1.createToken)(jwtPayload, config_1.default.jwt_refresh_secret, config_1.default.jwt_refresh_expires_in);
+    // After creating user, generate an OTP and send to the user's email.
+    // Store OTP and expiry in the users table so we can verify later.
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    const otpUpdateQuery = `
+    UPDATE users
+    SET otp = $1, otp_expires_at = $2, "updatedAt" = $3
+    WHERE id = $4
+  `;
+    yield database_1.default.query(otpUpdateQuery, [
+        otp,
+        otpExpiresAt,
+        new Date(),
+        newUser.id,
+    ]);
+    // send OTP email
+    yield emailSender_1.EmailHelper.sendOtpEmail(newUser.email, otp);
+    // Return created user (no tokens). Client must verify OTP before login or posting.
     return {
         user: newUser,
-        accessToken,
-        refreshToken,
+        message: 'OTP sent to email. Please verify to complete registration.',
     };
 });
 const loginUser = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const userQuery = `
-    SELECT id, name, email, password, phone, role, status, "profilePhoto"
+    SELECT id, name, email, password, phone, role, status, "profilePhoto", "isVerified"
     FROM users
     WHERE email = $1
   `;
@@ -117,6 +121,10 @@ const loginUser = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     if (!isCorrectPassword) {
         throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'Password do not matched');
     }
+    // Check if user email is verified
+    if (!user.isVerified) {
+        throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'Please verify your email before logging in. Check your inbox for the verification code.');
+    }
     const jwtPayload = {
         id: user.id,
         name: user.name,
@@ -126,7 +134,7 @@ const loginUser = (payload) => __awaiter(void 0, void 0, void 0, function* () {
         status: user.status,
         profilePhoto: user.profilePhoto,
     };
-    console.log(jwtPayload);
+    // jwtPayload prepared for token creation when needed
     const accessToken = (0, verifyJWT_1.createToken)(jwtPayload, config_1.default.jwt_access_secret, config_1.default.jwt_access_expires_in);
     const refreshToken = (0, verifyJWT_1.createToken)(jwtPayload, config_1.default.jwt_refresh_secret, config_1.default.jwt_refresh_expires_in);
     return {
@@ -275,20 +283,48 @@ const resetPassword = (payload, token) => __awaiter(void 0, void 0, void 0, func
 const sendOTP = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     try {
+        // Check existing OTP expiry to rate-limit resends
+        const userQuery = `
+      SELECT id, otp, otp_expires_at, "updatedAt"
+      FROM users
+      WHERE email = $1
+    `;
+        const userResult = yield database_1.default.query(userQuery, [payload.email]);
+        const user = userResult.rows[0];
+        if (!user) {
+            throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'This user is not found!');
+        }
+        // If there's an existing OTP and it's still valid, prevent immediate resend
+        if (user.otp_expires_at &&
+            new Date(String(user.otp_expires_at)) > new Date()) {
+            // calculate seconds remaining
+            const remainingMs = new Date(String(user.otp_expires_at)).getTime() - Date.now();
+            const remainingSec = Math.ceil(remainingMs / 1000);
+            throw new AppError_1.default(http_status_1.default.TOO_MANY_REQUESTS, `OTP already sent. Please wait ${remainingSec} seconds before requesting a new one.`);
+        }
+        const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
         const updateQuery = `
       UPDATE users 
-      SET otp = $1, "updatedAt" = $2
-      WHERE email = $3
+      SET otp = $1, otp_expires_at = $2, "updatedAt" = $3
+      WHERE email = $4
     `;
-        yield database_1.default.query(updateQuery, [otp, new Date(), payload.email]);
-        yield emailSender_1.EmailHelper.sendEmail(payload.email, otp);
+        yield database_1.default.query(updateQuery, [
+            otp,
+            otpExpiresAt,
+            new Date(),
+            payload.email,
+        ]);
+        yield emailSender_1.EmailHelper.sendOtpEmail(payload.email, otp);
         return { message: 'OTP sent successfully' };
     }
-    catch (_a) {
+    catch (err) {
+        if (err instanceof AppError_1.default)
+            throw err;
         throw new AppError_1.default(http_status_1.default.INTERNAL_SERVER_ERROR, 'Failed to send OTP');
     }
 });
 const verifyOTP = (payload) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     const userQuery = `
     SELECT id, email, otp, status
     FROM users 
@@ -299,17 +335,48 @@ const verifyOTP = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     if (!user) {
         throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'This user is not found!');
     }
+    if (!user.otp) {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'No OTP found. Please request a new one.');
+    }
+    // Check expiry
+    const expiryQuery = `
+    SELECT otp_expires_at FROM users WHERE email = $1
+  `;
+    const expiryRes = yield database_1.default.query(expiryQuery, [payload.email]);
+    const otpExpiresAt = (_a = expiryRes.rows[0]) === null || _a === void 0 ? void 0 : _a.otp_expires_at;
+    if (otpExpiresAt && new Date(String(otpExpiresAt)) < new Date()) {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'OTP has expired. Please request a new one.');
+    }
     if (user.otp !== payload.otp) {
         throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Invalid OTP');
     }
     // Update user as verified and clear OTP
     const updateQuery = `
     UPDATE users 
-    SET "isVerified" = true, otp = NULL, "updatedAt" = $1
+    SET "isVerified" = true, otp = NULL, otp_expires_at = NULL, "updatedAt" = $1
     WHERE id = $2
   `;
     yield database_1.default.query(updateQuery, [new Date(), user.id]);
-    return { message: 'User verified successfully' };
+    // return tokens so client can auto-login
+    const jwtPayloadQuery = `
+    SELECT id, name, email, phone, role, status, "profilePhoto"
+    FROM users
+    WHERE id = $1
+  `;
+    const userRow = yield database_1.default.query(jwtPayloadQuery, [user.id]);
+    const verifiedUser = userRow.rows[0];
+    const jwtPayload = {
+        id: String(verifiedUser.id),
+        name: String(verifiedUser.name),
+        email: String(verifiedUser.email),
+        phone: String(verifiedUser.phone),
+        role: verifiedUser.role,
+        status: verifiedUser.status,
+        profilePhoto: verifiedUser.profilePhoto,
+    };
+    const accessToken = (0, verifyJWT_1.createToken)(jwtPayload, config_1.default.jwt_access_secret, config_1.default.jwt_access_expires_in);
+    const refreshToken = (0, verifyJWT_1.createToken)(jwtPayload, config_1.default.jwt_refresh_secret, config_1.default.jwt_refresh_expires_in);
+    return { message: 'User verified successfully', accessToken, refreshToken };
 });
 exports.AuthServices = {
     registerUser,

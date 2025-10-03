@@ -21,7 +21,6 @@ const user_constant_1 = require("./user.constant");
 const pick_1 = __importDefault(require("../../../shared/pick"));
 const follow_service_1 = require("../Follow/follow.service");
 const getAllUsers = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log('Query params:', req.query); // Debug log
     const filters = (0, pick_1.default)(req.query, user_constant_1.userSearchableFields);
     const paginationOptions = (0, pick_1.default)(req.query, [
         'limit',
@@ -29,8 +28,6 @@ const getAllUsers = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0,
         'sortBy',
         'sortOrder',
     ]);
-    console.log('Filters:', filters);
-    console.log('Pagination:', paginationOptions);
     const queryParams = Object.assign(Object.assign({}, filters), paginationOptions);
     const result = yield user_service_raw_1.UserService.getAllUsers(queryParams);
     (0, sendResponse_1.default)(res, {

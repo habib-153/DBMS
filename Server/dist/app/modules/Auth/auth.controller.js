@@ -20,19 +20,13 @@ const auth_service_raw_1 = require("./auth.service.raw");
 const catchAsync_1 = require("../../utils/catchAsync");
 const registerUser = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield auth_service_raw_1.AuthServices.registerUser(req.body);
-    const { refreshToken, accessToken, user } = result;
-    res.cookie('refreshToken', refreshToken, {
-        secure: config_1.default.NODE_ENV === 'production',
-        httpOnly: true,
-    });
+    const { user, message } = result;
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.CREATED,
         success: true,
-        message: 'User registered successfully!',
+        message: message || 'User registered successfully!',
         data: {
             user,
-            accessToken,
-            refreshToken,
         },
     });
 }));
@@ -94,6 +88,31 @@ const resetPassword = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 
         data: result,
     });
 }));
+const sendOTP = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield auth_service_raw_1.AuthServices.sendOTP(req.body);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: 'OTP sent successfully',
+        data: result,
+    });
+}));
+const verifyOTP = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield auth_service_raw_1.AuthServices.verifyOTP(req.body);
+    // If service returned tokens, set refreshToken cookie
+    if (result === null || result === void 0 ? void 0 : result.refreshToken) {
+        res.cookie('refreshToken', result.refreshToken, {
+            secure: config_1.default.NODE_ENV === 'production',
+            httpOnly: true,
+        });
+    }
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: 'OTP verified successfully',
+        data: result,
+    });
+}));
 exports.AuthControllers = {
     registerUser,
     loginUser,
@@ -101,4 +120,6 @@ exports.AuthControllers = {
     refreshToken,
     forgotPassword,
     resetPassword,
+    sendOTP,
+    verifyOTP,
 };

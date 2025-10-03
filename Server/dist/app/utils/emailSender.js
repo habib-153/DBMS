@@ -49,7 +49,7 @@ const sendEmail = (email, resetLink) => __awaiter(void 0, void 0, void 0, functi
     const transporter = nodemailer_1.default.createTransport({
         host: 'smtp.gmail.com',
         port: 587,
-        secure: false, // Use `true` for port 465, `false` for all other ports
+        secure: false,
         auth: {
             user: config_1.default.sender_email,
             pass: config_1.default.sender_app_password,
@@ -114,6 +114,34 @@ const sendEmail = (email, resetLink) => __awaiter(void 0, void 0, void 0, functi
     </html>`,
     });
 });
+const sendOtpEmail = (email, otp) => __awaiter(void 0, void 0, void 0, function* () {
+    const transporter = nodemailer_1.default.createTransport({
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: {
+            user: config_1.default.sender_email,
+            pass: config_1.default.sender_app_password,
+        },
+        tls: {
+            rejectUnauthorized: false,
+        },
+    });
+    const html = `<div style="font-family: Arial, sans-serif; max-width:600px; margin:0 auto; padding:24px; background:#fff; border-radius:8px;">
+    <h2 style="color:#0d9488;">Warden — Verify your email</h2>
+    <p>Hello,</p>
+    <p>Your verification code is:</p>
+    <p style="font-size:28px; font-weight:700; letter-spacing:4px;">${otp}</p>
+    <p>This code will expire in 15 minutes. If you didn't request this, you can ignore this email.</p>
+    <p style="color:#999; font-size:12px;">Warden</p>
+  </div>`;
+    yield transporter.sendMail({
+        from: `"Warden" <${config_1.default.sender_email}>`,
+        to: email,
+        subject: 'Your Warden verification code',
+        html,
+    });
+});
 const createEmailContent = (data, templateType) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const templatePath = path.join(process.cwd(), `src/views/${templateType}.template.hbs`);
@@ -128,4 +156,5 @@ const createEmailContent = (data, templateType) => __awaiter(void 0, void 0, voi
 exports.EmailHelper = {
     sendEmail,
     createEmailContent,
+    sendOtpEmail,
 };
