@@ -8,7 +8,6 @@ import pick from '../../../shared/pick';
 import { FollowService } from '../Follow/follow.service';
 
 const getAllUsers = catchAsync(async (req: Request, res: Response) => {
-  console.log('Query params:', req.query); // Debug log
 
   const filters = pick(req.query, userSearchableFields);
   const paginationOptions = pick(req.query, [
@@ -17,9 +16,6 @@ const getAllUsers = catchAsync(async (req: Request, res: Response) => {
     'sortBy',
     'sortOrder',
   ]);
-
-  console.log('Filters:', filters); 
-  console.log('Pagination:', paginationOptions);
 
   const queryParams = { ...filters, ...paginationOptions };
   const result = await UserService.getAllUsers(queryParams);

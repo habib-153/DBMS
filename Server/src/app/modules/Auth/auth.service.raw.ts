@@ -115,40 +115,37 @@ const registerUser = async (payload: TRegisterUser) => {
     );
   }
 
-  // Create JWT payload
-  const jwtPayload = {
-    id: newUser.id,
-    name: newUser.name,
-    email: newUser.email,
-    phone: newUser.phone as string,
-    role: newUser.role as 'USER' | 'ADMIN' | 'SUPER_ADMIN',
-    status: newUser.status as 'ACTIVE' | 'BLOCKED' | 'DELETED',
-    profilePhoto: newUser.profilePhoto,
-  };
+  // After creating user, generate an OTP and send to the user's email.
+  // Store OTP and expiry in the users table so we can verify later.
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-  // Generate tokens
-  const accessToken = createToken(
-    jwtPayload,
-    config.jwt_access_secret as string,
-    config.jwt_access_expires_in as string
-  );
+  const otpUpdateQuery = `
+    UPDATE users
+    SET otp = $1, otp_expires_at = $2, "updatedAt" = $3
+    WHERE id = $4
+  `;
 
-  const refreshToken = createToken(
-    jwtPayload,
-    config.jwt_refresh_secret as string,
-    config.jwt_refresh_expires_in as string
-  );
+  await database.query(otpUpdateQuery, [
+    otp,
+    otpExpiresAt,
+    new Date(),
+    newUser.id,
+  ]);
 
+  // send OTP email
+  await EmailHelper.sendOtpEmail(newUser.email, otp);
+
+  // Return created user (no tokens). Client must verify OTP before login or posting.
   return {
     user: newUser,
-    accessToken,
-    refreshToken,
+    message: 'OTP sent to email. Please verify to complete registration.',
   };
 };
 
 const loginUser = async (payload: TLoginUser) => {
   const userQuery = `
-    SELECT id, name, email, password, phone, role, status, "profilePhoto"
+    SELECT id, name, email, password, phone, role, status, "profilePhoto", "isVerified"
     FROM users
     WHERE email = $1
   `;
@@ -161,7 +158,8 @@ const loginUser = async (payload: TLoginUser) => {
     phone?: string;
     role: string;
     status: string;
-    profilePhoto?: string; 
+    profilePhoto?: string;
+    isVerified: boolean;
   }>(userQuery, [payload.email]);
 
   const user = result.rows[0];
@@ -187,6 +185,14 @@ const loginUser = async (payload: TLoginUser) => {
     throw new AppError(httpStatus.FORBIDDEN, 'Password do not matched');
   }
 
+  // Check if user email is verified
+  if (!user.isVerified) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      'Please verify your email before logging in. Check your inbox for the verification code.'
+    );
+  }
+
   const jwtPayload = {
     id: user.id,
     name: user.name,
@@ -197,7 +203,7 @@ const loginUser = async (payload: TLoginUser) => {
     profilePhoto: user.profilePhoto,
   };
 
-  console.log(jwtPayload);
+  // jwtPayload prepared for token creation when needed
 
   const accessToken = createToken(
     jwtPayload,
@@ -459,16 +465,53 @@ const sendOTP = async (payload: TSendOTP) => {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
   try {
-    const updateQuery = `
-      UPDATE users 
-      SET otp = $1, "updatedAt" = $2
-      WHERE email = $3
+    // Check existing OTP expiry to rate-limit resends
+    const userQuery = `
+      SELECT id, otp, otp_expires_at, "updatedAt"
+      FROM users
+      WHERE email = $1
     `;
 
-    await database.query(updateQuery, [otp, new Date(), payload.email]);
-    await EmailHelper.sendEmail(payload.email, otp);
+    const userResult = await database.query(userQuery, [payload.email]);
+    const user = userResult.rows[0];
+
+    if (!user) {
+      throw new AppError(httpStatus.NOT_FOUND, 'This user is not found!');
+    }
+
+    // If there's an existing OTP and it's still valid, prevent immediate resend
+    if (
+      user.otp_expires_at &&
+      new Date(String(user.otp_expires_at)) > new Date()
+    ) {
+      // calculate seconds remaining
+      const remainingMs =
+        new Date(String(user.otp_expires_at)).getTime() - Date.now();
+      const remainingSec = Math.ceil(remainingMs / 1000);
+      throw new AppError(
+        httpStatus.TOO_MANY_REQUESTS,
+        `OTP already sent. Please wait ${remainingSec} seconds before requesting a new one.`
+      );
+    }
+
+    const otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    const updateQuery = `
+      UPDATE users 
+      SET otp = $1, otp_expires_at = $2, "updatedAt" = $3
+      WHERE email = $4
+    `;
+
+    await database.query(updateQuery, [
+      otp,
+      otpExpiresAt,
+      new Date(),
+      payload.email,
+    ]);
+    await EmailHelper.sendOtpEmail(payload.email, otp);
     return { message: 'OTP sent successfully' };
-  } catch {
+  } catch (err) {
+    if (err instanceof AppError) throw err;
     throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to send OTP');
   }
 };
@@ -493,6 +536,28 @@ const verifyOTP = async (payload: TVerifyOTP) => {
     throw new AppError(httpStatus.NOT_FOUND, 'This user is not found!');
   }
 
+  if (!user.otp) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'No OTP found. Please request a new one.'
+    );
+  }
+
+  // Check expiry
+  const expiryQuery = `
+    SELECT otp_expires_at FROM users WHERE email = $1
+  `;
+
+  const expiryRes = await database.query(expiryQuery, [payload.email]);
+  const otpExpiresAt = expiryRes.rows[0]?.otp_expires_at;
+
+  if (otpExpiresAt && new Date(String(otpExpiresAt)) < new Date()) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'OTP has expired. Please request a new one.'
+    );
+  }
+
   if (user.otp !== payload.otp) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Invalid OTP');
   }
@@ -500,13 +565,45 @@ const verifyOTP = async (payload: TVerifyOTP) => {
   // Update user as verified and clear OTP
   const updateQuery = `
     UPDATE users 
-    SET "isVerified" = true, otp = NULL, "updatedAt" = $1
+    SET "isVerified" = true, otp = NULL, otp_expires_at = NULL, "updatedAt" = $1
     WHERE id = $2
   `;
 
   await database.query(updateQuery, [new Date(), user.id]);
 
-  return { message: 'User verified successfully' };
+  // return tokens so client can auto-login
+  const jwtPayloadQuery = `
+    SELECT id, name, email, phone, role, status, "profilePhoto"
+    FROM users
+    WHERE id = $1
+  `;
+
+  const userRow = await database.query(jwtPayloadQuery, [user.id]);
+  const verifiedUser = userRow.rows[0];
+
+  const jwtPayload = {
+    id: String(verifiedUser.id),
+    name: String(verifiedUser.name),
+    email: String(verifiedUser.email),
+    phone: String(verifiedUser.phone) as string,
+    role: verifiedUser.role as 'USER' | 'ADMIN' | 'SUPER_ADMIN',
+    status: verifiedUser.status as 'ACTIVE' | 'BLOCKED' | 'DELETED',
+    profilePhoto: verifiedUser.profilePhoto as string | undefined,
+  };
+
+  const accessToken = createToken(
+    jwtPayload,
+    config.jwt_access_secret as string,
+    config.jwt_access_expires_in as string
+  );
+
+  const refreshToken = createToken(
+    jwtPayload,
+    config.jwt_refresh_secret as string,
+    config.jwt_refresh_expires_in as string
+  );
+
+  return { message: 'User verified successfully', accessToken, refreshToken };
 };
 
 export const AuthServices = {

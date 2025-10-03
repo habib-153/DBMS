@@ -12,6 +12,14 @@ const createPost = catchAsync(async (req, res) => {
     throw new AppError(400, 'Please upload an image');
   }
 
+  // Prevent unverified users from creating posts
+  if (!req.user || !req.user.isVerified) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      'Please verify your email before creating posts'
+    );
+  }
+
   const result = await PostService.createPost(
     req.body,
     req.file as TImageFile,

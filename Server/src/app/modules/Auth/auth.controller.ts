@@ -6,27 +6,25 @@ import { catchAsync } from '../../utils/catchAsync';
 
 const registerUser = catchAsync(async (req, res) => {
   const result = await AuthServices.registerUser(req.body);
-  const { refreshToken, accessToken, user } = result;
+  interface IRegisterResult {
+    user: unknown;
+    message?: string;
+  }
 
-  res.cookie('refreshToken', refreshToken, {
-    secure: config.NODE_ENV === 'production',
-    httpOnly: true,
-  });
+  const { user, message } = result as IRegisterResult;
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     success: true,
-    message: 'User registered successfully!',
+    message: message || 'User registered successfully!',
     data: {
       user,
-      accessToken,
-      refreshToken,
     },
   });
 });
 
 const loginUser = catchAsync(async (req, res) => {
-  const payload = req.body
+  const payload = req.body;
   const result = await AuthServices.loginUser(payload);
   const { refreshToken, accessToken } = result;
 
@@ -91,6 +89,36 @@ const resetPassword = catchAsync(async (req, res) => {
   });
 });
 
+const sendOTP = catchAsync(async (req, res) => {
+  const result = await AuthServices.sendOTP(req.body);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'OTP sent successfully',
+    data: result,
+  });
+});
+
+const verifyOTP = catchAsync(async (req, res) => {
+  const result = await AuthServices.verifyOTP(req.body);
+
+  // If service returned tokens, set refreshToken cookie
+  if (result?.refreshToken) {
+    res.cookie('refreshToken', result.refreshToken, {
+      secure: config.NODE_ENV === 'production',
+      httpOnly: true,
+    });
+  }
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'OTP verified successfully',
+    data: result,
+  });
+});
+
 export const AuthControllers = {
   registerUser,
   loginUser,
@@ -98,4 +126,6 @@ export const AuthControllers = {
   refreshToken,
   forgotPassword,
   resetPassword,
+  sendOTP,
+  verifyOTP,
 };

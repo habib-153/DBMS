@@ -13,6 +13,7 @@ import FXForm from "@/src/components/form/FXForm";
 import FXInput from "@/src/components/form/FXInput";
 import registerValidationSchema from "@/src/schema/registerSchema";
 import { useUserRegistration } from "@/src/hooks/auth.hook";
+import VerifyOtpModal from "@/src/components/UI/modal/AuthModal/VerifyOtpModal";
 import { useUser } from "@/src/context/user.provider";
 import registerBg from "@/src/assets/register_bg.png";
 import registerBg2 from "@/src/assets/registerBg2.jpg";
@@ -21,7 +22,7 @@ export default function RegisterPage() {
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") || "/";
   const router = useRouter();
-  const { theme, resolvedTheme } = useTheme();
+  const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const { setIsLoading: userRegLoading } = useUser();
 
@@ -29,11 +30,10 @@ export default function RegisterPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
-  const {
-    mutate: handleUserRegistration,
-    isPending,
-    isSuccess,
-  } = useUserRegistration();
+  const { mutateAsync: registerAsync, isPending } = useUserRegistration();
+
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
 
   const onSubmit: SubmitHandler<FieldValues> = async (data) => {
     const userData = {
@@ -42,19 +42,27 @@ export default function RegisterPage() {
         "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png",
     };
 
-    handleUserRegistration(userData);
-    userRegLoading(true);
+    try {
+      userRegLoading(true);
+
+      const res = await registerAsync(userData);
+
+      // axios service returns object { success, message, data }
+      // data may contain user under res.data.user or res.user depending on service wrapper
+      const maybeUser = (res as any)?.data?.user || (res as any)?.user;
+      const email = maybeUser?.email || (userData as any).email;
+
+      setRegisteredEmail(email);
+      setShowVerifyModal(true);
+    } catch (err) {
+      // error shown by hook
+    } finally {
+      userRegLoading(false);
+    }
   };
 
-  useEffect(() => {
-    if (!isPending && isSuccess) {
-      if (redirect) {
-        router.push(redirect);
-      } else {
-        router.push("/");
-      }
-    }
-  }, [isPending, isSuccess]);
+  // Removed automatic redirect on registration success so the verification
+  // modal can be shown and the user can verify their email first.
 
   // Select the appropriate background image based on theme
   const currentTheme = mounted ? theme : "light";
@@ -177,6 +185,15 @@ export default function RegisterPage() {
           </div>
         </div>
       </div>
+      <VerifyOtpModal
+        email={registeredEmail || ""}
+        open={showVerifyModal}
+        onClose={() => setShowVerifyModal(false)}
+        onVerified={() => {
+          // after verify, redirect to home or login
+          router.push(redirect || "/");
+        }}
+      />
     </div>
   );
 }

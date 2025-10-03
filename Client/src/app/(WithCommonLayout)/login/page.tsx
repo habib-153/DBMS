@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useTheme } from "next-themes";
+import { toast } from "sonner";
 
 import FXForm from "@/src/components/form/FXForm";
 import FXInput from "@/src/components/form/FXInput";
@@ -16,6 +17,7 @@ import { useUser } from "@/src/context/user.provider";
 import { useUserLogin } from "@/src/hooks/auth.hook";
 import registerBg from "@/src/assets/register_bg.png";
 import registerBg2 from "@/src/assets/registerBg2.jpg";
+import VerifyOtpModal from "@/src/components/UI/modal/AuthModal/VerifyOtpModal";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -23,6 +25,8 @@ export default function LoginPage() {
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const { setIsLoading: userLoading } = useUser();
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
 
   const redirect = searchParams.get("redirect");
 
@@ -34,7 +38,18 @@ export default function LoginPage() {
   const { mutate: handleUserLogin, isPending, isSuccess } = useUserLogin();
 
   const onSubmit: SubmitHandler<FieldValues> = (data) => {
-    handleUserLogin(data);
+    handleUserLogin(data, {
+      onError: (err: any) => {
+        const errorMessage = err?.message || "Login failed";
+
+        // Check if error is about unverified email
+        if (errorMessage.toLowerCase().includes("verify your email")) {
+          setUnverifiedEmail(data.email);
+          setShowVerifyModal(true);
+          toast.info("Please verify your email to continue");
+        }
+      },
+    });
     userLoading(true);
   };
 
@@ -158,6 +173,18 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      {/* Verification Modal for Unverified Users */}
+      <VerifyOtpModal
+        email={unverifiedEmail || ""}
+        open={showVerifyModal}
+        onClose={() => setShowVerifyModal(false)}
+        onVerified={() => {
+          setShowVerifyModal(false);
+          // After verification, navigate to home or intended redirect
+          router.push(redirect || "/");
+        }}
+      />
     </div>
   );
 }

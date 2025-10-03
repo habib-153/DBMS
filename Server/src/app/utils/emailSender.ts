@@ -13,7 +13,7 @@ const sendEmail = async (email: string, resetLink: string) => {
   const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 587,
-    secure: false, // Use `true` for port 465, `false` for all other ports
+    secure: false,
     auth: {
       user: config.sender_email,
       pass: config.sender_app_password,
@@ -80,6 +80,37 @@ const sendEmail = async (email: string, resetLink: string) => {
   });
 };
 
+const sendOtpEmail = async (email: string, otp: string) => {
+  const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: config.sender_email,
+      pass: config.sender_app_password,
+    },
+    tls: {
+      rejectUnauthorized: false,
+    },
+  });
+
+  const html = `<div style="font-family: Arial, sans-serif; max-width:600px; margin:0 auto; padding:24px; background:#fff; border-radius:8px;">
+    <h2 style="color:#0d9488;">Warden — Verify your email</h2>
+    <p>Hello,</p>
+    <p>Your verification code is:</p>
+    <p style="font-size:28px; font-weight:700; letter-spacing:4px;">${otp}</p>
+    <p>This code will expire in 15 minutes. If you didn't request this, you can ignore this email.</p>
+    <p style="color:#999; font-size:12px;">Warden</p>
+  </div>`;
+
+  await transporter.sendMail({
+    from: `"Warden" <${config.sender_email}>`,
+    to: email,
+    subject: 'Your Warden verification code',
+    html,
+  });
+};
+
 const createEmailContent = async (data: object, templateType: string) => {
   try {
     const templatePath = path.join(
@@ -102,4 +133,5 @@ const createEmailContent = async (data: object, templateType: string) => {
 export const EmailHelper = {
   sendEmail,
   createEmailContent,
+  sendOtpEmail,
 };

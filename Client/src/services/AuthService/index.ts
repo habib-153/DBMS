@@ -52,6 +52,41 @@ export const loginUser = async (userData: FieldValues) => {
   }
 };
 
+export const sendOTP = async (payload: { email: string }) => {
+  try {
+    const { data } = await axiosInstance.post("/auth/send-otp", payload);
+
+    return data;
+  } catch (error: any) {
+    const errorMessage =
+      error?.response?.data?.message || error?.message || "Failed to send OTP";
+
+    throw new Error(errorMessage);
+  }
+};
+
+export const verifyOTP = async (payload: { email: string; otp: string }) => {
+  try {
+    const { data } = await axiosInstance.post("/auth/verify-otp", payload, {
+      withCredentials: true,
+    });
+
+    // If tokens returned, set cookies server-side will set refreshToken; also set accessToken cookie client-side
+    if (data?.data?.accessToken) {
+      cookies().set("accessToken", data.data.accessToken);
+    }
+
+    return data;
+  } catch (error: any) {
+    const errorMessage =
+      error?.response?.data?.message ||
+      error?.message ||
+      "Failed to verify OTP";
+
+    throw new Error(errorMessage);
+  }
+};
+
 export const logout = () => {
   cookies().delete("accessToken");
   cookies().delete("refreshToken");

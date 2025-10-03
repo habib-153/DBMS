@@ -21,6 +21,18 @@ router.post(
 );
 
 router.post(
+  '/send-otp',
+  validateRequest(AuthValidation.sendOTPValidationSchema),
+  AuthControllers.sendOTP
+);
+
+router.post(
+  '/verify-otp',
+  validateRequest(AuthValidation.verifyOTPValidationSchema),
+  AuthControllers.verifyOTP
+);
+
+router.post(
   '/change-password',
   auth('USER', 'ADMIN', 'SUPER_ADMIN'),
   validateRequest(AuthValidation.changePasswordValidationSchema),
