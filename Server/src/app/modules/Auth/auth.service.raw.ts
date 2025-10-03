@@ -99,6 +99,7 @@ const registerUser = async (payload: TRegisterUser) => {
     name: string;
     email: string;
     phone?: string;
+    profilePhoto?: string;
     role: string;
     status: string;
     isVerified: boolean;
@@ -122,6 +123,7 @@ const registerUser = async (payload: TRegisterUser) => {
     phone: newUser.phone as string,
     role: newUser.role as 'USER' | 'ADMIN' | 'SUPER_ADMIN',
     status: newUser.status as 'ACTIVE' | 'BLOCKED' | 'DELETED',
+    profilePhoto: newUser.profilePhoto,
   };
 
   // Generate tokens
@@ -146,7 +148,7 @@ const registerUser = async (payload: TRegisterUser) => {
 
 const loginUser = async (payload: TLoginUser) => {
   const userQuery = `
-    SELECT id, name, email, password, phone, role, status
+    SELECT id, name, email, password, phone, role, status, "profilePhoto"
     FROM users
     WHERE email = $1
   `;
@@ -159,6 +161,7 @@ const loginUser = async (payload: TLoginUser) => {
     phone?: string;
     role: string;
     status: string;
+    profilePhoto?: string; 
   }>(userQuery, [payload.email]);
 
   const user = result.rows[0];
@@ -191,7 +194,10 @@ const loginUser = async (payload: TLoginUser) => {
     phone: user.phone as string,
     role: user.role as 'USER' | 'ADMIN' | 'SUPER_ADMIN',
     status: user.status as 'ACTIVE' | 'BLOCKED' | 'DELETED',
+    profilePhoto: user.profilePhoto,
   };
+
+  console.log(jwtPayload);
 
   const accessToken = createToken(
     jwtPayload,
@@ -293,6 +299,7 @@ const refreshToken = async (token: string) => {
     role: string;
     status: string;
     passwordChangedAt?: Date;
+    profilePhoto?: string;
   }>(userQuery, [id]);
 
   const user = result.rows[0];
@@ -323,6 +330,7 @@ const refreshToken = async (token: string) => {
     phone: user.phone as string,
     role: user.role as 'USER' | 'ADMIN' | 'SUPER_ADMIN',
     status: user.status as 'ACTIVE' | 'BLOCKED' | 'DELETED',
+    profilePhoto: user.profilePhoto,
   };
 
   const accessToken = createToken(
@@ -350,6 +358,7 @@ const forgetPassword = async (email: string) => {
     phone?: string;
     role: string;
     status: string;
+    profilePhoto?: string;
   }>(userQuery, [email]);
 
   const user = result.rows[0];
@@ -373,6 +382,7 @@ const forgetPassword = async (email: string) => {
     phone: user.phone as string,
     role: user.role as 'USER' | 'ADMIN' | 'SUPER_ADMIN',
     status: user.status as 'ACTIVE' | 'BLOCKED' | 'DELETED',
+    profilePhoto: user.profilePhoto,
   };
 
   const resetToken = createToken(

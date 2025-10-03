@@ -20,6 +20,14 @@ const updatePostValidationSchema = z.object({
       .optional(),
     image: z.string().optional(),
     isDeleted: z.boolean().optional(),
+    location: z.string().optional(),
+    division: z.string().optional(),
+    district: z.string().optional(),
+    status: z.enum(['PENDING', 'APPROVED', 'REJECTED']).optional(),
+    crimeDate: z
+      .string()
+      .transform((str) => new Date(str))
+      .optional(),
   }),
 });
 

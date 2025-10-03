@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import {
@@ -94,27 +94,33 @@ export const useRemoveDownVoteFromPost = () => {
 };
 
 export const useUpdatePost = () => {
+  const queryClient = useQueryClient();
+
   return useMutation<any, Error, { postData: FormData; id: string }>({
     mutationKey: ["UPDATE_POST"],
-    mutationFn: async ({ postData, id }) => {
-      return toast.promise(updatePost(postData, id), {
-        loading: "Updating Post...",
-        success: "Post updated successfully!",
-        error: "Error when updating Post.",
-      });
+    mutationFn: async ({ postData, id }) => await updatePost(postData, id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      toast.success("Post updated successfully!");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Error when updating Post.");
     },
   });
 };
 
 export const useDeletePost = () => {
+  const queryClient = useQueryClient();
+
   return useMutation<any, Error, { id: string }>({
     mutationKey: ["DELETE_POST"],
-    mutationFn: async ({ id }) => {
-      return toast.promise(deletePost(id), {
-        loading: "Deleting Post...",
-        success: "Post deleted successfully!",
-        error: "Error when deleting post.",
-      });
+    mutationFn: async ({ id }) => await deletePost(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      toast.success("Post deleted successfully!");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Error when deleting post.");
     },
   });
 };

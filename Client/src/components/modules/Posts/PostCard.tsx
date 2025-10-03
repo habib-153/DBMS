@@ -1,7 +1,7 @@
 "use client";
 
-import { Card, CardBody, Avatar, Chip, Button } from "@heroui/react";
-import { ThumbsUp, ThumbsDown, Eye } from "lucide-react";
+import { Card, CardBody, Avatar, Chip, Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
+import { ThumbsUp, ThumbsDown, Eye, MoreVertical, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
 import Image from "next/image";
@@ -15,6 +15,9 @@ interface PostCardProps {
   onVote: (postId: string, voteType: "up" | "down") => Promise<void>;
   userId?: string;
   isVoting: boolean;
+  onEdit?: (post: IPost) => void;
+  onDelete?: (postId: string) => void;
+  showActions?: boolean;
 }
 
 export default function PostCard({
@@ -22,12 +25,16 @@ export default function PostCard({
   onVote,
   userId,
   isVoting,
+  onEdit,
+  onDelete,
+  showActions = false,
 }: PostCardProps) {
   const upVotes = post.votes?.filter((vote) => vote.type === "UP") || [];
   const downVotes = post.votes?.filter((vote) => vote.type === "DOWN") || [];
   const isUpvoted = upVotes.some((vote) => vote.userId === userId);
   const isDownvoted = downVotes.some((vote) => vote.userId === userId);
   const voteCount = upVotes.length - downVotes.length;
+  const isOwner = userId === post.author.id;
 
   const handleVote = async (voteType: "up" | "down") => {
     if (!userId) {
@@ -41,6 +48,18 @@ export default function PostCard({
       await onVote(post.id, voteType);
     } catch (error) {
       toast.error("Failed to vote. Please try again.");
+    }
+  };
+
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete(post.id);
+    }
+  };
+
+  const handleEdit = () => {
+    if (onEdit) {
+      onEdit(post);
     }
   };
 
@@ -81,7 +100,7 @@ export default function PostCard({
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               src={post.image}
             />
-            <div className="absolute top-3 right-3">
+            <div className="absolute top-3 right-3 flex items-center gap-2">
               <Chip
                 className="backdrop-blur-md"
                 color={getStatusColor(post.status)}
@@ -90,6 +109,39 @@ export default function PostCard({
               >
                 {post.status}
               </Chip>
+              {showActions && isOwner && (
+                <Dropdown placement="bottom-end">
+                  <DropdownTrigger>
+                    <Button
+                      isIconOnly
+                      className="backdrop-blur-md bg-white/80 dark:bg-gray-800/80 hover:bg-brand-primary hover:text-white transition-all"
+                      size="sm"
+                      variant="flat"
+                    >
+                      <MoreVertical size={16} />
+                    </Button>
+                  </DropdownTrigger>
+                  <DropdownMenu aria-label="Post actions">
+                    <DropdownItem
+                      key="edit"
+                      className="text-brand-primary"
+                      startContent={<Edit size={16} />}
+                      onPress={handleEdit}
+                    >
+                      Edit Post
+                    </DropdownItem>
+                    <DropdownItem
+                      key="delete"
+                      className="text-danger"
+                      color="danger"
+                      startContent={<Trash2 size={16} />}
+                      onPress={handleDelete}
+                    >
+                      Delete Post
+                    </DropdownItem>
+                  </DropdownMenu>
+                </Dropdown>
+              )}
             </div>
           </div>
         )}
@@ -119,13 +171,48 @@ export default function PostCard({
                 {formatDate(post.createdAt)}
               </p>
             </div>
-            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-              <FollowButton
-                size="sm"
-                userId={post.author.id}
-                userName={post.author?.name || "User"}
-                variant="light"
-              />
+            <div className="flex items-center gap-2">
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                <FollowButton
+                  size="sm"
+                  userId={post.author.id}
+                  userName={post.author?.name || "User"}
+                  variant="light"
+                />
+              </div>
+              {!post.image && showActions && isOwner && (
+                <Dropdown placement="bottom-end">
+                  <DropdownTrigger>
+                    <Button
+                      isIconOnly
+                      className="bg-gray-100 dark:bg-gray-800 hover:bg-brand-primary hover:text-white transition-all"
+                      size="sm"
+                      variant="flat"
+                    >
+                      <MoreVertical size={16} />
+                    </Button>
+                  </DropdownTrigger>
+                  <DropdownMenu aria-label="Post actions">
+                    <DropdownItem
+                      key="edit"
+                      className="text-brand-primary"
+                      startContent={<Edit size={16} />}
+                      onPress={handleEdit}
+                    >
+                      Edit Post
+                    </DropdownItem>
+                    <DropdownItem
+                      key="delete"
+                      className="text-danger"
+                      color="danger"
+                      startContent={<Trash2 size={16} />}
+                      onPress={handleDelete}
+                    >
+                      Delete Post
+                    </DropdownItem>
+                  </DropdownMenu>
+                </Dropdown>
+              )}
             </div>
           </div>
 

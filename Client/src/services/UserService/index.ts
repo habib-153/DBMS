@@ -32,6 +32,16 @@ export const updateUserRole = async (id: string, payload: any) => {
   }
 };
 
+export const updateUserStatus = async (id: string, payload: any) => {
+  try {
+    const { data } = await axiosInstance.put(`/users/${id}`, payload);
+
+    return data;
+  } catch (error: any) {
+    throw new Error(error);
+  }
+};
+
 export const deleteUser = async (id: string): Promise<any> => {
   try {
     const { data } = await axiosInstance.delete(`/users/${id}`);

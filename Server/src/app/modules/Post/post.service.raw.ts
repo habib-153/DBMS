@@ -14,6 +14,7 @@ import {
 import { TCreatePost, TUpdatePost } from './post.interface';
 import { TUser } from '../User/user.interface';
 import { TImageFile } from '../../interfaces/image.interface';
+import { JwtPayload } from 'jsonwebtoken';
 
 // Simple UUID generator replacement
 const generateUuid = (): string => {
@@ -68,7 +69,8 @@ const createPost = async (
 };
 
 const getAllPosts = async (
-  filters: Record<string, unknown>
+  filters: Record<string, unknown>,
+  user: JwtPayload
 ): Promise<PaginatedResult<DbPostWithAuthor>> => {
   const {
     page = 1,
@@ -79,7 +81,6 @@ const getAllPosts = async (
     authorEmail,
     ...filterData
   } = filters;
-  console.log('filters:', filterData);
   const offset = (Number(page) - 1) * Number(limit);
   const conditions: string[] = [`p."isDeleted" = false`];
   const values: unknown[] = [];
@@ -112,19 +113,24 @@ const getAllPosts = async (
     values.push(filterData.division);
     paramIndex++;
   }
-  console.log(conditions, 'conditions');
+
   if (filterData.status) {
     conditions.push(`p.status = $${paramIndex}`);
     values.push(filterData.status);
     paramIndex++;
-  } else {
-    // Default: show only APPROVED and PENDING posts
-    conditions.push(`p.status IN ('APPROVED', 'PENDING')`);
   }
+  console.log('User in getAllPosts:', user);
+   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+   const isViewingOwnPosts = authorEmail && user?.email === authorEmail;
+
+   if (!isAdmin && !isViewingOwnPosts && !filterData.status) {
+     // Regular users only see APPROVED posts 
+     conditions.push(`p.status = 'APPROVED'`);
+   }
 
   const whereClause =
     conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  console.log(whereClause);
+
   // Count query
   const countQuery = `
     SELECT COUNT(*) as total
@@ -138,7 +144,7 @@ const getAllPosts = async (
     values
   );
   const total = parseInt(countResult.rows[0].total, 10);
-  console.log(sortBy, 'sortBy', sortOrder, 'sortOrder');
+
   // Determine ORDER BY clause
   let orderByClause = '';
   if (sortBy === 'votes') {
@@ -298,7 +304,7 @@ const updatePost = async (
   id: string,
   updateData: TUpdatePost,
   imageFile: TImageFile | undefined,
-  userId: string
+  user: JwtPayload
 ): Promise<DbPostWithDetails> => {
   // First, check if post exists and user owns it
   const checkQuery = `
@@ -313,7 +319,10 @@ const updatePost = async (
     throw new AppError(httpStatus.NOT_FOUND, 'Post not found');
   }
 
-  if (post.authorId !== userId) {
+  const isOwner = post.authorId === user.id;
+  const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+
+  if (!isOwner && !isAdmin) {
     throw new AppError(
       httpStatus.FORBIDDEN,
       'You are not authorized to update this post'
@@ -361,6 +370,13 @@ const updatePost = async (
     paramIndex++;
   }
 
+  // Allow admin to update post status
+  if (updateData.status !== undefined && isAdmin) {
+    updateFields.push(`status = $${paramIndex}`);
+    values.push(updateData.status);
+    paramIndex++;
+  }
+
   if (imageFile) {
     updateFields.push(`image = $${paramIndex}`);
     values.push(imageFile.path);
@@ -401,7 +417,7 @@ const updatePost = async (
 
 const deletePost = async (
   id: string,
-  userId: string
+  user: JwtPayload
 ): Promise<{ message: string }> => {
   // Check if post exists and user owns it
   const checkQuery = `
@@ -416,10 +432,13 @@ const deletePost = async (
     throw new AppError(httpStatus.NOT_FOUND, 'Post not found');
   }
 
-  if (post.authorId !== userId) {
+  const isOwner = post.authorId === user.id;
+  const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+
+  if (!isOwner && !isAdmin) {
     throw new AppError(
       httpStatus.FORBIDDEN,
-      'You are not authorized to delete this post'
+      'You are not authorized to update this post'
     );
   }
 

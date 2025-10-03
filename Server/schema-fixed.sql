@@ -6,8 +6,10 @@ CREATE TYPE "VoteType" AS ENUM ('UP', 'DOWN');
 CREATE TYPE "PostStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
 
 CREATE TYPE "UserRole" AS ENUM ('USER', 'ADMIN', 'SUPER_ADMIN');
+DROP TYPE IF EXISTS "UserStatus" CASCADE;
+CREATE TYPE "UserStatus" AS ENUM ('ACTIVE', 'BLOCKED', 'DELETED');
 
-CREATE TYPE "UserStatus" AS ENUM ('ACTIVE', 'BLOCKED');
+ALTER TABLE "users" ADD COLUMN "status" "UserStatus" DEFAULT 'ACTIVE' NOT NULL
 
 -- Table: users (must be created first due to foreign keys)
 CREATE TABLE
@@ -114,3 +116,24 @@ CREATE TABLE
     );
 
 CREATE UNIQUE INDEX IF NOT EXISTS comment_votes_userId_commentId_key ON comment_votes USING btree ("userId", "commentId");
+
+CREATE TABLE
+    IF NOT EXISTS division (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        bn_name VARCHAR(100),
+        url VARCHAR(255)
+    );
+
+-- Table: district (Bangladesh districts)
+CREATE TABLE
+    IF NOT EXISTS district (
+        id SERIAL PRIMARY KEY,
+        division_id INT NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        bn_name VARCHAR(100),
+        lat DECIMAL(10, 7),
+        lon DECIMAL(10, 7),
+        url VARCHAR(255),
+        CONSTRAINT fk_division FOREIGN KEY (division_id) REFERENCES division (id) ON DELETE CASCADE
+    );

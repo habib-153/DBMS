@@ -17,6 +17,28 @@ export interface DbUser extends Record<string, unknown> {
   updatedAt: Date;
 }
 
+export interface DbDivision extends Record<string, unknown> {
+  id: number;
+  name: string;
+  bn_name?: string;
+  url?: string;
+}
+
+export interface DbDistrict extends Record<string, unknown> {
+  id: number;
+  division_id: number;
+  name: string;
+  bn_name?: string;
+  lat?: number;
+  lon?: number;
+  url?: string;
+}
+
+export interface DbDistrictWithDivision extends DbDistrict {
+  divisionName?: string;
+  divisionBnName?: string;
+}
+
 export interface DbPost extends Record<string, unknown> {
   id: string;
   title: string;

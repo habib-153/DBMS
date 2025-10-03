@@ -28,6 +28,7 @@ export const updateAccessTokenInCookies = (updatedUser: IUser) => {
         role: updatedUser.role,
         phone: updatedUser.phone,
         status: updatedUser.status,
+        profilePhoto: updatedUser?.profilePhoto,
       },
       secret,
       { expiresIn: expiresIn } // Ensure `expiresIn` is valid here

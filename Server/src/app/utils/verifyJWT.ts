@@ -11,6 +11,7 @@ export const createToken = (
     phone: string;
     role: 'USER' | 'ADMIN' | 'SUPER_ADMIN';
     status: 'ACTIVE' | 'BLOCKED' | 'DELETED';
+    profilePhoto?: string;
   },
   secret: string,
   expiresIn: string

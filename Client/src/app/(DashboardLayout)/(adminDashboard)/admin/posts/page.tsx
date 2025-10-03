@@ -1,24 +1,24 @@
 "use client";
 
-import UserManagementTable from "@/src/components/modules/dashboard/UserManagementTable";
+import PostManagementTable from "@/src/components/modules/dashboard/PostManagementTable";
 
-const UserManagementPage = () => {
+const PostManagementPage = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold bg-gradient-to-r from-[#a50034] to-pink-600 bg-clip-text text-transparent">
-          User Management
+          Post Management
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">
-          Manage user accounts, roles, and permissions
+          Review, approve, reject, and manage all posts
         </p>
       </div>
 
-      {/* User Management Table */}
-      <UserManagementTable />
+      {/* Post Management Table */}
+      <PostManagementTable />
     </div>
   );
 };
 
-export default UserManagementPage;
+export default PostManagementPage;

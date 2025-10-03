@@ -60,18 +60,23 @@ export default function NavbarDropdown({ user }: IProps) {
             <p className="font-semibold">Signed in as</p>
             <p className="font-semibold">{user.email}</p>
           </DropdownItem>
-          <DropdownItem key='my-profile' onClick={() => handleNavigation("/profile")}>
+          <DropdownItem
+            key="my-profile"
+            onClick={() => handleNavigation("/profile")}
+          >
             My Profile
           </DropdownItem>
-          <DropdownItem key='dashboard'
-            onClick={() =>
-              handleNavigation(
-                user?.role === "ADMIN" ? "/admin" : "/user"
-              )
-            }
-          >
-            Dashboard
-          </DropdownItem>
+          {user?.role === "ADMIN" || user?.role === "SUPER_ADMIN" ? (
+            <DropdownItem
+              key="dashboard"
+              onClick={() =>
+                handleNavigation("/admin" )
+              }
+            >
+              Dashboard
+            </DropdownItem>
+          ) : null}
+
           <DropdownItem
             key="logout"
             color="danger"

@@ -4,6 +4,7 @@ import { UserRoutes } from '../modules/User/user.route';
 import { PostRoutes } from '../modules/Post/post.route';
 import { CommentRoutes } from '../modules/Comment/comment.route';
 import { FollowRoutes } from '../modules/Follow/follow.route';
+import { AdminRoutes } from '../modules/Admin/admin.route';
 import auth from '../middlewares/auth';
 import { USER_ROLE } from '../modules/User/user.constant';
 import { UserController } from '../modules/User/user.controller';
@@ -32,6 +33,10 @@ const moduleRoutes = [
   {
     path: '/follows',
     route: FollowRoutes,
+  },
+  {
+    path: '/admin',
+    route: AdminRoutes,
   },
 ];
 

@@ -12,6 +12,7 @@ import {
   getSingleUser,
   unFollowUser,
   updateUserRole,
+  updateUserStatus,
   getFollowers,
   getFollowing,
   getFollowStats,
@@ -22,7 +23,6 @@ export const useGetAllUsers = (query?: string) => {
   const { data, refetch, isLoading } = useQuery({
     queryKey: query ? ["users", query] : ["users"],
     queryFn: async () => await getAllUsers(query || ""),
-    refetchInterval: 2000,
   });
 
   return { data, refetch, isLoading };
@@ -115,6 +115,19 @@ export const useUpdateUserRole = () => {
         loading: "Updating User Role...",
         success: "User Role updated successfully!",
         error: "Error when updating the user role.",
+      });
+    },
+  });
+};
+
+export const useUpdateUserStatus = () => {
+  return useMutation<any, Error, { payload: any; id: string }>({
+    mutationKey: ["UPDATE_USER_STATUS"],
+    mutationFn: async ({ payload, id }) => {
+      return toast.promise(updateUserStatus(id, payload), {
+        loading: "Updating User Status...",
+        success: "User Status updated successfully!",
+        error: "Error when updating the user status.",
       });
     },
   });

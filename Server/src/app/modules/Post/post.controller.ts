@@ -27,7 +27,7 @@ const createPost = catchAsync(async (req, res) => {
 });
 
 const getAllPost = catchAsync(async (req, res) => {
-  const result = await PostService.getAllPosts(req.query);
+  const result = await PostService.getAllPosts(req.query, req.user);
 
   sendResponse(res, {
     success: true,
@@ -57,7 +57,7 @@ const updatePost = catchAsync(async (req, res) => {
     id,
     req.body,
     req.file as TImageFile,
-    req.user.id
+    req.user
   );
 
   sendResponse(res, {
@@ -70,7 +70,7 @@ const updatePost = catchAsync(async (req, res) => {
 
 const deletePost = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await PostService.deletePost(id, req.user.id);
+  const result = await PostService.deletePost(id, req.user);
 
   sendResponse(res, {
     success: true,

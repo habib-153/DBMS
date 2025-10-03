@@ -19,7 +19,7 @@ import { useRouter } from "next/navigation";
 
 import { IUser } from "@/src/types";
 import { IPost } from "@/src/types/post.types";
-import { useGetAllPosts } from "@/src/hooks/post.hook";
+import { useGetAllPosts, useDeletePost, useUpdatePost } from "@/src/hooks/post.hook";
 import envConfig from "@/src/config/envConfig";
 import VerifyModal from "@/src/components/UI/modal/ProfileVerify/ProfileVerify";
 import UpdateProfileModal from "@/src/components/UI/modal/ProfileVerify/UpdateProfileModal";
@@ -27,15 +27,22 @@ import { useFollowUser, useUnfollowUser } from "@/src/hooks/user.hook";
 import ChangePassword from "@/src/components/UI/modal/ProfileVerify/ChangePassword";
 import { PostCard } from "@/src/components/modules/Posts";
 import { transformPostsData } from "@/src/utils/transformPostData";
+import DeletePostModal from "@/src/components/UI/modal/DeletePostModal";
+import EditPostModal from "@/src/components/UI/modal/EditPostModal";
 
 const ProfilePage = ({ user }: { user: IUser }) => {
   const router = useRouter();
   const [openEditProfileModal, setOpenEditProfileModal] = useState(false);
   const [openChangePasswordModal, setOpenChangePasswordModal] = useState(false);
   const [openVerifyProfileModal, setOpenVerifyProfileModal] = useState(false);
+  const [openDeletePostModal, setOpenDeletePostModal] = useState(false);
+  const [openEditPostModal, setOpenEditPostModal] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<IPost | null>(null);
   const [activeTab, setActiveTab] = useState("posts");
   const { mutate: followUser, isPending: isFollowing } = useFollowUser();
   const { mutate: unFollowUser, isPending: isUnfollowing } = useUnfollowUser();
+  const { mutate: deletePost, isPending: isDeleting } = useDeletePost();
+  const { mutate: updatePost, isPending: isUpdating } = useUpdatePost();
 
   const {
     name,
@@ -47,13 +54,12 @@ const ProfilePage = ({ user }: { user: IUser }) => {
     following,
     totalUpVotes,
   } = user as IUser;
-  console.log("user data in profile page:", user);
 
   const apiUrl = `${envConfig.baseApi}/posts?${new URLSearchParams({
     ...{ authorEmail: email },
   }).toString()}`;
 
-  const { data: postData, isLoading: isLoadingPosts } = useGetAllPosts(apiUrl);
+  const { data: postData, isLoading: isLoadingPosts, refetch: refetchPosts } = useGetAllPosts(apiUrl);
 
   // Transform backend data to match frontend structure
   const posts = postData?.data ? transformPostsData(postData.data) : [];
@@ -72,6 +78,48 @@ const ProfilePage = ({ user }: { user: IUser }) => {
 
   const handleUserClick = (userId: string) => {
     router.push(`/profile/${userId}`);
+  };
+
+  const handleEditPost = (post: IPost) => {
+    setSelectedPost(post);
+    setOpenEditPostModal(true);
+  };
+
+  const handleDeletePost = (postId: string) => {
+    const post = posts.find((p: IPost) => p.id === postId);
+
+    setSelectedPost(post || null);
+    setOpenDeletePostModal(true);
+  };
+
+  const confirmDeletePost = () => {
+    if (selectedPost) {
+      deletePost(
+        { id: selectedPost.id },
+        {
+          onSuccess: () => {
+            refetchPosts();
+            setOpenDeletePostModal(false);
+            setSelectedPost(null);
+          },
+        }
+      );
+    }
+  };
+
+  const handleUpdatePost = (formData: FormData) => {
+    if (selectedPost) {
+      updatePost(
+        { postData: formData, id: selectedPost.id },
+        {
+          onSuccess: () => {
+            refetchPosts();
+            setOpenEditPostModal(false);
+            setSelectedPost(null);
+          },
+        }
+      );
+    }
   };
 
   return (
@@ -236,9 +284,12 @@ const ProfilePage = ({ user }: { user: IUser }) => {
                 {posts.map((post: IPost, index: number) => (
                   <PostCard
                     key={post.id || index}
+                    showActions
                     isVoting={false}
                     post={post}
                     userId={user?.id}
+                    onDelete={handleDeletePost}
+                    onEdit={handleEditPost}
                     onVote={() => Promise.resolve()}
                   />
                 ))}
@@ -435,6 +486,24 @@ const ProfilePage = ({ user }: { user: IUser }) => {
         <VerifyModal
           isOpen={openVerifyProfileModal}
           onOpenChange={setOpenVerifyProfileModal}
+        />
+      )}
+      {openDeletePostModal && selectedPost && (
+        <DeletePostModal
+          isDeleting={isDeleting}
+          isOpen={openDeletePostModal}
+          postTitle={selectedPost.title}
+          onConfirm={confirmDeletePost}
+          onOpenChange={setOpenDeletePostModal}
+        />
+      )}
+      {openEditPostModal && selectedPost && (
+        <EditPostModal
+          isOpen={openEditPostModal}
+          isUpdating={isUpdating}
+          post={selectedPost}
+          onOpenChange={setOpenEditPostModal}
+          onSubmit={handleUpdatePost}
         />
       )}
     </div>

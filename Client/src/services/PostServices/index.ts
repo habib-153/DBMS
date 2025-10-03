@@ -25,15 +25,23 @@ export const createPost = async (formData: FormData): Promise<any> => {
 };
 
 export const getAllPosts = async (apiUrl: string) => {
-  const res = await fetch(apiUrl, {
-    next: {
-      tags: ["posts"],
-    },
-  });
+  try {
+    // Extract the path from the full URL since axiosInstance has baseURL configured
+    const url = new URL(apiUrl);
+    const pathWithQuery = url.pathname.replace('/api/v1', '') + url.search;
 
-  const data = await res.json();
+    const { data } = await axiosInstance.get(pathWithQuery);
 
-  return data;
+    return data;
+  } catch (error: any) {
+    const errorMessage =
+      error?.response?.data?.message ||
+      error?.response?.data?.errorSources?.[0]?.message ||
+      error?.message ||
+      "Failed to fetch posts";
+
+    throw new Error(errorMessage);
+  }
 };
 
 export const getMyPosts = async () => {

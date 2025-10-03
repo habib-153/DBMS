@@ -8,6 +8,8 @@ import pick from '../../../shared/pick';
 import { FollowService } from '../Follow/follow.service';
 
 const getAllUsers = catchAsync(async (req: Request, res: Response) => {
+  console.log('Query params:', req.query); // Debug log
+
   const filters = pick(req.query, userSearchableFields);
   const paginationOptions = pick(req.query, [
     'limit',
@@ -16,7 +18,9 @@ const getAllUsers = catchAsync(async (req: Request, res: Response) => {
     'sortOrder',
   ]);
 
-  // Combine filters and pagination for raw service
+  console.log('Filters:', filters); 
+  console.log('Pagination:', paginationOptions);
+
   const queryParams = { ...filters, ...paginationOptions };
   const result = await UserService.getAllUsers(queryParams);
 
@@ -32,7 +36,7 @@ const getAllUsers = catchAsync(async (req: Request, res: Response) => {
 const getUserById = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await UserService.getSingleUser(id);
-console.log(id)
+
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
@@ -81,7 +85,7 @@ const deleteUser = catchAsync(async (req: Request, res: Response) => {
 const getMyProfile = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.id; 
   const result = await UserService.getSingleUser(userId);
-console.log(userId)
+
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,

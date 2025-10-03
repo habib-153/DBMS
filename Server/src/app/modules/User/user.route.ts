@@ -16,9 +16,8 @@ export const UserRoutes = router;
 // router.post('/send-otp', UserController.sendOTPController);
 // router.post('/verify-otp', UserController.verifyOTPController);
 
-router.get('/', auth(USER_ROLE.ADMIN), UserController.getAllUsers);
+router.get('/', auth(USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN), UserController.getAllUsers);
 
-// Follow routes integrated with user routes - MUST be before /:id routes
 router.post(
   '/follow/:followedId',
   auth(USER_ROLE.USER, USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN),
@@ -33,7 +32,7 @@ router.delete(
 router.get('/:id', UserController.getUserById);
 router.put(
   '/:id',
-  auth(USER_ROLE.ADMIN, USER_ROLE.USER),
+  auth(USER_ROLE.ADMIN, USER_ROLE.USER, USER_ROLE.SUPER_ADMIN),
   UserController.updateUser
 );
-router.delete('/:id', auth(USER_ROLE.ADMIN), UserController.deleteUser);
+router.delete('/:id', auth(USER_ROLE.ADMIN, USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN), UserController.deleteUser);

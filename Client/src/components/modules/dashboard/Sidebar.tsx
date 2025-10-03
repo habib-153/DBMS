@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import { Button } from "@heroui/button";
 import { Divider } from "@heroui/divider";
@@ -8,6 +7,7 @@ import {
   ContactRound,
   Menu,
   LogOut,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
@@ -49,14 +49,13 @@ const commonLinks = [
 const Sidebar = ({ specificLinks, title }: SidebarProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const { setUser, setIsLoading: userLoading } = useUser();
+  const { setIsLoading: userLoading } = useUser();
   const toggleSidebar = () => setIsOpen(!isOpen);
   const router = useRouter();
   const pathname = usePathname();
 
   const handleLogout = () => {
     logout();
-    //setUser(null);
     userLoading(true);
 
     if (protectedRoutes.some((route) => pathname.match(route))) {
@@ -86,72 +85,127 @@ const Sidebar = ({ specificLinks, title }: SidebarProps) => {
     };
   }, [isOpen]);
 
+  const isLinkActive = (href: string) => {
+    return pathname === href;
+  };
+
   return (
     <>
-      <div className="relative">
+      {/* Mobile Menu Button */}
+      <Button
+        isIconOnly
+        className="fixed top-4 left-4 z-50 lg:hidden bg-[#a50034] text-white"
+        onClick={toggleSidebar}
+      >
+        <Menu size={24} />
+      </Button>
+
+      {/* Overlay for mobile */}
+      {isOpen && (
+        <div
+          aria-label="Close sidebar"
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          role="button"
+          tabIndex={0}
+          onClick={() => setIsOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setIsOpen(false);
+            }
+          }}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div
+        ref={sidebarRef}
+        className={`fixed top-0 left-0 h-full w-64 bg-white dark:bg-gray-900 border-r-2 border-gray-200 dark:border-gray-700 z-50 transform ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:relative flex flex-col`}
+      >
+        {/* Close button for mobile */}
         <Button
-          className="absolute top-0 left-0 z-10 lg:hidden p-2 m-2 light:text-gray-600 light:hover:text-gray-800"
-          onClick={toggleSidebar}
+          isIconOnly
+          className="absolute top-4 right-4 lg:hidden"
+          variant="light"
+          onClick={() => setIsOpen(false)}
         >
-          <Menu size={28} />
+          <X size={20} />
         </Button>
 
-        {/* Sidebar Drawer */}
-        <div
-          ref={sidebarRef}
-          className={`fixed top-0 left-0 h-full w-52 md:w-72 light:bg-gray-200 dark:bg-gray-900 z-50 transform ${
-            isOpen ? "translate-x-0" : "-translate-x-full"
-          } transition-transform duration-300 lg:translate-x-0 lg:relative lg:flex p-4 flex flex-col`}
-        >
-          <div className="w-full space-y-3 flex-grow">
-            <Link href={"/"}>
-              <div className="mb-6 text-center">
-                <h2 className="text-xl font-bold light:text-gray-600 light:hover:bg-gray-100 rounded-lg px-3 py-2">
-                  Warden
-                </h2>
-              </div>
-            </Link>
-            <Divider />
-            <div>
-              <nav className="space-y-1">
-                {specificLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    className="flex items-center gap-2 rounded-lg px-3 py-2 light:text-gray-600 light:hover:bg-gray-100"
-                    href={link.href}
-                  >
-                    {link.icon}
-                    <span>{link.label}</span>
-                  </Link>
-                ))}
-              </nav>
+        <div className="flex-1 flex flex-col p-4 overflow-y-auto">
+          {/* Logo/Title */}
+          <Link href="/" onClick={() => setIsOpen(false)}>
+            <div className="mb-6 text-center py-4">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-[#a50034] to-pink-600 bg-clip-text text-transparent">
+                {title || "Warden"}
+              </h2>
             </div>
-            <Divider />
-            <div>
-              <nav className="space-y-1">
-                {commonLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    className="flex items-center gap-2 rounded-lg px-3 py-2 light:text-gray-600 light:hover:bg-gray-100"
-                    href={link.href}
-                  >
-                    {link.icon}
-                    <span>{link.label}</span>
-                  </Link>
-                ))}
-              </nav>
-            </div>
-            <Divider className="" />
-            <div className="cursor-pointer">
-              <button
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 light:text-gray-600 light:hover:bg-gray-100"
-                onClick={handleLogout}
-              >
-                <LogOut />
-                <span>Logout</span>
-              </button>
-            </div>
+          </Link>
+
+          <Divider className="mb-4" />
+
+          {/* Specific Links (Dashboard Links) */}
+          <div className="mb-4">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2 px-3">
+              Dashboard
+            </p>
+            <nav className="space-y-1">
+              {specificLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-3 transition-all ${
+                    isLinkActive(link.href)
+                      ? "bg-[#a50034] text-white shadow-lg"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  }`}
+                  href={link.href}
+                  onClick={() => setIsOpen(false)}
+                >
+                  {link.icon}
+                  <span className="font-medium">{link.label}</span>
+                </Link>
+              ))}
+            </nav>
           </div>
+
+          <Divider className="my-4" />
+
+          {/* Common Links */}
+          <div className="mb-4">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2 px-3">
+              Navigation
+            </p>
+            <nav className="space-y-1">
+              {commonLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-3 transition-all ${
+                    isLinkActive(link.href)
+                      ? "bg-[#a50034] text-white shadow-lg"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  }`}
+                  href={link.href}
+                  onClick={() => setIsOpen(false)}
+                >
+                  {link.icon}
+                  <span className="font-medium">{link.label}</span>
+                </Link>
+              ))}
+            </nav>
+          </div>
+
+          <Divider className="my-4" />
+
+          {/* Logout Button */}
+          <button
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-all font-medium"
+            onClick={handleLogout}
+          >
+            <LogOut size={18} />
+            <span>Logout</span>
+          </button>
         </div>
       </div>
     </>
