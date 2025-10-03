@@ -52,8 +52,22 @@ export interface DbPost extends Record<string, unknown> {
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   isDeleted: boolean;
   authorId: string;
+  verificationScore: number;
+  reportCount: number;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface DbPostReport extends Record<string, unknown> {
+  id: string;
+  postId: string;
+  userId: string;
+  reason: string;
+  description?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewedBy?: string;
+  reviewedAt?: Date;
+  createdAt: Date;
 }
 
 export interface DbPostVote extends Record<string, unknown> {
@@ -104,6 +118,17 @@ export interface DbPostWithAuthor extends DbPost {
 export interface DbPostWithDetails extends DbPostWithAuthor {
   votes?: DbPostVote[];
   comments?: DbComment[];
+  reports?: DbPostReport[];
+}
+
+export interface DbPostReportWithUser extends DbPostReport {
+  userName: string;
+  userEmail: string;
+  userProfilePhoto?: string;
+  reviewerName?: string;
+  reviewerEmail?: string;
+  postTitle?: string;
+  postVerificationScore?: number;
 }
 
 // Pagination result type

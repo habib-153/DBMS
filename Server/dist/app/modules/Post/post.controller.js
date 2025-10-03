@@ -111,6 +111,42 @@ const removePostDownvote = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(
         data: result,
     });
 }));
+const reportPost = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield post_service_raw_1.PostService.reportPost(req.params.postId, req.user.id, req.body);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.CREATED,
+        message: result.message,
+        data: { verificationScore: result.verificationScore },
+    });
+}));
+const getPostReports = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield post_service_raw_1.PostService.getPostReports(req.params.postId);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: 'Post reports retrieved successfully',
+        data: result,
+    });
+}));
+const getAllPendingReports = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield post_service_raw_1.PostService.getAllPendingReports();
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: 'Pending reports retrieved successfully',
+        data: result,
+    });
+}));
+const reviewReport = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield post_service_raw_1.PostService.reviewReport(req.params.reportId, req.user.id, req.body.action);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: result.message,
+        data: { verificationScore: result.verificationScore },
+    });
+}));
 exports.PostControllers = {
     createPost,
     getAllPost,
@@ -121,4 +157,8 @@ exports.PostControllers = {
     addPostDownvote,
     removePostUpvote,
     removePostDownvote,
+    reportPost,
+    getPostReports,
+    getAllPendingReports,
+    reviewReport,
 };

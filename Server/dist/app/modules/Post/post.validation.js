@@ -31,7 +31,24 @@ const updatePostValidationSchema = zod_1.z.object({
             .optional(),
     }),
 });
+const reportPostValidationSchema = zod_1.z.object({
+    body: zod_1.z.object({
+        reason: zod_1.z.string({ required_error: 'Reason is required' }).min(5, {
+            message: 'Reason must be at least 5 characters long',
+        }),
+        description: zod_1.z.string().optional(),
+    }),
+});
+const reviewReportValidationSchema = zod_1.z.object({
+    body: zod_1.z.object({
+        action: zod_1.z.enum(['APPROVE', 'REJECT'], {
+            required_error: 'Action is required',
+        }),
+    }),
+});
 exports.PostValidation = {
     createPostValidationSchema,
     updatePostValidationSchema,
+    reportPostValidationSchema,
+    reviewReportValidationSchema,
 };

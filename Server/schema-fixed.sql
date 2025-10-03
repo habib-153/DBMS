@@ -137,3 +137,57 @@ CREATE TABLE
         url VARCHAR(255),
         CONSTRAINT fk_division FOREIGN KEY (division_id) REFERENCES division (id) ON DELETE CASCADE
     );
+
+
+CREATE TABLE IF NOT EXISTS post_reports (
+    "id" TEXT NOT NULL,
+    "postId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "reason" TEXT NOT NULL,
+    "description" TEXT,
+    "createdAt" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    PRIMARY KEY ("id"),
+    CONSTRAINT post_reports_postId_fkey FOREIGN KEY ("postId") REFERENCES posts ("id") ON DELETE CASCADE,
+    CONSTRAINT post_reports_userId_fkey FOREIGN KEY ("userId") REFERENCES users ("id") ON DELETE CASCADE
+);
+
+-- Ensure one user can only report a post once
+CREATE UNIQUE INDEX IF NOT EXISTS post_reports_userId_postId_key ON post_reports USING btree ("userId", "postId");
+
+-- Add verification score and report count to posts table
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS "verificationScore" DECIMAL(10, 2) DEFAULT 50.0 NOT NULL;
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS "reportCount" INTEGER DEFAULT 0 NOT NULL;
+
+-- Create index for faster queries on verification score
+CREATE INDEX IF NOT EXISTS posts_verificationScore_idx ON posts USING btree ("verificationScore");
+CREATE INDEX IF NOT EXISTS posts_reportCount_idx ON posts USING btree ("reportCount");
+
+DO $$ BEGIN
+    CREATE TYPE "ReportStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- Add status column to post_reports table
+ALTER TABLE post_reports 
+ADD COLUMN IF NOT EXISTS "status" "ReportStatus" DEFAULT 'PENDING' NOT NULL;
+
+-- Add reviewedBy and reviewedAt columns for admin tracking
+ALTER TABLE post_reports 
+ADD COLUMN IF NOT EXISTS "reviewedBy" TEXT,
+ADD COLUMN IF NOT EXISTS "reviewedAt" TIMESTAMP WITHOUT TIME ZONE;
+
+-- Add foreign key constraint for reviewedBy
+DO $$ BEGIN
+    ALTER TABLE post_reports 
+    ADD CONSTRAINT post_reports_reviewedBy_fkey 
+    FOREIGN KEY ("reviewedBy") REFERENCES users ("id") ON DELETE SET NULL;
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- Create index for faster queries on report status
+CREATE INDEX IF NOT EXISTS post_reports_status_idx ON post_reports USING btree ("status");
+
+-- Update existing reports to APPROVED status (migration compatibility)
+UPDATE post_reports SET "status" = 'APPROVED' WHERE "status" = 'PENDING';

@@ -31,7 +31,26 @@ const updatePostValidationSchema = z.object({
   }),
 });
 
+const reportPostValidationSchema = z.object({
+  body: z.object({
+    reason: z.string({ required_error: 'Reason is required' }).min(5, {
+      message: 'Reason must be at least 5 characters long',
+    }),
+    description: z.string().optional(),
+  }),
+});
+
+const reviewReportValidationSchema = z.object({
+  body: z.object({
+    action: z.enum(['APPROVE', 'REJECT'], {
+      required_error: 'Action is required',
+    }),
+  }),
+});
+
 export const PostValidation = {
   createPostValidationSchema,
   updatePostValidationSchema,
+  reportPostValidationSchema,
+  reviewReportValidationSchema,
 };

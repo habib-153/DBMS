@@ -144,6 +144,58 @@ const removePostDownvote = catchAsync(async (req, res) => {
   });
 });
 
+const reportPost = catchAsync(async (req, res) => {
+  const result = await PostService.reportPost(
+    req.params.postId,
+    req.user.id,
+    req.body
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.CREATED,
+    message: result.message,
+    data: { verificationScore: result.verificationScore },
+  });
+});
+
+const getPostReports = catchAsync(async (req, res) => {
+  const result = await PostService.getPostReports(req.params.postId);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Post reports retrieved successfully',
+    data: result,
+  });
+});
+
+const getAllPendingReports = catchAsync(async (req, res) => {
+  const result = await PostService.getAllPendingReports();
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Pending reports retrieved successfully',
+    data: result,
+  });
+});
+
+const reviewReport = catchAsync(async (req, res) => {
+  const result = await PostService.reviewReport(
+    req.params.reportId,
+    req.user.id,
+    req.body.action
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: result.message,
+    data: { verificationScore: result.verificationScore },
+  });
+});
+
 export const PostControllers = {
   createPost,
   getAllPost,
@@ -154,4 +206,8 @@ export const PostControllers = {
   addPostDownvote,
   removePostUpvote,
   removePostDownvote,
+  reportPost,
+  getPostReports,
+  getAllPendingReports,
+  reviewReport,
 };

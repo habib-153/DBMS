@@ -44,3 +44,8 @@ export interface TPostFilterableFields {
   authorId?: string;
   searchTerm?: string;
 }
+
+export interface TReportPost {
+  reason: string;
+  description?: string;
+}

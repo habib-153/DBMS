@@ -74,4 +74,33 @@ router.delete(
   PostControllers.removePostDownvote
 );
 
+// Report routes
+router.post(
+  '/:postId/report',
+  auth('USER', 'ADMIN', 'SUPER_ADMIN'),
+  validateRequest(PostValidation.reportPostValidationSchema),
+  PostControllers.reportPost
+);
+
+router.get(
+  '/:postId/reports',
+  auth('ADMIN', 'SUPER_ADMIN'),
+  PostControllers.getPostReports
+);
+
+// Get all pending reports (Admin only)
+router.get(
+  '/reports/pending',
+  auth('ADMIN', 'SUPER_ADMIN'),
+  PostControllers.getAllPendingReports
+);
+
+// Review report (Approve or Reject) - Admin only
+router.patch(
+  '/reports/:reportId/review',
+  auth('ADMIN', 'SUPER_ADMIN'),
+  validateRequest(PostValidation.reviewReportValidationSchema),
+  PostControllers.reviewReport
+);
+
 export const PostRoutes = router;

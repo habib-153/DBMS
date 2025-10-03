@@ -5,6 +5,7 @@ import { DbComment, DbCommentVote } from '../../interfaces/database.types';
 import { TCreateComment, TUpdateComment } from './comment.interface';
 import database from '../../../shared/database';
 import AppError from '../../errors/AppError';
+import { PostService } from '../Post/post.service.raw';
 
 const generateUuid = (): string =>
   randomBytes(16)
@@ -64,7 +65,14 @@ const addCommentVote = async (
       SELECT * FROM comments WHERE id = $1 AND "isDeleted" = false
     `;
     const commentRes = await client.query<DbComment>(commentQuery, [commentId]);
-    return commentRes.rows[0];
+    const comment = commentRes.rows[0];
+
+    // Recalculate verification score for the post after comment vote
+    if (comment?.postId) {
+      await PostService.calculateVerificationScore(comment.postId);
+    }
+
+    return comment;
   });
 };
 
@@ -88,7 +96,14 @@ const removeCommentVote = async (commentId: string, userId: string) => {
     SELECT * FROM comments WHERE id = $1 AND "isDeleted" = false
   `;
   const result = await database.query<DbComment>(commentQuery, [commentId]);
-  return result.rows[0];
+  const comment = result.rows[0];
+
+  // Recalculate verification score for the post after comment vote removal
+  if (comment?.postId) {
+    await PostService.calculateVerificationScore(comment.postId);
+  }
+
+  return comment;
 };
 
 const removeCommentUpvote = async (commentId: string, userId: string) => {
@@ -131,6 +146,9 @@ export const CommentService = {
         'Failed to create comment'
       );
     }
+
+    // Recalculate verification score for the post after comment is added
+    await PostService.calculateVerificationScore(commentData.postId);
 
     return createdComment;
   },

@@ -9,9 +9,11 @@ import {
   DbPostWithDetails,
   DbPostVote,
   DbComment,
+  DbPostReport,
+  DbPostReportWithUser,
   PaginatedResult,
 } from '../../interfaces/database.types';
-import { TCreatePost, TUpdatePost } from './post.interface';
+import { TCreatePost, TUpdatePost, TReportPost } from './post.interface';
 import { TUser } from '../User/user.interface';
 import { TImageFile } from '../../interfaces/image.interface';
 import { JwtPayload } from 'jsonwebtoken';
@@ -119,14 +121,14 @@ const getAllPosts = async (
     values.push(filterData.status);
     paramIndex++;
   }
-  console.log('User in getAllPosts:', user);
-   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
-   const isViewingOwnPosts = authorEmail && user?.email === authorEmail;
 
-   if (!isAdmin && !isViewingOwnPosts && !filterData.status) {
-     // Regular users only see APPROVED posts 
-     conditions.push(`p.status = 'APPROVED'`);
-   }
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+  const isViewingOwnPosts = authorEmail && user?.email === authorEmail;
+
+  if (!isAdmin && !isViewingOwnPosts && !filterData.status) {
+    // Regular users only see APPROVED posts
+    conditions.push(`p.status = 'APPROVED'`);
+  }
 
   const whereClause =
     conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -283,6 +285,24 @@ const getSinglePost = async (id: string): Promise<DbPostWithDetails> => {
     DbComment & { authorName: string; authorProfilePhoto?: string }
   >(commentsQuery, [id]);
 
+  // Get reports for this post
+  const reportsQuery = `
+    SELECT 
+      pr.*,
+      u.name as "userName",
+      u.email as "userEmail",
+      u."profilePhoto" as "userProfilePhoto"
+    FROM post_reports pr
+    INNER JOIN users u ON pr."userId" = u.id
+    WHERE pr."postId" = $1
+    ORDER BY pr."createdAt" DESC
+  `;
+
+  const reportsResult = await database.query<DbPostReportWithUser>(
+    reportsQuery,
+    [id]
+  );
+
   // Calculate vote counts
   const upVotes = votesResult.rows.filter((vote) => vote.type === 'UP').length;
   const downVotes = votesResult.rows.filter(
@@ -297,6 +317,7 @@ const getSinglePost = async (id: string): Promise<DbPostWithDetails> => {
     commentCount: commentsResult.rows.length,
     votes: votesResult.rows,
     comments: commentsResult.rows,
+    reports: reportsResult.rows,
   };
 };
 
@@ -505,6 +526,9 @@ const addPostVote = async (
       );
     }
 
+    // Recalculate verification score after vote change
+    await calculateVerificationScore(postId);
+
     // Return updated post details
     return await getSinglePost(postId);
   });
@@ -532,11 +556,306 @@ const removePostVote = async (
 };
 
 const removePostUpvote = async (postId: string, user: TUser) => {
-  return await removePostVote(postId, user.id);
+  const result = await removePostVote(postId, user.id);
+  // Recalculate verification score after vote removal
+  await calculateVerificationScore(postId);
+  return result;
 };
 
 const removePostDownvote = async (postId: string, user: TUser) => {
-  return await removePostVote(postId, user.id);
+  const result = await removePostVote(postId, user.id);
+  // Recalculate verification score after vote removal
+  await calculateVerificationScore(postId);
+  return result;
+};
+
+// Verification Score Calculation
+// Formula: Base(50) + (PostUpvotes * 2) - (PostDownvotes * 1) + (Comments * 1) + (CommentUpvotes * 0.5) - (CommentDownvotes * 0.25) - (Reports * 5)
+const calculateVerificationScore = async (
+  postId: string,
+  transactionClient?: PoolClient
+): Promise<number> => {
+  const executeQuery = async (client: PoolClient) => {
+    // Get post votes
+    const postVotesQuery = `
+      SELECT 
+        COUNT(CASE WHEN type = 'UP' THEN 1 END) as up_votes,
+        COUNT(CASE WHEN type = 'DOWN' THEN 1 END) as down_votes
+      FROM post_votes
+      WHERE "postId" = $1
+    `;
+    const postVotesResult = await client.query<{
+      up_votes: string;
+      down_votes: string;
+    }>(postVotesQuery, [postId]);
+    const postUpvotes = parseInt(postVotesResult.rows[0]?.up_votes || '0');
+    const postDownvotes = parseInt(postVotesResult.rows[0]?.down_votes || '0');
+
+    // Get comments count for this post
+    const commentsQuery = `
+      SELECT COUNT(*) as comment_count
+      FROM comments
+      WHERE "postId" = $1 AND "isDeleted" = false
+    `;
+    const commentsResult = await client.query<{ comment_count: string }>(
+      commentsQuery,
+      [postId]
+    );
+    const commentCount = parseInt(commentsResult.rows[0]?.comment_count || '0');
+
+    // Get comment votes for all comments on this post
+    const commentVotesQuery = `
+      SELECT 
+        COUNT(CASE WHEN cv.type = 'UP' THEN 1 END) as comment_up_votes,
+        COUNT(CASE WHEN cv.type = 'DOWN' THEN 1 END) as comment_down_votes
+      FROM comment_votes cv
+      INNER JOIN comments c ON cv."commentId" = c.id
+      WHERE c."postId" = $1 AND c."isDeleted" = false
+    `;
+    const commentVotesResult = await client.query<{
+      comment_up_votes: string;
+      comment_down_votes: string;
+    }>(commentVotesQuery, [postId]);
+    const commentUpvotes = parseInt(
+      commentVotesResult.rows[0]?.comment_up_votes || '0'
+    );
+    const commentDownvotes = parseInt(
+      commentVotesResult.rows[0]?.comment_down_votes || '0'
+    );
+
+    // Get report count (only APPROVED reports)
+    const reportsQuery = `
+      SELECT COUNT(*) as report_count
+      FROM post_reports
+      WHERE "postId" = $1 AND "status" = 'APPROVED'
+    `;
+    const reportsResult = await client.query<{ report_count: string }>(
+      reportsQuery,
+      [postId]
+    );
+    const reportCount = parseInt(reportsResult.rows[0]?.report_count || '0');
+
+    // Calculate verification score
+    const baseScore = 50;
+    const postUpvoteScore = postUpvotes * 2;
+    const postDownvoteScore = postDownvotes * -1;
+    const commentScore = commentCount * 1;
+    const commentUpvoteScore = commentUpvotes * 0.5;
+    const commentDownvoteScore = commentDownvotes * -0.25;
+    const reportScore = reportCount * -5;
+
+    const verificationScore =
+      baseScore +
+      postUpvoteScore +
+      postDownvoteScore +
+      commentScore +
+      commentUpvoteScore +
+      commentDownvoteScore +
+      reportScore;
+
+    // Update post with new verification score and report count
+    const updateQuery = `
+      UPDATE posts
+      SET "verificationScore" = $1, "reportCount" = $2, "updatedAt" = $3
+      WHERE id = $4
+    `;
+    await client.query(updateQuery, [
+      verificationScore,
+      reportCount,
+      new Date(),
+      postId,
+    ]);
+
+    // Auto-remove post if verification score <= 0 OR report count >= 10
+    if (verificationScore <= 0 || reportCount >= 10) {
+      const deleteQuery = `
+        UPDATE posts
+        SET "isDeleted" = true, "updatedAt" = $1
+        WHERE id = $2
+      `;
+      await client.query(deleteQuery, [new Date(), postId]);
+    }
+
+    return verificationScore;
+  };
+
+  // If transaction client provided, use it; otherwise create new transaction
+  if (transactionClient) {
+    return await executeQuery(transactionClient);
+  } else {
+    return await database.transaction(async (client: PoolClient) => {
+      return await executeQuery(client);
+    });
+  }
+};
+
+// Report Post Feature
+const reportPost = async (
+  postId: string,
+  userId: string,
+  reportData: TReportPost
+): Promise<{ message: string; verificationScore: number }> => {
+  return await database.transaction(async (client: PoolClient) => {
+    // Check if post exists
+    const postQuery = `
+      SELECT id FROM posts WHERE id = $1 AND "isDeleted" = false
+    `;
+    const postResult = await client.query(postQuery, [postId]);
+    if (postResult.rows.length === 0) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Post not found');
+    }
+
+    // Check if user already reported this post
+    const existingReportQuery = `
+      SELECT id FROM post_reports
+      WHERE "postId" = $1 AND "userId" = $2
+    `;
+    const existingReportResult = await client.query(existingReportQuery, [
+      postId,
+      userId,
+    ]);
+
+    if (existingReportResult.rows.length > 0) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'You have already reported this post'
+      );
+    }
+
+    // Create report with PENDING status
+    const reportId = generateUuid();
+    const insertReportQuery = `
+      INSERT INTO post_reports (id, "postId", "userId", reason, description, status, "createdAt")
+      VALUES ($1, $2, $3, $4, $5, 'PENDING', $6)
+      RETURNING *
+    `;
+    await client.query<DbPostReport>(insertReportQuery, [
+      reportId,
+      postId,
+      userId,
+      reportData.reason,
+      reportData.description || null,
+      new Date(),
+    ]);
+
+    // Note: Verification score is NOT recalculated here
+    // It will only update when admin approves the report
+    const currentScoreQuery = `SELECT "verificationScore" FROM posts WHERE id = $1`;
+    const scoreResult = await client.query<{ verificationScore: number }>(
+      currentScoreQuery,
+      [postId]
+    );
+
+    return {
+      message:
+        'Report submitted successfully. It will be reviewed by an admin.',
+      verificationScore: scoreResult.rows[0]?.verificationScore || 50,
+    };
+  });
+};
+
+// Get reports for a post (Admin only)
+const getPostReports = async (
+  postId: string
+): Promise<DbPostReportWithUser[]> => {
+  const query = `
+    SELECT 
+      pr.*,
+      u.name as "userName",
+      u.email as "userEmail",
+      u."profilePhoto" as "userProfilePhoto",
+      reviewer.name as "reviewerName",
+      reviewer.email as "reviewerEmail"
+    FROM post_reports pr
+    INNER JOIN users u ON pr."userId" = u.id
+    LEFT JOIN users reviewer ON pr."reviewedBy" = reviewer.id
+    WHERE pr."postId" = $1
+    ORDER BY 
+      CASE pr.status 
+        WHEN 'PENDING' THEN 1 
+        WHEN 'APPROVED' THEN 2 
+        WHEN 'REJECTED' THEN 3 
+      END,
+      pr."createdAt" DESC
+  `;
+
+  const result = await database.query<DbPostReportWithUser>(query, [postId]);
+  return result.rows;
+};
+
+// Get all pending reports (Admin only)
+const getAllPendingReports = async (): Promise<DbPostReportWithUser[]> => {
+  const query = `
+    SELECT 
+      pr.*,
+      u.name as "userName",
+      u.email as "userEmail",
+      u."profilePhoto" as "userProfilePhoto",
+      p.title as "postTitle",
+      p."verificationScore" as "postVerificationScore"
+    FROM post_reports pr
+    INNER JOIN users u ON pr."userId" = u.id
+    INNER JOIN posts p ON pr."postId" = p.id
+    WHERE pr.status = 'PENDING' AND p."isDeleted" = false
+    ORDER BY pr."createdAt" DESC
+  `;
+
+  const result = await database.query<DbPostReportWithUser>(query);
+  return result.rows;
+};
+
+// Review report (Approve or Reject) - Admin only
+const reviewReport = async (
+  reportId: string,
+  adminId: string,
+  action: 'APPROVE' | 'REJECT'
+): Promise<{ message: string; verificationScore?: number }> => {
+  return await database.transaction(async (client: PoolClient) => {
+    // Get report details
+    const reportQuery = `
+      SELECT * FROM post_reports WHERE id = $1
+    `;
+    const reportResult = await client.query<DbPostReport>(reportQuery, [
+      reportId,
+    ]);
+
+    if (reportResult.rows.length === 0) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Report not found');
+    }
+
+    const report = reportResult.rows[0];
+
+    if (report.status !== 'PENDING') {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Report has already been reviewed'
+      );
+    }
+
+    // Update report status
+    const updateReportQuery = `
+      UPDATE post_reports
+      SET status = $1, "reviewedBy" = $2, "reviewedAt" = $3
+      WHERE id = $4
+    `;
+    await client.query(updateReportQuery, [
+      action === 'APPROVE' ? 'APPROVED' : 'REJECTED',
+      adminId,
+      new Date(),
+      reportId,
+    ]);
+
+    // Recalculate verification score (will count approved reports)
+    // Pass the transaction client so it can see the status update
+    const newScore = await calculateVerificationScore(report.postId, client);
+
+    return {
+      message: `Report ${
+        action === 'APPROVE' ? 'approved' : 'rejected'
+      } successfully`,
+      verificationScore: newScore,
+    };
+  });
 };
 
 export const PostService = {
@@ -550,4 +869,9 @@ export const PostService = {
   removePostUpvote,
   removePostDownvote,
   addPostVote,
+  calculateVerificationScore,
+  reportPost,
+  getPostReports,
+  getAllPendingReports,
+  reviewReport,
 };

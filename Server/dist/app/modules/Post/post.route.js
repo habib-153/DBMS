@@ -33,4 +33,11 @@ router.post('/:postId/upvote', (0, auth_1.default)('USER', 'SUPER_ADMIN', 'ADMIN
 router.post('/:postId/downvote', (0, auth_1.default)(user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.SUPER_ADMIN), post_controller_1.PostControllers.addPostDownvote);
 router.delete('/:postId/upvote', (0, auth_1.default)(user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.SUPER_ADMIN), post_controller_1.PostControllers.removePostUpvote);
 router.delete('/:postId/downvote', (0, auth_1.default)(user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.SUPER_ADMIN), post_controller_1.PostControllers.removePostDownvote);
+// Report routes
+router.post('/:postId/report', (0, auth_1.default)('USER', 'ADMIN', 'SUPER_ADMIN'), (0, validateRequest_1.default)(post_validation_1.PostValidation.reportPostValidationSchema), post_controller_1.PostControllers.reportPost);
+router.get('/:postId/reports', (0, auth_1.default)('ADMIN', 'SUPER_ADMIN'), post_controller_1.PostControllers.getPostReports);
+// Get all pending reports (Admin only)
+router.get('/reports/pending', (0, auth_1.default)('ADMIN', 'SUPER_ADMIN'), post_controller_1.PostControllers.getAllPendingReports);
+// Review report (Approve or Reject) - Admin only
+router.patch('/reports/:reportId/review', (0, auth_1.default)('ADMIN', 'SUPER_ADMIN'), (0, validateRequest_1.default)(post_validation_1.PostValidation.reviewReportValidationSchema), post_controller_1.PostControllers.reviewReport);
 exports.PostRoutes = router;

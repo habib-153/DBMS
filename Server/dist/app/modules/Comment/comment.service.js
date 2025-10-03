@@ -17,6 +17,7 @@ const http_status_1 = __importDefault(require("http-status"));
 const crypto_1 = require("crypto");
 const database_1 = __importDefault(require("../../../shared/database"));
 const AppError_1 = __importDefault(require("../../errors/AppError"));
+const post_service_raw_1 = require("../Post/post.service.raw");
 const generateUuid = () => (0, crypto_1.randomBytes)(16)
     .toString('hex')
     .replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
@@ -57,7 +58,12 @@ const addCommentVote = (commentId, userId, type) => __awaiter(void 0, void 0, vo
       SELECT * FROM comments WHERE id = $1 AND "isDeleted" = false
     `;
         const commentRes = yield client.query(commentQuery, [commentId]);
-        return commentRes.rows[0];
+        const comment = commentRes.rows[0];
+        // Recalculate verification score for the post after comment vote
+        if (comment === null || comment === void 0 ? void 0 : comment.postId) {
+            yield post_service_raw_1.PostService.calculateVerificationScore(comment.postId);
+        }
+        return comment;
     }));
 });
 const addCommentUpvote = (commentId, userId) => __awaiter(void 0, void 0, void 0, function* () {
@@ -76,7 +82,12 @@ const removeCommentVote = (commentId, userId) => __awaiter(void 0, void 0, void 
     SELECT * FROM comments WHERE id = $1 AND "isDeleted" = false
   `;
     const result = yield database_1.default.query(commentQuery, [commentId]);
-    return result.rows[0];
+    const comment = result.rows[0];
+    // Recalculate verification score for the post after comment vote removal
+    if (comment === null || comment === void 0 ? void 0 : comment.postId) {
+        yield post_service_raw_1.PostService.calculateVerificationScore(comment.postId);
+    }
+    return comment;
 });
 const removeCommentUpvote = (commentId, userId) => __awaiter(void 0, void 0, void 0, function* () {
     return yield removeCommentVote(commentId, userId);
@@ -107,6 +118,8 @@ exports.CommentService = {
         if (!createdComment) {
             throw new AppError_1.default(http_status_1.default.INTERNAL_SERVER_ERROR, 'Failed to create comment');
         }
+        // Recalculate verification score for the post after comment is added
+        yield post_service_raw_1.PostService.calculateVerificationScore(commentData.postId);
         return createdComment;
     }),
     updateComment: (id, updateData, userId) => __awaiter(void 0, void 0, void 0, function* () {
