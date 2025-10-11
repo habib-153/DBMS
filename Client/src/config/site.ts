@@ -10,6 +10,10 @@ export const siteConfig = {
       href: "/",
     },
     {
+      label: "Heatmap",
+      href: "/heatmap",
+    },
+    {
       label: "Contact",
       href: "/contact",
     },
@@ -20,12 +24,16 @@ export const siteConfig = {
   ],
   navMenuItems: [
     {
-      label: "About",
-      href: "/about",
-    },
-    {
       label: "NewsFeed",
       href: "/posts",
+    },
+    {
+      label: "Heatmap",
+      href: "/heatmap",
+    },
+    {
+      label: "About",
+      href: "/about",
     },
     {
       label: "Contact",

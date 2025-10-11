@@ -1,0 +1,424 @@
+"use client";
+
+import { useState, useMemo } from "react";
+import { Card, CardBody, CardHeader, Button, Spinner } from "@heroui/react";
+import { MapPin, Layers, Filter } from "lucide-react";
+import Map, { Source, Layer, NavigationControl, FullscreenControl, Popup } from "react-map-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
+
+import {
+  useGetHeatmapPoints,
+  useGetDistrictStats,
+} from "@/src/hooks/heatmap.hook";
+
+// Mapbox token
+const MAPBOX_TOKEN =
+  "pk.eyJ1IjoiaGFiaWIxNTMiLCJhIjoiY21nZXZ1ajN6MDF1czJrc2MwbHQwc2MydSJ9.aSaVggHUcQ_7bGf_0Cz_Jw";
+
+interface HeatmapProps {
+  className?: string;
+}
+
+interface PopupInfo {
+  longitude: number;
+  latitude: number;
+  title: string;
+  district: string;
+  division: string;
+  crimeDate: string;
+  weight: number;
+}
+
+export default function InteractiveHeatmap({ className }: HeatmapProps) {
+  const [viewMode, setViewMode] = useState<"heatmap" | "choropleth">("heatmap");
+  const [showFilters, setShowFilters] = useState(false);
+  const [popupInfo, setPopupInfo] = useState<PopupInfo | null>(null);
+
+  // Fetch data
+  const {
+    data: heatmapData,
+    isLoading: heatmapLoading,
+    error: heatmapError,
+  } = useGetHeatmapPoints();
+  const {
+    data: districtData,
+    isLoading: districtLoading,
+    error: districtError,
+  } = useGetDistrictStats();
+
+  // Debug logging (only log once when data arrives)
+  useEffect(() => {
+    if (heatmapData?.data) {
+      // eslint-disable-next-line no-console
+      console.log("�️ Heatmap data loaded:", heatmapData.data.length, "points");
+    }
+  }, [heatmapData]);
+
+  // Initialize map - Following Mapbox React best practices
+  useEffect(() => {
+    if (map.current) return; // Initialize map only once
+
+    if (!mapContainer.current) {
+      // eslint-disable-next-line no-console
+      console.log("⏳ Container not ready yet");
+
+      return;
+    }
+
+    // eslint-disable-next-line no-console
+    console.log("🚀 Creating map instance...");
+
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: "mapbox://styles/mapbox/dark-v11",
+      center: [90.4125, 23.8103], // Dhaka coordinates
+      zoom: 6.5,
+    });
+
+    // Add navigation controls
+    map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+    map.current.addControl(new mapboxgl.FullscreenControl(), "top-right");
+
+    map.current.on("load", () => {
+      // eslint-disable-next-line no-console
+      console.log("✅ Map loaded successfully!");
+      setMapLoaded(true);
+    });
+
+    map.current.on("error", (e) => {
+      // eslint-disable-next-line no-console
+      console.error("❌ Map error:", e);
+    });
+
+    // Cleanup function
+    return () => {
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+    };
+  }, []); // Empty dependency array - run only once
+
+  // Add heatmap layer when data loads
+  useEffect(() => {
+    if (!map.current || !mapLoaded || !heatmapData?.data || heatmapData.data.length === 0) {
+      return;
+    }
+
+    const points = heatmapData.data;
+
+    // eslint-disable-next-line no-console
+    console.log("🔥 Adding heatmap with", points.length, "crime points");
+
+    // Convert points to GeoJSON
+    const geojson: GeoJSON.FeatureCollection<GeoJSON.Point> = {
+      type: "FeatureCollection",
+      features: points.map((point: any) => ({
+        type: "Feature",
+        properties: {
+          weight: point.weight || 0.5,
+          title: point.title || "Crime Report",
+          district: point.district || "Unknown",
+          division: point.division || "Unknown",
+          crimeDate: point.crimeDate || new Date().toISOString(),
+        },
+        geometry: {
+          type: "Point",
+          coordinates: [point.lng, point.lat],
+        },
+      })),
+    };
+
+    // Remove existing layers if present
+    if (map.current.getLayer("crime-point")) {
+      map.current.removeLayer("crime-point");
+    }
+    if (map.current.getLayer("crime-heat")) {
+      map.current.removeLayer("crime-heat");
+    }
+    if (map.current.getSource("crime-points")) {
+      map.current.removeSource("crime-points");
+    }
+
+    // Add source
+    map.current.addSource("crime-points", {
+      type: "geojson",
+      data: geojson,
+    });
+
+    try {
+      // Add heatmap layer
+      map.current.addLayer({
+        id: "crime-heat",
+        type: "heatmap",
+        source: "crime-points",
+        maxzoom: 15,
+        paint: {
+          // Weight based on crime severity (0-1)
+          "heatmap-weight": [
+            "interpolate",
+            ["linear"],
+            ["get", "weight"],
+            0,
+            0,
+            1,
+            1,
+          ],
+          // Increase intensity as zoom level increases
+          "heatmap-intensity": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            0,
+            1,
+            9,
+            3,
+          ],
+          // Color ramp for heatmap (blue to red)
+          "heatmap-color": [
+            "interpolate",
+            ["linear"],
+            ["heatmap-density"],
+            0,
+            "rgba(33,102,172,0)",
+            0.2,
+            "rgb(103,169,207)",
+            0.4,
+            "rgb(209,229,240)",
+            0.6,
+            "rgb(253,219,199)",
+            0.8,
+            "rgb(239,138,98)",
+            1,
+            "rgb(178,24,43)",
+          ],
+          // Adjust radius by zoom level
+          "heatmap-radius": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            0,
+            4,
+            9,
+            30,
+          ],
+          // Fade out at higher zoom
+          "heatmap-opacity": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            7,
+            1,
+            9,
+            0.5,
+          ],
+        },
+      });
+
+      // Add circle layer for individual points at high zoom
+      map.current.addLayer({
+        id: "crime-point",
+        type: "circle",
+        source: "crime-points",
+        minzoom: 7,
+        paint: {
+          // Size based on weight
+          "circle-radius": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            7,
+            ["interpolate", ["linear"], ["get", "weight"], 0, 1, 1, 4],
+            16,
+            ["interpolate", ["linear"], ["get", "weight"], 0, 5, 1, 50],
+          ],
+          // Color based on weight
+          "circle-color": [
+            "interpolate",
+            ["linear"],
+            ["get", "weight"],
+            0,
+            "#51bbd6",
+            0.3,
+            "#f1f075",
+            0.5,
+            "#f28cb1",
+            0.7,
+            "#f03b20",
+            1,
+            "#bd0026",
+          ],
+          "circle-stroke-color": "white",
+          "circle-stroke-width": 1,
+          "circle-opacity": ["interpolate", ["linear"], ["zoom"], 7, 0, 8, 1],
+        },
+      });
+
+      // Add click handler for popups
+      map.current.on("click", "crime-point", (e) => {
+        if (!e.features || e.features.length === 0) return;
+
+        const feature = e.features[0];
+        const properties = feature.properties;
+
+        if (properties) {
+          new mapboxgl.Popup()
+            .setLngLat((feature.geometry as any).coordinates)
+            .setHTML(
+              `
+            <div class="p-2">
+              <h3 class="font-bold text-sm mb-1">${properties.title}</h3>
+              <p class="text-xs text-gray-600">
+                <strong>District:</strong> ${properties.district}<br/>
+                <strong>Division:</strong> ${properties.division}<br/>
+                <strong>Date:</strong> ${new Date(
+                  properties.crimeDate
+                ).toLocaleDateString()}<br/>
+                <strong>Severity:</strong> ${(properties.weight * 100).toFixed(
+                  0
+                )}%
+              </p>
+            </div>
+          `
+            )
+            .addTo(map.current!);
+        }
+      });
+
+      // Change cursor on hover
+      map.current.on("mouseenter", "crime-point", () => {
+        if (map.current) map.current.getCanvas().style.cursor = "pointer";
+      });
+
+      map.current.on("mouseleave", "crime-point", () => {
+        if (map.current) map.current.getCanvas().style.cursor = "";
+      });
+
+      // eslint-disable-next-line no-console
+      console.log("✅ Heatmap layers added successfully");
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error("❌ Error adding heatmap layers:", error);
+    }
+  }, [mapLoaded, heatmapData, heatmapLoading]);
+
+  // Add district choropleth layer
+  useEffect(() => {
+    if (
+      !map.current ||
+      !mapLoaded ||
+      !districtData?.data ||
+      viewMode !== "choropleth"
+    )
+      return;
+
+    // TODO: Add choropleth layer with district boundaries
+    // This requires Bangladesh district GeoJSON boundaries
+    // You can load from a static file or API
+  }, [mapLoaded, districtData, viewMode]);
+
+  const toggleViewMode = () => {
+    setViewMode((prev) => (prev === "heatmap" ? "choropleth" : "heatmap"));
+  };
+
+  return (
+    <Card className={className}>
+      <CardHeader className="flex justify-between items-center pb-3">
+        <div className="flex items-center gap-2">
+          <MapPin className="text-brand-primary h-5 w-5" />
+          <h3 className="font-semibold text-lg">Crime Heatmap</h3>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            isIconOnly
+            size="sm"
+            variant="flat"
+            onPress={() => setShowFilters(!showFilters)}
+          >
+            <Filter className="h-4 w-4" />
+          </Button>
+          <Button isIconOnly size="sm" variant="flat" onPress={toggleViewMode}>
+            <Layers className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardBody className="pt-0">
+        {/* Debug Info */}
+        <div className="mb-2 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs">
+          <strong>Debug:</strong> Loading: {heatmapLoading ? "Yes" : "No"} |
+          MapLoaded: {mapLoaded ? "Yes" : "No"} | Data:{" "}
+          {heatmapData?.data?.length || 0} points
+        </div>
+
+        {heatmapLoading || districtLoading ? (
+          <div className="flex h-96 items-center justify-center">
+            <Spinner size="lg" />
+            <p className="ml-2">Loading map data...</p>
+          </div>
+        ) : (
+          <>
+            <div
+              ref={mapContainer}
+              className="h-96 w-full rounded-lg min-h-[400px] bg-gray-200 dark:bg-gray-700"
+            />
+
+            {/* Data Info */}
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium text-sm text-gray-700 dark:text-gray-300">
+                  Crime Density
+                </h4>
+                {heatmapData?.data && heatmapData.data.length > 0 && (
+                  <p className="text-xs text-gray-500">
+                    Showing {heatmapData.data.length} crime incidents
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 rounded bg-[#6FA7CF]" />
+                  <span className="text-gray-600 dark:text-gray-400">Low</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 rounded bg-[#FED976]" />
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Medium
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 rounded bg-[#EF8A62]" />
+                  <span className="text-gray-600 dark:text-gray-400">High</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 rounded bg-[#B2182B]" />
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Very High
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Stats */}
+            {heatmapData?.data && (
+              <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                {heatmapData.data.length > 0 ? (
+                  <>Showing {heatmapData.data.length} crime incidents</>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-orange-500 font-medium">
+                      No crime data available
+                    </p>
+                    <p className="text-xs mt-1">
+                      This could be due to: no approved posts, missing district
+                      coordinates, or database connection issues.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </CardBody>
+    </Card>
+  );
+}
