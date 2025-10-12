@@ -13,7 +13,8 @@ export const useAddCommentUpvote = (postId?: string) => {
 
   return useMutation({
     mutationKey: ["ADD_COMMENT_UPVOTE"],
-    mutationFn: async ({ commentId }: { commentId: string }) => {
+    // accept optional userId to match calls from components
+    mutationFn: async ({ commentId, userId }: { commentId: string; userId?: string }) => {
       return toast.promise(addCommentUpvote(commentId), {
         loading: "Upvoting comment...",
         success: "You upvoted the comment",
@@ -78,7 +79,8 @@ export const useAddCommentDownvote = (postId?: string) => {
 
   return useMutation({
     mutationKey: ["ADD_COMMENT_DOWNVOTE"],
-    mutationFn: async ({ commentId }: { commentId: string }) => {
+    // accept optional userId to match calls from components
+    mutationFn: async ({ commentId, userId }: { commentId: string; userId?: string }) => {
       return toast.promise(addCommentDownvote(commentId), {
         loading: "Downvoting comment...",
         success: "You downvoted the comment",
@@ -142,7 +144,8 @@ export const useRemoveCommentUpvote = (postId?: string) => {
 
   return useMutation({
     mutationKey: ["REMOVE_COMMENT_UPVOTE"],
-    mutationFn: async ({ commentId }: { commentId: string }) => {
+    // accept optional userId to match calls from components
+    mutationFn: async ({ commentId, userId }: { commentId: string; userId?: string }) => {
       return toast.promise(removeCommentUpvote(commentId), {
         loading: "Removing upvote...",
         success: "Removed upvote",
@@ -202,7 +205,8 @@ export const useRemoveCommentDownvote = (postId?: string) => {
 
   return useMutation({
     mutationKey: ["REMOVE_COMMENT_DOWNVOTE"],
-    mutationFn: async ({ commentId }: { commentId: string }) => {
+    // accept optional userId to match calls from components
+    mutationFn: async ({ commentId, userId }: { commentId: string; userId?: string }) => {
       return toast.promise(removeCommentDownvote(commentId), {
         loading: "Removing downvote...",
         success: "Removed downvote",

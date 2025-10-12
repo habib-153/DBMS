@@ -27,6 +27,7 @@ async function bootstrap() {
     console.log('🛢 Database connected successfully (With PostgreSQL)');
     await seed();
     server = app.listen(config.port, () => {
+      console.log(config.port)
       console.log(`🚀 Application is running on port ${config.port}`);
     });
   } catch (err) {
