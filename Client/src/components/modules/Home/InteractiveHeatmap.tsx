@@ -244,7 +244,7 @@ export default function InteractiveHeatmap({ className }: HeatmapProps) {
                   zoom: 6.5,
                 }}
                 interactiveLayerIds={["crime-point", "crime-heat"]}
-                mapStyle="mapbox://styles/mapbox/dark-v11"
+                mapStyle="mapbox://styles/mapbox/outdoors-v11"
                 mapboxAccessToken={MAPBOX_TOKEN}
                 style={{ width: "100%", height: "100%" }}
                 onClick={onClick}
