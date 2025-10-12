@@ -13,7 +13,7 @@ const createPost = catchAsync(async (req, res) => {
   }
 
   // Prevent unverified users from creating posts
-  if (!req.user || !req.user.isVerified) {
+  if (!req.user ) {
     throw new AppError(
       httpStatus.FORBIDDEN,
       'Please verify your email before creating posts'

@@ -12,7 +12,7 @@ const router = express.Router();
 
 router.post(
   '/create',
-  auth(USER_ROLE.ADMIN, USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN),
+  auth(USER_ROLE.USER, USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN),
   multerUpload.single('image'),
   //validateImageFileRequest(ImageFilesArrayZodSchema),
   parseBody,
