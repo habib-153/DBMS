@@ -83,10 +83,12 @@ export interface DbComment extends Record<string, unknown> {
   content: string;
   image?: string;
   postId: string;
+  parentId?: string;
   authorId: string;
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
+  children?: DbComment[];
 }
 
 export interface DbCommentVote extends Record<string, unknown> {

@@ -1,8 +1,5 @@
-"use server";
-
-import { getCurrentUser } from "../AuthService";
-
 import axiosInstance from "@/src/libs/AxiosInstance";
+import { getCurrentUser } from "../AuthService";
 
 export const createPost = async (formData: FormData): Promise<any> => {
   try {
@@ -14,11 +11,29 @@ export const createPost = async (formData: FormData): Promise<any> => {
 
     return data;
   } catch (error: any) {
-    const errorMessage =
-      error?.response?.data?.message ||
-      error?.response?.data?.errorSources?.[0]?.message ||
-      error?.message ||
-      "Failed to create post";
+    // Prefer structured server validation messages when available
+    const resp = error?.response?.data;
+    let errorMessage = "Failed to create post";
+
+    if (resp) {
+      if (Array.isArray(resp.errorSources) && resp.errorSources.length > 0) {
+        try {
+          errorMessage = resp.errorSources.map((s: any) => s.message).join("; ");
+        } catch (e) {
+          errorMessage = resp.message || JSON.stringify(resp);
+        }
+      } else if (resp.message) {
+        errorMessage = resp.message;
+      } else {
+        errorMessage = JSON.stringify(resp);
+      }
+    } else {
+      errorMessage = error?.message || errorMessage;
+    }
+
+    // surface the full response on console for debugging
+    // eslint-disable-next-line no-console
+    console.error("createPost error:", error?.response ?? error);
 
     throw new Error(errorMessage);
   }

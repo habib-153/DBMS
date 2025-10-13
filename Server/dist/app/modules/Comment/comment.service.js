@@ -99,16 +99,29 @@ exports.CommentService = {
     createComment: (commentData, authorId) => __awaiter(void 0, void 0, void 0, function* () {
         const commentId = generateUuid();
         const now = new Date();
+        // If parentId is provided, validate the parent exists and belongs to same post
+        if (commentData.parentId) {
+            const parentQuery = `SELECT id, "postId" FROM comments WHERE id = $1 AND "isDeleted" = false`;
+            const parentRes = yield database_1.default.query(parentQuery, [commentData.parentId]);
+            const parent = parentRes.rows[0];
+            if (!parent) {
+                throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Parent comment not found');
+            }
+            if (parent.postId !== commentData.postId) {
+                throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Parent comment does not belong to the same post');
+            }
+        }
         const query = `
-			INSERT INTO comments (id, content, image, "postId", "authorId", "isDeleted", "createdAt", "updatedAt")
-			VALUES ($1, $2, $3, $4, $5, false, $6, $7)
-			RETURNING *
-		`;
+            INSERT INTO comments (id, content, image, "postId", "parentId", "authorId", "isDeleted", "createdAt", "updatedAt")
+            VALUES ($1, $2, $3, $4, $5, $6, false, $7, $8)
+            RETURNING *
+        `;
         const values = [
             commentId,
             commentData.content,
             commentData.image || null,
             commentData.postId,
+            commentData.parentId || null,
             authorId,
             now,
             now,
@@ -216,8 +229,30 @@ exports.CommentService = {
             acc[vote.commentId].push(vote);
             return acc;
         }, {});
-        const commentsWithVotes = comments.map((c) => (Object.assign(Object.assign({}, c), { votes: votesByComment[c.id] || [] })));
-        return commentsWithVotes;
+        // attach votes
+        const commentsWithVotes = comments.map((c) => (Object.assign(Object.assign({}, c), { votes: votesByComment[c.id] || [], children: [] })));
+        // Build nested tree
+        const byId = commentsWithVotes.reduce((acc, c) => {
+            acc[c.id] = c;
+            return acc;
+        }, {});
+        const tree = [];
+        commentsWithVotes.forEach((c) => {
+            if (c.parentId) {
+                const parent = byId[c.parentId];
+                if (parent) {
+                    parent.children.push(c);
+                }
+                else {
+                    // parent missing (shouldn't happen), push as root
+                    tree.push(c);
+                }
+            }
+            else {
+                tree.push(c);
+            }
+        });
+        return tree;
     }),
     addCommentVote: addCommentVote,
     addCommentUpvote: addCommentUpvote,

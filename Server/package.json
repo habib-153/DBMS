@@ -1,6 +1,7 @@
 {
   "name": "CrimeReport",
   "version": "1.0.0",
+  "type": "module",
   "main": "index.js",
   "author": "Habibur Rahman",
   "license": "MIT",

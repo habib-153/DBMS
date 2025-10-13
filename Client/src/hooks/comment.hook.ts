@@ -6,9 +6,9 @@ import { postAComment, getPostComments } from "@/src/services/CommentServices";
 export const usePostAComment = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<any, Error, { postId: string; content: string }>({
+  return useMutation<any, Error, { postId: string; content: string; parentId?: string | null }>({
     mutationKey: ["POST_COMMENT"],
-    mutationFn: async (payload: { postId: string; content: string }) => {
+    mutationFn: async (payload: { postId: string; content: string; parentId?: string | null }) => {
       return postAComment(payload);
     },
     onSuccess: (_data, variables) => {

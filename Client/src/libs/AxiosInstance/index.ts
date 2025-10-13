@@ -18,8 +18,11 @@ axiosInstance.interceptors.request.use(
 
           if (accessToken) {
             config.headers = config.headers || {};
+            // Ensure Bearer prefix so server can parse uniformly
             // @ts-ignore
-            config.headers["Authorization"] = accessToken;
+            config.headers["Authorization"] = accessToken.startsWith("Bearer ")
+              ? accessToken
+              : `Bearer ${accessToken}`;
           }
         } catch (e) {
           // dynamic import failed; ignore
@@ -33,8 +36,11 @@ axiosInstance.interceptors.request.use(
 
         if (accessToken) {
           config.headers = config.headers || {};
+          // Ensure Bearer prefix for client-side cookies
           // @ts-ignore
-          config.headers["Authorization"] = accessToken;
+          config.headers["Authorization"] = accessToken.startsWith("Bearer ")
+            ? accessToken
+            : `Bearer ${accessToken}`;
         }
       }
     } catch (e) {

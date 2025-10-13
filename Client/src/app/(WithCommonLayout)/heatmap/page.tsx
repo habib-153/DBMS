@@ -215,8 +215,9 @@ export default function HeatmapPage() {
                 <li className="flex items-start gap-2">
                   <span className="text-brand-primary mt-0.5">•</span>
                   <span>
-                    Red areas indicate higher crime density, blue areas are
-                    safer
+                    Darker blue areas indicate higher crime density; a
+                    single-color (monochrome) palette is used for clarity
+                    and improved accessibility.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">

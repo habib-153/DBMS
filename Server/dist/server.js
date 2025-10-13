@@ -38,6 +38,7 @@ function bootstrap() {
             console.log('🛢 Database connected successfully (With PostgreSQL)');
             yield (0, seeding_1.seed)();
             server = app_1.default.listen(config_1.default.port, () => {
+                console.log(config_1.default.port);
                 console.log(`🚀 Application is running on port ${config_1.default.port}`);
             });
         }
