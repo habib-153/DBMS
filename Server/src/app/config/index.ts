@@ -21,12 +21,5 @@ export default {
   cloudinary_api_secret: process.env.CLOUDINARY_API_SECRET,
   sender_email: process.env.SENDER_EMAIL,
   sender_app_password: process.env.SENDER_APP_PASS,
-  payment_url: process.env.PAYMENT_URL,
-  store_id: process.env.STORE_ID,
-  signature_key: process.env.SIGNATURE_KEY,
-  payment_verify_url: process.env.PAYMENT_VERIFY_URL,
   reset_pass_ui_link: process.env.CLIENT_URL,
-  twilio_account_sid: process.env.TWILIO_ACCOUNT_SID,
-  twilio_auth_token: process.env.TWILIO_AUTH_TOKEN,
-  twilio_phone_number: process.env.TWILIO_PHONE_NUMBER,
 };
