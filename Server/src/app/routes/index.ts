@@ -6,6 +6,7 @@ import { CommentRoutes } from '../modules/Comment/comment.route';
 import { FollowRoutes } from '../modules/Follow/follow.route';
 import { AdminRoutes } from '../modules/Admin/admin.route';
 import { HeatmapRoutes } from '../modules/Heatmap/heatmap.route';
+import { AnalyticsRoutes } from '../modules/Analytics/analytics.route';
 import auth from '../middlewares/auth';
 import { USER_ROLE } from '../modules/User/user.constant';
 import { UserController } from '../modules/User/user.controller';
@@ -42,6 +43,10 @@ const moduleRoutes = [
   {
     path: '/heatmap',
     route: HeatmapRoutes,
+  },
+  {
+    path: '/analytics',
+    route: AnalyticsRoutes,
   },
 ];
 
