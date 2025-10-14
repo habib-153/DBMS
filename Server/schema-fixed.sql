@@ -9,7 +9,7 @@ CREATE TYPE "UserRole" AS ENUM ('USER', 'ADMIN', 'SUPER_ADMIN');
 DROP TYPE IF EXISTS "UserStatus" CASCADE;
 CREATE TYPE "UserStatus" AS ENUM ('ACTIVE', 'BLOCKED', 'DELETED');
 
-ALTER TABLE "users" ADD COLUMN "status" "UserStatus" DEFAULT 'ACTIVE' NOT NULL
+ALTER TABLE "users" ADD COLUMN "status" "UserStatus" DEFAULT 'ACTIVE' NOT NULL;
 
 -- Table: users (must be created first due to foreign keys)
 CREATE TABLE
@@ -65,6 +65,7 @@ CREATE TABLE
         "image" TEXT,
         "postId" TEXT NOT NULL,
         "authorId" TEXT NOT NULL,
+        "parentId" TEXT REFERENCES comments("id"),
         "isDeleted" BOOLEAN DEFAULT false NOT NULL,
         "createdAt" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
         "updatedAt" TIMESTAMP WITHOUT TIME ZONE NOT NULL,

@@ -70,12 +70,13 @@ export default function InteractiveHeatmap({ className }: HeatmapProps) {
     };
   }, [heatmapData]);
 
-  // Heatmap layer configuration with custom color scheme
+  // Heatmap layer configuration optimized for large datasets
   const heatmapLayer: LayerProps = {
     id: "crime-heat",
     type: "heatmap",
     maxzoom: 15,
     paint: {
+      // Increase weight influence based on zoom level
       "heatmap-weight": [
         "interpolate",
         ["linear"],
@@ -83,75 +84,161 @@ export default function InteractiveHeatmap({ className }: HeatmapProps) {
         0,
         0,
         1,
-        1,
+        2 // Increased max weight for better visibility
       ],
-      "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 9, 3],
-      // Blue → Green → Yellow → Orange → Red
+      // Enhanced intensity scaling for better visualization of dense areas
+      "heatmap-intensity": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        0, 1,
+        9, 4,
+        15, 8
+      ],
+      // Subtle heatmap coloring for light theme
       "heatmap-color": [
         "interpolate",
         ["linear"],
         ["heatmap-density"],
         0,
-        "rgba(59, 130, 246, 0)", // Transparent Blue
-        0.2,
-        "rgb(59, 130, 246)", // Blue - Low
-        0.4,
-        "rgb(34, 197, 94)", // Green - Safe
-        0.6,
-        "rgb(234, 179, 8)", // Yellow - Medium
-        0.8,
-        "rgb(249, 115, 22)", // Orange - High
+        "rgba(165, 0, 52, 0)",
+        0.1,
+        "rgba(254, 226, 226, 0.5)",
+        0.3,
+        "rgba(254, 202, 202, 0.6)",
+        0.5,
+        "rgba(165, 0, 52, 0.5)",
+        0.7,
+        "rgba(165, 0, 52, 0.7)",
         1,
-        "rgb(239, 68, 68)", // Red - Very High
+        "rgba(165, 0, 52, 0.8)"
       ],
-      "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 0, 6, 9, 40],
-      "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 7, 0.8, 9, 0.6],
+      // Adjusted radius based on zoom for better clustering
+      "heatmap-radius": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        0, 4,    // Smaller initial radius
+        9, 30,   // Medium zoom
+        15, 50   // Maximum zoom
+      ],
+      // Improved opacity scaling
+      "heatmap-opacity": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        7, 1,     // Full opacity at low zoom
+        9, 0.9,   // Slight fade at medium zoom
+        15, 0.7   // More transparent at high zoom
+      ],
     },
   };
 
-  // Circle layer for individual points at high zoom
+  // Clean pointer design with subtle glow effect
   const circleLayer: LayerProps = {
     id: "crime-point",
     type: "circle",
-    minzoom: 7,
+    minzoom: 8,
+    paint: {
+      // Core pointer size
+      "circle-radius": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        8,
+        ["interpolate", ["linear"], ["get", "weight"], 0, 4, 1, 6],
+        12,
+        ["interpolate", ["linear"], ["get", "weight"], 0, 6, 1, 8],
+        16,
+        ["interpolate", ["linear"], ["get", "weight"], 0, 8, 1, 10]
+      ],
+      // Single brand red color (solid center)
+      "circle-color": "#a50034",
+      // Ensure no stroke is drawn
+      "circle-stroke-width": 0,
+      // No blur for the core dot
+      "circle-blur": 0,
+      // Full opacity for the core marker
+      "circle-opacity": 1
+    },
+  };
+
+  // Outer glow effect
+  const circleBlurLayer: LayerProps = {
+    id: "crime-point-blur",
+    type: "circle",
+    minzoom: 8,
     paint: {
       "circle-radius": [
         "interpolate",
         ["linear"],
         ["zoom"],
-        7,
-        ["interpolate", ["linear"], ["get", "weight"], 0, 2, 1, 6],
+        8,
+        ["interpolate", ["linear"], ["get", "weight"], 0, 15, 1, 20],
+        12,
+        ["interpolate", ["linear"], ["get", "weight"], 0, 20, 1, 25],
         16,
-        ["interpolate", ["linear"], ["get", "weight"], 0, 8, 1, 60],
+        ["interpolate", ["linear"], ["get", "weight"], 0, 25, 1, 30]
       ],
-      // Blue → Green → Yellow → Orange → Red based on weight
-      "circle-color": [
-        "interpolate",
-        ["linear"],
-        ["get", "weight"],
-        0,
-        "#3B82F6", // Blue - Low
-        0.25,
-        "#22C55E", // Green - Safe
-        0.5,
-        "#EAB308", // Yellow - Medium
-        0.75,
-        "#F97316", // Orange - High
-        1,
-        "#EF4444", // Red - Very High
-      ],
-      "circle-stroke-color": "white",
-      "circle-stroke-width": 2,
-      "circle-opacity": ["interpolate", ["linear"], ["zoom"], 7, 0, 8, 0.8],
-      "circle-stroke-opacity": [
+      // translucent blur using rgba so it fades into background without
+      // creating lighter opaque halos
+      "circle-color": "rgba(165,0,52,0.14)",
+      "circle-blur": 2.5,
+      "circle-opacity": [
         "interpolate",
         ["linear"],
         ["zoom"],
-        7,
-        0,
-        8,
-        1,
+        8, 0.15,
+        10, 0.2,
+        12, 0.25
       ],
+    },
+  };
+
+  // Cluster layer to group many points at low zoom and avoid overplotting
+  const clusterLayer: LayerProps = {
+    id: "clusters",
+    type: "circle",
+    source: "crime-points",
+    filter: ["has", "point_count"],
+    paint: {
+      // size based on point count
+      "circle-radius": [
+        "step",
+        ["get", "point_count"],
+        15,
+        50,
+        20,
+        200,
+        30,
+      ],
+      // color progression for clusters
+      "circle-color": [
+        "step",
+        ["get", "point_count"],
+        "rgba(165,0,52,0.25)",
+        50,
+        "rgba(165,0,52,0.45)",
+        200,
+        "rgba(165,0,52,0.65)",
+      ],
+      "circle-opacity": 0.9,
+      "circle-blur": 1.6,
+    },
+  };
+
+  const clusterCountLayer: LayerProps = {
+    id: "cluster-count",
+    type: "symbol",
+    source: "crime-points",
+    filter: ["has", "point_count"],
+    layout: {
+      "text-field": ["get", "point_count"],
+      "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
+      "text-size": 12,
+    },
+    paint: {
+      "text-color": "#ffffff",
     },
   };
 
@@ -236,7 +323,7 @@ export default function InteractiveHeatmap({ className }: HeatmapProps) {
           </div>
         ) : (
           <>
-            <div className="h-[500px] w-full rounded-lg overflow-hidden relative">
+            <div className="h-[500px] w-full rounded-lg overflow-hidden relative shadow-sm ring-1 ring-gray-200 dark:ring-gray-700">
               <Map
                 initialViewState={{
                   longitude: 90.4125,
@@ -244,7 +331,7 @@ export default function InteractiveHeatmap({ className }: HeatmapProps) {
                   zoom: 6.5,
                 }}
                 interactiveLayerIds={["crime-point", "crime-heat"]}
-                mapStyle="mapbox://styles/mapbox/outdoors-v11"
+                mapStyle="mapbox://styles/mapbox/streets-v12"
                 mapboxAccessToken={MAPBOX_TOKEN}
                 style={{ width: "100%", height: "100%" }}
                 onClick={onClick}
@@ -253,8 +340,25 @@ export default function InteractiveHeatmap({ className }: HeatmapProps) {
                 <FullscreenControl position="top-right" />
 
                 {geojson && (
-                  <Source data={geojson} id="crime-points" type="geojson">
+                  <Source
+                    data={geojson}
+                    id="crime-points"
+                    type="geojson"
+                    cluster={true}
+                    clusterMaxZoom={14}
+                    clusterRadius={50}
+                  >
+                    {/* Heatmap provides context for density */}
                     <Layer {...heatmapLayer} />
+
+                    {/* Clusters at low zoom to avoid overplotting */}
+                    <Layer {...clusterLayer} />
+                    <Layer {...clusterCountLayer} />
+
+                    {/* Blurred halo under individual points */}
+                    <Layer {...circleBlurLayer} />
+
+                    {/* Core point marker */}
                     <Layer {...circleLayer} />
                   </Source>
                 )}
@@ -269,55 +373,59 @@ export default function InteractiveHeatmap({ className }: HeatmapProps) {
                     longitude={popupInfo.longitude}
                     onClose={() => setPopupInfo(null)}
                   >
-                    <div className="p-3">
-                      <h3 className="font-bold text-base mb-2 text-gray-900">
-                        {popupInfo.title}
-                      </h3>
-                      <div className="space-y-1 text-sm text-gray-700">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-brand-primary" />
-                          <span>
-                            <strong>Location:</strong> {popupInfo.district},{" "}
-                            {popupInfo.division}
-                          </span>
+                    <div className="p-3 max-w-xs">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0">
+                          <div
+                            className={`h-3 w-3 rounded-full mt-1 ${
+                              popupInfo.weight > 0.75
+                                ? "bg-brand-secondary"
+                                : popupInfo.weight > 0.5
+                                  ? "bg-brand-primary"
+                                  : popupInfo.weight > 0.25
+                                    ? "bg-red-400"
+                                    : "bg-red-200"
+                            }`}
+                          />
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-500">📅</span>
-                          <span>
-                            <strong>Date:</strong>{" "}
-                            {new Date(popupInfo.crimeDate).toLocaleDateString(
-                              "en-US",
-                              {
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-sm mb-1 text-gray-900 dark:text-gray-100">
+                            {popupInfo.title}
+                          </h3>
+                          <div className="text-xs text-gray-600 dark:text-gray-300 space-y-1">
+                            <div>
+                              <strong>Location:</strong> {popupInfo.district}, {popupInfo.division}
+                            </div>
+                            <div>
+                              <strong>Date:</strong>{" "}
+                              {new Date(popupInfo.crimeDate).toLocaleDateString("en-US", {
                                 year: "numeric",
                                 month: "short",
                                 day: "numeric",
-                              }
-                            )}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="text-gray-500">⚠️</span>
-                          <span>
-                            <strong>Severity:</strong>
-                          </span>
-                          <div className="flex-1 bg-gray-200 rounded-full h-2">
-                            {/* eslint-disable-next-line */}
-                            <div
-                              className={`h-2 rounded-full ${
-                                popupInfo.weight > 0.75
-                                  ? "bg-red-500"
-                                  : popupInfo.weight > 0.5
-                                    ? "bg-orange-500"
-                                    : popupInfo.weight > 0.25
-                                      ? "bg-yellow-500"
-                                      : "bg-green-500"
-                              }`}
-                              style={{ width: `${popupInfo.weight * 100}%` }}
-                            />
+                              })}
+                            </div>
+                            <div className="mt-2">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-medium">Severity</span>
+                                <span className="font-semibold">{(popupInfo.weight * 100).toFixed(0)}%</span>
+                              </div>
+                              <div className="mt-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                {/* eslint-disable-next-line */}
+                                <div
+                                  className={`h-2 rounded-full ${
+                                    popupInfo.weight > 0.75
+                                      ? "bg-brand-secondary"
+                                      : popupInfo.weight > 0.5
+                                        ? "bg-brand-primary"
+                                        : popupInfo.weight > 0.25
+                                          ? "bg-red-400"
+                                          : "bg-red-200"
+                                  }`}
+                                  style={{ width: `${popupInfo.weight * 100}%` }}
+                                />
+                              </div>
+                            </div>
                           </div>
-                          <span className="text-xs font-semibold">
-                            {(popupInfo.weight * 100).toFixed(0)}%
-                          </span>
                         </div>
                       </div>
                     </div>
@@ -329,37 +437,26 @@ export default function InteractiveHeatmap({ className }: HeatmapProps) {
             {/* Legend - Crime Intensity */}
             <div className="mt-4 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
               <h4 className="text-sm font-semibold mb-2 text-gray-700 dark:text-gray-300">
-                Crime Intensity Legend
+                Crime Intensity
               </h4>
-              <div className="grid grid-cols-5 gap-2 text-xs">
-                <div className="flex flex-col items-center gap-1">
-                  <div className="h-6 w-full rounded bg-[#3B82F6]" />
-                  <span className="text-gray-600 dark:text-gray-400">Low</span>
+              <div className="flex flex-col gap-2">
+                <div className="h-6 w-full rounded-md overflow-hidden ring-1 ring-gray-100 dark:ring-gray-700">
+                  {/* gradient from very light blue to deep blue */}
+                  <div className="h-full w-full" style={{
+                    background: 'linear-gradient(90deg, #FEE2E2 0%, #FECACA 25%, #F87171 50%, #a50034 75%, #8b0000 100%)'
+                  }} />
                 </div>
-                <div className="flex flex-col items-center gap-1">
-                  <div className="h-6 w-full rounded bg-[#22C55E]" />
-                  <span className="text-gray-600 dark:text-gray-400">Safe</span>
+                <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
+                  <span>0</span>
+                  <span>25</span>
+                  <span>50</span>
+                  <span>75</span>
+                  <span>100</span>
                 </div>
-                <div className="flex flex-col items-center gap-1">
-                  <div className="h-6 w-full rounded bg-[#EAB308]" />
-                  <span className="text-gray-600 dark:text-gray-400">
-                    Medium
-                  </span>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                  <div className="h-6 w-full rounded bg-[#F97316]" />
-                  <span className="text-gray-600 dark:text-gray-400">High</span>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                  <div className="h-6 w-full rounded bg-[#EF4444]" />
-                  <span className="text-gray-600 dark:text-gray-400">
-                    Very High
-                  </span>
-                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Darker red indicates higher crime density. Zoom in to see individual points.
+                </p>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-                Zoom in to see individual crime points
-              </p>
             </div>
 
             {/* Stats */}
