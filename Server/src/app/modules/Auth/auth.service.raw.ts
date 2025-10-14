@@ -201,6 +201,7 @@ const loginUser = async (payload: TLoginUser) => {
     role: user.role as 'USER' | 'ADMIN' | 'SUPER_ADMIN',
     status: user.status as 'ACTIVE' | 'BLOCKED' | 'DELETED',
     profilePhoto: user.profilePhoto,
+    isVerified: user.isVerified,
   };
 
   // jwtPayload prepared for token creation when needed
@@ -292,7 +293,7 @@ const refreshToken = async (token: string) => {
   const { id, iat } = decoded;
 
   const userQuery = `
-    SELECT id, name, email, phone, role, status, "passwordChangedAt"
+    SELECT id, name, email, phone, role, status, "passwordChangedAt", "isVerified"
     FROM users 
     WHERE id = $1
   `;
@@ -306,6 +307,7 @@ const refreshToken = async (token: string) => {
     status: string;
     passwordChangedAt?: Date;
     profilePhoto?: string;
+    isVerified: boolean;
   }>(userQuery, [id]);
 
   const user = result.rows[0];
@@ -337,6 +339,7 @@ const refreshToken = async (token: string) => {
     role: user.role as 'USER' | 'ADMIN' | 'SUPER_ADMIN',
     status: user.status as 'ACTIVE' | 'BLOCKED' | 'DELETED',
     profilePhoto: user.profilePhoto,
+    isVerified: user.isVerified,
   };
 
   const accessToken = createToken(
@@ -352,7 +355,7 @@ const refreshToken = async (token: string) => {
 
 const forgetPassword = async (email: string) => {
   const userQuery = `
-    SELECT id, name, email, phone, role, status
+    SELECT id, name, email, phone, role, status, "profilePhoto", "isVerified"
     FROM users 
     WHERE email = $1
   `;
@@ -365,6 +368,7 @@ const forgetPassword = async (email: string) => {
     role: string;
     status: string;
     profilePhoto?: string;
+    isVerified: boolean;
   }>(userQuery, [email]);
 
   const user = result.rows[0];
@@ -389,6 +393,7 @@ const forgetPassword = async (email: string) => {
     role: user.role as 'USER' | 'ADMIN' | 'SUPER_ADMIN',
     status: user.status as 'ACTIVE' | 'BLOCKED' | 'DELETED',
     profilePhoto: user.profilePhoto,
+    isVerified: user.isVerified,
   };
 
   const resetToken = createToken(
@@ -589,6 +594,7 @@ const verifyOTP = async (payload: TVerifyOTP) => {
     role: verifiedUser.role as 'USER' | 'ADMIN' | 'SUPER_ADMIN',
     status: verifiedUser.status as 'ACTIVE' | 'BLOCKED' | 'DELETED',
     profilePhoto: verifiedUser.profilePhoto as string | undefined,
+    isVerified: true,
   };
 
   const accessToken = createToken(

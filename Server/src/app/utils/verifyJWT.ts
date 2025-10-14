@@ -12,6 +12,7 @@ export const createToken = (
     role: 'USER' | 'ADMIN' | 'SUPER_ADMIN';
     status: 'ACTIVE' | 'BLOCKED' | 'DELETED';
     profilePhoto?: string;
+    isVerified?: boolean;
   },
   secret: string,
   expiresIn: string

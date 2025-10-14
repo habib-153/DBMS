@@ -65,6 +65,12 @@ export default function HomePage() {
           {/* Sidebar */}
           <div className="space-y-6">
             <CrimeHeatmap />
+            {/* Dashboard quick access tile */}
+            <div className="p-4 bg-white rounded shadow-sm">
+              <h4 className="font-semibold">Analytics</h4>
+              <p className="text-sm text-gray-500 mb-3">Real-time crime dashboard with advanced analytics</p>
+              <a href="/dashboard" className="inline-block px-3 py-2 bg-brand-primary text-white rounded">Open Dashboard</a>
+            </div>
             <EmergencyContacts />
           </div>
         </div>

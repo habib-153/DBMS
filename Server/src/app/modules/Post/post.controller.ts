@@ -11,7 +11,7 @@ const createPost = catchAsync(async (req, res) => {
   if (!req.file) {
     throw new AppError(400, 'Please upload an image');
   }
-
+console.log(req.user);
   // Prevent unverified users from creating posts
   if (!req.user ) {
     throw new AppError(

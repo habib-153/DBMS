@@ -1,7 +1,13 @@
 "use client";
 
 import { Card, CardBody } from "@heroui/react";
-import { MapPin, TrendingUp, AlertTriangle } from "lucide-react";
+import { MapPin, TrendingUp, AlertTriangle, MoreVertical } from "lucide-react";
+import {
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+} from '@heroui/dropdown';
 
 import InteractiveHeatmap from "@/src/components/modules/Home/InteractiveHeatmap";
 import {
@@ -25,9 +31,28 @@ export default function HeatmapPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-3">
-            <MapPin className="h-8 w-8 text-brand-primary" />
-            <h1 className="text-3xl font-bold">Crime Heatmap</h1>
-          </div>
+              <MapPin className="h-8 w-8 text-brand-primary" />
+              <h1 className="text-3xl font-bold">Crime Heatmap</h1>
+
+              {/* Right-aligned dropdown menu for heatmap actions */}
+              <div className="ml-4">
+                <Dropdown>
+                  <DropdownTrigger>
+                    <button className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800">
+                      <MoreVertical className="w-5 h-5" />
+                    </button>
+                  </DropdownTrigger>
+                  <DropdownMenu>
+                    <DropdownItem key="dashboard">
+                      <a href="/dashboard">Real-time Dashboard</a>
+                    </DropdownItem>
+                    <DropdownItem key="patterns">
+                      <a href="/heatmap/patterns">Pattern Detection (coming soon)</a>
+                    </DropdownItem>
+                  </DropdownMenu>
+                </Dropdown>
+              </div>
+            </div>
           <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
             Visualize crime incidents across Bangladesh. Explore hotspots, view
             statistics, and stay informed about safety in different regions.
