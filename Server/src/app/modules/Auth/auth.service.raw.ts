@@ -402,7 +402,9 @@ const forgetPassword = async (email: string) => {
     '10m'
   );
 
-  const resetUILink = `${config.jwt_refresh_expires_in}/reset-password?id=${user.id}&token=${resetToken}`;
+  const resetUILink = `${
+    config.reset_pass_ui_link
+  }?email=${encodeURIComponent(user.email)}&token=${resetToken}`;
 
   await EmailHelper.sendEmail(user.email, resetUILink);
 

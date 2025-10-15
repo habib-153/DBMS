@@ -1,0 +1,91 @@
+/* Custom Mapbox Geocoder Styles to match app theme */
+
+/* Geocoder container */
+.mapboxgl-ctrl-geocoder {
+  width: 100% !important;
+  max-width: 100% !important;
+  font-family: inherit;
+  box-shadow:
+    0 1px 3px 0 rgb(0 0 0 / 0.1),
+    0 1px 2px -1px rgb(0 0 0 / 0.1);
+  border-radius: 0.5rem;
+}
+
+/* Input field */
+.mapboxgl-ctrl-geocoder input[type="text"] {
+  font-family: inherit;
+  padding: 0.625rem 2.5rem 0.625rem 2.5rem;
+  font-size: 0.875rem;
+  border: 1px solid rgb(229 231 235);
+  border-radius: 0.5rem;
+  transition: border-color 0.2s ease;
+}
+
+.mapboxgl-ctrl-geocoder input[type="text"]:focus {
+  outline: none;
+  border-color: #a50034;
+  box-shadow: 0 0 0 3px rgba(165, 0, 52, 0.1);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .mapboxgl-ctrl-geocoder {
+    background-color: rgb(31 41 55);
+  }
+
+  .mapboxgl-ctrl-geocoder input[type="text"] {
+    background-color: rgb(31 41 55);
+    color: rgb(243 244 246);
+    border-color: rgb(55 65 81);
+  }
+
+  .mapboxgl-ctrl-geocoder input[type="text"]::placeholder {
+    color: rgb(156 163 175);
+  }
+
+  .mapboxgl-ctrl-geocoder--suggestion {
+    background-color: rgb(31 41 55);
+    color: rgb(243 244 246);
+  }
+
+  .mapboxgl-ctrl-geocoder--suggestion:hover {
+    background-color: rgb(55 65 81);
+  }
+}
+
+/* Suggestions */
+.mapboxgl-ctrl-geocoder--suggestion {
+  font-family: inherit;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  transition: background-color 0.2s ease;
+}
+
+.mapboxgl-ctrl-geocoder--suggestion:hover,
+.mapboxgl-ctrl-geocoder--suggestion.active {
+  background-color: rgba(165, 0, 52, 0.05);
+}
+
+.mapboxgl-ctrl-geocoder--suggestion-title {
+  font-weight: 500;
+  color: #a50034;
+}
+
+.mapboxgl-ctrl-geocoder--suggestion-address {
+  color: rgb(107 114 128);
+}
+
+/* Icons */
+.mapboxgl-ctrl-geocoder--icon {
+  fill: #a50034;
+}
+
+.mapboxgl-ctrl-geocoder--button {
+  background-color: transparent;
+}
+
+/* Pin/powered by Mapbox */
+.mapboxgl-ctrl-geocoder--powered-by {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}

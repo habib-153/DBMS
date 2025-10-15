@@ -49,12 +49,20 @@ const CrimeReportCard = ({ post }: { post: IPost }) => {
     }
   };
 
+  // Validate image URL to prevent Next.js Image errors
+  const isValidImageUrl = (url: string | undefined) => {
+    if (!url) return false;
+
+    return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/');
+
+  };
+
   return (
     <Card className="hover:shadow-lg h-42 transition-all duration-300 border border-gray-200 dark:border-gray-700">
       <CardBody className="p-0">
         <div className="flex">
           {/* Image */}
-          {post.image && (
+          {isValidImageUrl(post.image) && (
             <div className="relative w-32  flex-shrink-0 overflow-hidden rounded-l-lg">
               <Image
                 fill

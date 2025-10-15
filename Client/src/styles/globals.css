@@ -89,7 +89,7 @@
 /* Glass Form Effect */
 .glass-form-enhanced {
   background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(15px);
+  backdrop-filter: blur(1px);
   border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow: 0 25px 45px rgba(0, 0, 0, 0.1);
 }
@@ -151,7 +151,7 @@
 /* Glass morphism effect */
 .glass-form {
   background: rgba(255, 255, 255, 0.055);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(2px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 25px 45px rgba(0, 0, 0, 0.1);
 }
@@ -280,7 +280,7 @@
 .glass-form-enhanced {
   background: transparent 100%;
   background-clip: inherit;
-  backdrop-filter: blur(15px);
+  backdrop-filter: blur(2px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow:
     0 25px 45px rgba(0, 0, 0, 0.15),

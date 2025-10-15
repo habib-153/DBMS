@@ -25,6 +25,11 @@ export interface IPost {
   createdAt?: string;
   crimeDate?: string;
   postDate?: Date;
+  longitude?: number;
+  latitude?: number;
+  status?: string;
+  reportCount?: number;
+  verificationScore?: number;
   division?: string;
   district?: string;
   location?: string;
@@ -46,6 +51,9 @@ export interface IUser {
   role: string;
   email: string;
   status: string;
+  latitude?: number;
+  longitude?: number;
+  address?: string;
   phone: string;
   profilePhoto: string;
   followers: [IUser];

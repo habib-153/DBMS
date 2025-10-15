@@ -5,6 +5,13 @@ import { Card, CardBody, CardHeader, Button } from "@heroui/react";
 import { AlertTriangle, Bug, Clipboard } from "lucide-react";
 import { toast } from "sonner";
 
+import {
+  MotionDiv,
+  MotionH2,
+  MotionP,
+  MotionPre
+} from "@/src/components/motion-components";
+
 export default function Error({
   error,
   reset,
@@ -29,63 +36,151 @@ export default function Error({
     }
   };
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0, scale: 0.9, y: 20 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        ease: "easeOut",
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.3, ease: "easeOut" },
+    },
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-6">
-      <Card className="max-w-2xl w-full">
-        <CardHeader className="flex items-center gap-3">
-          <div className="p-2 rounded-md bg-red-50 dark:bg-red-900/30">
-            <AlertTriangle className="text-red-600 w-6 h-6" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Crime Reporting Portal — Error
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              We ran into a problem while loading the incident report or related
-              data. You can retry or copy the error details and share with the
-              support team.
-            </p>
-          </div>
-        </CardHeader>
-
-        <CardBody className="space-y-4">
-          <div className="text-sm text-gray-700 dark:text-gray-300 break-words">
-            {error?.message ?? "Unknown error"}
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button color="primary" onClick={() => reset()}>
-              Retry
-            </Button>
-
-            <Button variant="bordered" onClick={() => setExpanded((v) => !v)}>
-              <Bug className="w-4 h-4 mr-2" />
-              {expanded ? "Hide details" : "Show details"}
-            </Button>
-
-            <Button variant="light" onClick={copyError}>
-              <Clipboard className="w-4 h-4 mr-2" />
-              Copy details
-            </Button>
-
-            <Button
-              variant="bordered"
-              onClick={() =>
-                (window.location.href =
-                  "mailto:support@crime-portal.example?subject=Incident%20report%20error")
-              }
+    <MotionDiv
+      animate="visible"
+      className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-6"
+      initial="hidden"
+      variants={containerVariants}
+    >
+      <MotionDiv
+        transition={{ duration: 0.2 }}
+        variants={itemVariants}
+        whileHover={{ scale: 1.02 }}
+      >
+        <Card className="max-w-2xl w-full">
+          <CardHeader className="flex items-center gap-3">
+            <MotionDiv
+              animate={{ scale: 1, rotate: 0 }}
+              className="p-2 rounded-md bg-red-50 dark:bg-red-900/30"
+              initial={{ scale: 0, rotate: -180 }}
+              transition={{ duration: 0.5, delay: 0.2, type: "spring" }}
             >
-              Report issue
-            </Button>
-          </div>
+              <AlertTriangle className="text-red-600 w-6 h-6" />
+            </MotionDiv>
+            <MotionDiv variants={itemVariants}>
+              <MotionH2
+                animate={{ opacity: 1, x: 0 }}
+                className="text-lg font-semibold text-gray-900 dark:text-gray-100"
+                initial={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.4, delay: 0.3 }}
+              >
+                Crime Reporting Portal — Error
+              </MotionH2>
+              <MotionP
+                animate={{ opacity: 1, x: 0 }}
+                className="text-sm text-gray-500 dark:text-gray-400"
+                initial={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.4, delay: 0.4 }}
+              >
+                We ran into a problem while loading the incident report or
+                related data. You can retry or copy the error details and share
+                with the support team.
+              </MotionP>
+            </MotionDiv>
+          </CardHeader>
 
-          {expanded && (
-            <pre className="overflow-auto max-h-64 text-xs bg-gray-100 dark:bg-gray-800 p-3 rounded">
-              {error?.stack ?? error?.message}
-            </pre>
-          )}
-        </CardBody>
-      </Card>
-    </div>
+          <CardBody className="space-y-4">
+            <MotionDiv
+              animate={{ opacity: 1 }}
+              className="text-sm text-gray-700 dark:text-gray-300 break-words"
+              initial={{ opacity: 0 }}
+              transition={{ duration: 0.4, delay: 0.5 }}
+              variants={itemVariants}
+            >
+              {error?.message ?? "Unknown error"}
+            </MotionDiv>
+
+            <MotionDiv
+              className="flex items-center gap-3"
+              variants={itemVariants}
+            >
+              <MotionDiv
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button color="primary" onClick={() => reset()}>
+                  Retry
+                </Button>
+              </MotionDiv>
+
+              <MotionDiv
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button
+                  variant="bordered"
+                  onClick={() => setExpanded((v) => !v)}
+                >
+                  <Bug className="w-4 h-4 mr-2" />
+                  {expanded ? "Hide details" : "Show details"}
+                </Button>
+              </MotionDiv>
+
+              <MotionDiv
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button variant="light" onClick={copyError}>
+                  <Clipboard className="w-4 h-4 mr-2" />
+                  Copy details
+                </Button>
+              </MotionDiv>
+
+              <MotionDiv
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button
+                  variant="bordered"
+                  onClick={() =>
+                    (window.location.href =
+                      "mailto:support@crime-portal.example?subject=Incident%20report%20error")
+                  }
+                >
+                  Report issue
+                </Button>
+              </MotionDiv>
+            </MotionDiv>
+
+            {expanded && (
+              <MotionPre
+                animate={{ opacity: 1, height: "auto" }}
+                className="overflow-auto max-h-64 text-xs bg-gray-100 dark:bg-gray-800 p-3 rounded"
+                exit={{ opacity: 0, height: 0 }}
+                initial={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                {error?.stack ?? error?.message}
+              </MotionPre>
+            )}
+          </CardBody>
+        </Card>
+      </MotionDiv>
+    </MotionDiv>
   );
 }

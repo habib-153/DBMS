@@ -35,8 +35,8 @@ const createPost = async (
   const now = new Date();
 
   const query = `
-    INSERT INTO posts (id, title, description, image, location, district, division, "crimeDate", "authorId", status, "isDeleted", "postDate", "createdAt", "updatedAt")
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'PENDING', false, $10, $11, $12)
+    INSERT INTO posts (id, title, description, image, location, district, division, "crimeDate", "authorId", latitude, longitude, status, "isDeleted", "postDate", "createdAt", "updatedAt")
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'PENDING', false, $12, $13, $14)
     RETURNING *
   `;
 
@@ -50,6 +50,9 @@ const createPost = async (
     postData.division,
     crimeDate,
     authorId,
+    // latitude and longitude: accept numbers or null
+    postData.latitude ?? null,
+    postData.longitude ?? null,
     now,
     now,
     now,
@@ -388,6 +391,19 @@ const updatePost = async (
   if (updateData.crimeDate !== undefined) {
     updateFields.push(`"crimeDate" = $${paramIndex}`);
     values.push(new Date(updateData.crimeDate));
+    paramIndex++;
+  }
+
+  // Latitude / Longitude may be provided or explicitly set to null to clear
+  if (updateData.latitude !== undefined) {
+    updateFields.push(`latitude = $${paramIndex}`);
+    values.push(updateData.latitude);
+    paramIndex++;
+  }
+
+  if (updateData.longitude !== undefined) {
+    updateFields.push(`longitude = $${paramIndex}`);
+    values.push(updateData.longitude);
     paramIndex++;
   }
 

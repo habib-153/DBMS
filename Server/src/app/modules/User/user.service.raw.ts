@@ -21,10 +21,10 @@ const createUser = async (userData: Partial<TUser>): Promise<DbUser> => {
 
   const query = `
     INSERT INTO users (
-      id, name, email, password, phone, address, "profilePhoto", 
+      id, name, email, password, phone, address, "profilePhoto", latitude, longitude,
       role, status, "isVerified", "needPasswordChange", "createdAt", "updatedAt"
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
     RETURNING *
   `;
 
@@ -36,6 +36,9 @@ const createUser = async (userData: Partial<TUser>): Promise<DbUser> => {
     userData.phone || null,
     userData.address || null,
     userData.profilePhoto || null,
+    // latitude / longitude (optional)
+    userData.latitude ?? null,
+    userData.longitude ?? null,
     userData.role || 'USER',
     userData.status || 'ACTIVE',
     userData.isVerified || false,
@@ -71,7 +74,7 @@ const getAllUsers = async (
     isVerified,
   } = filters;
 
-  console.log('Received filters:', filters); 
+  console.log('Received filters:', filters);
 
   const offset = (Number(page) - 1) * Number(limit);
   const conditions: string[] = [];
@@ -264,6 +267,18 @@ const updateUser = async (
   if (updateData.address !== undefined) {
     updateFields.push(`address = $${paramIndex}`);
     values.push(updateData.address);
+    paramIndex++;
+  }
+
+  if (updateData.latitude !== undefined) {
+    updateFields.push(`latitude = $${paramIndex}`);
+    values.push(updateData.latitude);
+    paramIndex++;
+  }
+
+  if (updateData.longitude !== undefined) {
+    updateFields.push(`longitude = $${paramIndex}`);
+    values.push(updateData.longitude);
     paramIndex++;
   }
 

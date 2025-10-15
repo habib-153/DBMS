@@ -10,6 +10,8 @@ const nextConfig = {
   },
   // Optimize font loading
   optimizeFonts: true,
+  // Transpile framer-motion for better compatibility
+  transpilePackages: ["framer-motion"],
   // Ensure Google Fonts can be loaded
   async headers() {
     return [

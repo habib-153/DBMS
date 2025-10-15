@@ -20,6 +20,8 @@ export interface TCreatePost {
   title: string;
   description: string;
   location: string;
+  latitude?: number;
+  longitude?: number;
   district: string;
   division: string;
   crimeDate: string; // Will be converted to Date
@@ -29,6 +31,8 @@ export interface TUpdatePost {
   title?: string;
   description?: string;
   location?: string;
+  latitude?: number;
+  longitude?: number;
   district?: string;
   division?: string;
   crimeDate?: string;

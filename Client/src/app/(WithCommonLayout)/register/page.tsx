@@ -9,6 +9,12 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useTheme } from "next-themes";
 
+import {
+  MotionDiv,
+  MotionH1,
+  MotionP,
+  MotionSpan,
+} from "@/src/components/motion-components";
 import FXForm from "@/src/components/form/FXForm";
 import FXInput from "@/src/components/form/FXInput";
 import registerValidationSchema from "@/src/schema/registerSchema";
@@ -68,10 +74,56 @@ export default function RegisterPage() {
   const currentTheme = mounted ? theme : "light";
   const backgroundImage = currentTheme === "dark" ? registerBg : registerBg2;
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0, y: 50 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.6,
+        ease: "easeOut",
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.4, ease: "easeOut" },
+    },
+  };
+
+  const formVariants = {
+    hidden: { opacity: 0, scale: 0.95 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: {
+        duration: 0.5,
+        ease: "easeOut",
+        delay: 0.2,
+      },
+    },
+  };
+
   return (
-    <div className="min-h-[calc(100vh-100px)] relative overflow-hidden">
+    <MotionDiv
+      animate="visible"
+      className="min-h-[calc(100vh-100px)] relative overflow-hidden"
+      initial="hidden"
+      variants={containerVariants}
+    >
       {/* Background Image */}
-      <div className="absolute inset-0">
+      <MotionDiv
+        animate={{ scale: 1, opacity: 1 }}
+        className="absolute inset-0"
+        initial={{ scale: 1.1, opacity: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+      >
         <Image
           fill
           priority
@@ -80,11 +132,16 @@ export default function RegisterPage() {
           quality={85}
           src={backgroundImage}
         />
-      </div>
+      </MotionDiv>
 
       {/* Gradient overlay for better contrast */}
       {currentTheme === "light" ? (
-        <div className="absolute inset-0 bg-gradient-to-br from-black/10 via-black/5 to-black/10" />
+        <MotionDiv
+          animate={{ opacity: 1 }}
+          className="absolute inset-0 bg-gradient-to-br from-black/10 via-black/5 to-black/10"
+          initial={{ opacity: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+        />
       ) : null}
 
       {/* Main Content Container */}
@@ -94,13 +151,30 @@ export default function RegisterPage() {
             {/* Left Side - Form */}
             <div className="w-full max-w-lg mx-auto">
               {/* Header */}
-              <div className="text-center mb-3">
-                <h1 className="text-3xl lg:text-5xl font-bold mb-2 leading-tight drop-shadow-lg">
+              <MotionDiv className="text-center mb-3" variants={itemVariants}>
+                <MotionH1
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-3xl lg:text-5xl font-bold mb-2 leading-tight drop-shadow-lg"
+                  initial={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.6, delay: 0.3 }}
+                >
                   <span className="text-inherit">Create new</span>{" "}
-                  <span className="text-brand-contrast">account</span>
+                  <MotionSpan
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-brand-contrast"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    transition={{ duration: 0.4, delay: 0.5 }}
+                  >
+                    account
+                  </MotionSpan>
                   <span className="text-inherit">.</span>
-                </h1>
-                <p className="text-inherit/90 drop-shadow-md">
+                </MotionH1>
+                <MotionP
+                  animate={{ opacity: 1 }}
+                  className="text-inherit/90 drop-shadow-md"
+                  initial={{ opacity: 0 }}
+                  transition={{ duration: 0.6, delay: 0.7 }}
+                >
                   Join{" "}
                   <span className="text-brand-contrast font-semibold">
                     WARDEN
@@ -108,17 +182,25 @@ export default function RegisterPage() {
                   <span className="text-inherit/90">
                     - Secure Crime Reporting Platform
                   </span>
-                </p>
-              </div>
+                </MotionP>
+              </MotionDiv>
 
               {/* Form Card with Enhanced Glass Effect */}
-              <div className="glass-form-enhanced rounded-3xl p-4 lg:p-5">
+              <MotionDiv
+                className="glass-form-enhanced rounded-3xl p-4 lg:p-5"
+                transition={{ duration: 0.2 }}
+                variants={formVariants}
+                whileHover={{ scale: 1.02 }}
+              >
                 <FXForm
                   resolver={zodResolver(registerValidationSchema)}
                   onSubmit={onSubmit}
                 >
-                  <div className="space-y-3">
-                    <div>
+                  <MotionDiv
+                    className="space-y-3"
+                    variants={containerVariants}
+                  >
+                    <MotionDiv variants={itemVariants}>
                       <FXInput
                         isRequired
                         label="Full Name"
@@ -126,8 +208,8 @@ export default function RegisterPage() {
                         placeholder="Enter your full name"
                         size="sm"
                       />
-                    </div>
-                    <div>
+                    </MotionDiv>
+                    <MotionDiv variants={itemVariants}>
                       <FXInput
                         isRequired
                         label="Email Address"
@@ -136,8 +218,8 @@ export default function RegisterPage() {
                         size="sm"
                         type="email"
                       />
-                    </div>
-                    <div>
+                    </MotionDiv>
+                    <MotionDiv variants={itemVariants}>
                       <FXInput
                         isRequired
                         label="Mobile Number"
@@ -145,8 +227,8 @@ export default function RegisterPage() {
                         placeholder="Enter your mobile number"
                         size="sm"
                       />
-                    </div>
-                    <div>
+                    </MotionDiv>
+                    <MotionDiv variants={itemVariants}>
                       <FXInput
                         isRequired
                         label="Password"
@@ -155,21 +237,29 @@ export default function RegisterPage() {
                         size="sm"
                         type="password"
                       />
-                    </div>
-                  </div>
+                    </MotionDiv>
+                  </MotionDiv>
 
-                  <div className="mt-6">
-                    <Button
-                      className="w-full h-12  font-semibold bg-brand-primary hover:bg-brand-secondary text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
-                      isLoading={isPending}
-                      type="submit"
+                  <MotionDiv className="mt-6" variants={itemVariants}>
+                    <MotionDiv
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      {isPending ? "Creating Account..." : "Create Account"}
-                    </Button>
-                  </div>
+                      <Button
+                        className="w-full h-12  font-semibold bg-brand-primary hover:bg-brand-secondary text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
+                        isLoading={isPending}
+                        type="submit"
+                      >
+                        {isPending ? "Creating Account..." : "Create Account"}
+                      </Button>
+                    </MotionDiv>
+                  </MotionDiv>
                 </FXForm>
 
-                <div className="text-center text-sm mt-4">
+                <MotionDiv
+                  className="text-center text-sm mt-4"
+                  variants={itemVariants}
+                >
                   <p className="text-inherit/80 drop-shadow-sm">
                     Already have an account?{" "}
                     <Link
@@ -179,8 +269,8 @@ export default function RegisterPage() {
                       Sign in
                     </Link>
                   </p>
-                </div>
-              </div>
+                </MotionDiv>
+              </MotionDiv>
             </div>
           </div>
         </div>
@@ -194,6 +284,6 @@ export default function RegisterPage() {
           router.push(redirect || "/");
         }}
       />
-    </div>
+    </MotionDiv>
   );
 }

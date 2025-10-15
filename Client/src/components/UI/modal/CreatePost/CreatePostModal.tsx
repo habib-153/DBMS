@@ -1,5 +1,16 @@
 import { Button, Divider, Modal, ModalContent } from "@heroui/react";
-import React, { ChangeEvent, useState, useEffect, useCallback } from "react";
+import React, {
+  ChangeEvent,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
+import mapboxgl from "mapbox-gl";
+import MapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
+import "mapbox-gl/dist/mapbox-gl.css";
+import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
+import "@/src/styles/mapbox-geocoder-custom.css";
 import {
   FieldValues,
   FormProvider,
@@ -54,6 +65,13 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
   const [divisionsLoading, setDivisionsLoading] = useState(false);
   const [showDivisionDropdown, setShowDivisionDropdown] = useState(false);
   const [showDistrictDropdown, setShowDistrictDropdown] = useState(false);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const markerRef = useRef<mapboxgl.Marker | null>(null);
+  const [selectedCoords, setSelectedCoords] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
   // Load divisions when modal opens
   useEffect(() => {
@@ -95,6 +113,98 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
         });
     }
   }, [selectedDivision]);
+
+  // Initialize Mapbox geocoder/map when modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
+
+    if (!token) return;
+
+    mapboxgl.accessToken = token;
+
+    if (!mapRef.current && mapContainerRef.current) {
+      mapRef.current = new mapboxgl.Map({
+        container: mapContainerRef.current,
+        style: "mapbox://styles/mapbox/streets-v11",
+        center: [90.4125, 23.8103],
+        zoom: 6,
+      });
+
+      // Create a single reusable marker with app brand color
+      markerRef.current = new mapboxgl.Marker({
+        color: "#a50034",
+        draggable: true,
+      });
+
+      // Update coords when marker is dragged
+      markerRef.current.on("dragend", () => {
+        const lngLat = markerRef.current!.getLngLat();
+
+        setSelectedCoords({ latitude: lngLat.lat, longitude: lngLat.lng });
+      });
+
+      // Add a click handler to pick coordinates
+      mapRef.current.on("click", (e) => {
+        const { lng, lat } = e.lngLat;
+
+        setSelectedCoords({ latitude: lat, longitude: lng });
+
+        // Move the single marker to the new position
+        markerRef.current!.setLngLat([lng, lat]).addTo(mapRef.current!);
+      });
+
+      // Add geocoder control with custom styling
+      const geocoder = new MapboxGeocoder({
+        accessToken: mapboxgl.accessToken,
+        mapboxgl: mapboxgl as any,
+        marker: false,
+        placeholder: "Search address or coordinates",
+        reverseGeocode: true,
+      });
+
+      geocoder.on("result", (ev: any) => {
+        const coords = ev.result?.center;
+
+        if (coords && coords.length >= 2) {
+          const [lng, lat] = coords;
+
+          setSelectedCoords({ latitude: lat, longitude: lng });
+
+          if (mapRef.current) {
+            mapRef.current.flyTo({ center: [lng, lat], zoom: 14 });
+            markerRef.current!.setLngLat([lng, lat]).addTo(mapRef.current);
+          }
+        }
+      });
+
+      mapRef.current.addControl(geocoder as any);
+
+      // Style the geocoder to match app theme
+      setTimeout(() => {
+        const geocoderContainer = document.querySelector(
+          ".mapboxgl-ctrl-geocoder"
+        );
+
+        if (geocoderContainer) {
+          geocoderContainer.classList.add("shadow-sm");
+        }
+      }, 100);
+    }
+
+    return () => {
+      // cleanup
+      if (markerRef.current) {
+        markerRef.current.remove();
+        markerRef.current = null;
+      }
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, [isOpen]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -164,6 +274,8 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
       division: selectedDivision,
       district: selectedDistrict,
       location: `${divisionName}, ${districtName}`,
+      latitude: selectedCoords?.latitude,
+      longitude: selectedCoords?.longitude,
     };
 
     // Append the data correctly
@@ -304,6 +416,45 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
                           label="Crime date"
                           name="crimeDate"
                         />
+                      </div>
+                    </div>
+
+                    {/* Map selector for exact coordinates */}
+                    <div className="py-4">
+                      <label
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                        htmlFor="map"
+                      >
+                        Select exact location
+                      </label>
+                      {/* Hidden form control to associate the label with a control for accessibility/linting */}
+                      <input
+                        readOnly
+                        aria-hidden="true"
+                        className="sr-only"
+                        id="map"
+                        tabIndex={-1}
+                        type="text"
+                        value=""
+                      />
+                      <div
+                        ref={mapContainerRef}
+                        className="w-full h-64 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700"
+                      />
+                      <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                        {selectedCoords ? (
+                          <>
+                            Selected: <strong>Lat:</strong>{" "}
+                            {selectedCoords.latitude.toFixed(6)},{" "}
+                            <strong>Lng:</strong>{" "}
+                            {selectedCoords.longitude.toFixed(6)}
+                          </>
+                        ) : (
+                          <>
+                            Click on the map or search an address to pick
+                            coordinates.
+                          </>
+                        )}
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2 py-2">

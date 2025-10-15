@@ -10,6 +10,8 @@ export interface TUser {
   address?: string;
   profilePhoto?: string;
   role: UserRole;
+  latitude?: number;
+  longitude?: number;
   status: UserStatus;
   isVerified: boolean;
   otp?: string;

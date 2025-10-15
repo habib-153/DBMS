@@ -38,7 +38,7 @@ export default function HeatmapPage() {
               <div className="ml-4">
                 <Dropdown>
                   <DropdownTrigger>
-                    <button className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <button aria-label="menu" className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800">
                       <MoreVertical className="w-5 h-5" />
                     </button>
                   </DropdownTrigger>

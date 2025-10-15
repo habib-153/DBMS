@@ -7,7 +7,12 @@ import {
   ModalFooter,
 } from "@heroui/modal";
 import { PressEvent } from "@react-types/shared";
-import { ChangeEvent, useRef, useState } from "react";
+import { ChangeEvent, useRef, useState, useEffect } from "react";
+import mapboxgl from "mapbox-gl";
+import MapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
+import "mapbox-gl/dist/mapbox-gl.css";
+import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
+import "@/src/styles/mapbox-geocoder-custom.css";
 import { FieldValues, SubmitHandler } from "react-hook-form";
 import { Camera, X, Loader2 } from "lucide-react";
 
@@ -30,6 +35,13 @@ const UpdateProfileModal = ({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const markerRef = useRef<mapboxgl.Marker | null>(null);
+  const [selectedCoords, setSelectedCoords] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -56,7 +68,13 @@ const UpdateProfileModal = ({
   const handleUpdate: SubmitHandler<FieldValues> = (data) => {
     const formData = new FormData();
 
-    formData.append("data", JSON.stringify(data));
+    const payload = {
+      ...data,
+      latitude: selectedCoords?.latitude,
+      longitude: selectedCoords?.longitude,
+    };
+
+    formData.append("data", JSON.stringify(payload));
     if (imageFile) {
       formData.append("profilePhoto", imageFile);
     }
@@ -70,6 +88,98 @@ const UpdateProfileModal = ({
       },
     });
   };
+
+  // Initialize the map when modal opens (show existing user coords if present)
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
+    if (!token) return;
+
+    mapboxgl.accessToken = token;
+
+    if (!mapRef.current && mapContainerRef.current) {
+      mapRef.current = new mapboxgl.Map({
+        container: mapContainerRef.current,
+        style: "mapbox://styles/mapbox/streets-v11",
+        center: [user.longitude || 90.4125, user.latitude || 23.8103],
+        zoom: user.latitude ? 12 : 6,
+      });
+
+      // Create a single reusable marker with app brand color
+      markerRef.current = new mapboxgl.Marker({
+        color: "#a50034",
+        draggable: true,
+      });
+
+      // If user has coords, show marker at that location
+      if (user.latitude && user.longitude) {
+        setSelectedCoords({
+          latitude: user.latitude,
+          longitude: user.longitude,
+        });
+        markerRef.current
+          .setLngLat([user.longitude, user.latitude])
+          .addTo(mapRef.current);
+      }
+
+      // Update coords when marker is dragged
+      markerRef.current.on("dragend", () => {
+        const lngLat = markerRef.current!.getLngLat();
+        setSelectedCoords({ latitude: lngLat.lat, longitude: lngLat.lng });
+      });
+
+      mapRef.current.on("click", (e) => {
+        const { lng, lat } = e.lngLat;
+        setSelectedCoords({ latitude: lat, longitude: lng });
+        // Move the single marker to the new position
+        markerRef.current!.setLngLat([lng, lat]).addTo(mapRef.current!);
+      });
+
+      const geocoder = new MapboxGeocoder({
+        accessToken: mapboxgl.accessToken,
+        mapboxgl: mapboxgl as any,
+        marker: false,
+        placeholder: "Search your address",
+        reverseGeocode: true,
+      });
+
+      geocoder.on("result", (ev: any) => {
+        const coords = ev.result?.center;
+        if (coords && coords.length >= 2) {
+          const [lng, lat] = coords;
+          setSelectedCoords({ latitude: lat, longitude: lng });
+          if (mapRef.current) {
+            mapRef.current.flyTo({ center: [lng, lat], zoom: 14 });
+            markerRef.current!.setLngLat([lng, lat]).addTo(mapRef.current);
+          }
+        }
+      });
+
+      mapRef.current.addControl(geocoder as any);
+
+      // Style the geocoder to match app theme
+      setTimeout(() => {
+        const geocoderContainer = document.querySelector(
+          ".mapboxgl-ctrl-geocoder"
+        );
+        if (geocoderContainer) {
+          geocoderContainer.classList.add("shadow-sm");
+        }
+      }, 100);
+    }
+
+    return () => {
+      if (markerRef.current) {
+        markerRef.current.remove();
+        markerRef.current = null;
+      }
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, [isOpen, user.latitude, user.longitude]);
 
   const handleSubmit = () => {
     if (formRef.current && !isPending) {
@@ -222,6 +332,42 @@ const UpdateProfileModal = ({
                       />
                     </label>
                   )}
+                </div>
+
+                {/* Map selector */}
+                <div className="py-4">
+                  <label
+                    htmlFor="map-coords-input"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  >
+                    Set exact address (click map)
+                  </label>
+                  <input
+                    id="map-coords-input"
+                    type="text"
+                    readOnly
+                    aria-hidden="true"
+                    className="sr-only"
+                  />
+                  <div
+                    id="map-container"
+                    ref={mapContainerRef}
+                    className="w-full h-56 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700"
+                  />
+                  <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                    {selectedCoords ? (
+                      <>
+                        Selected: <strong>Lat:</strong>{" "}
+                        {selectedCoords.latitude.toFixed(6)},{" "}
+                        <strong>Lng:</strong>{" "}
+                        {selectedCoords.longitude.toFixed(6)}
+                      </>
+                    ) : (
+                      <>
+                        Click on the map to pick coordinates for your address.
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </ModalBody>
