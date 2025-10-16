@@ -133,6 +133,7 @@ const loginUser = (payload) => __awaiter(void 0, void 0, void 0, function* () {
         role: user.role,
         status: user.status,
         profilePhoto: user.profilePhoto,
+        isVerified: user.isVerified,
     };
     // jwtPayload prepared for token creation when needed
     const accessToken = (0, verifyJWT_1.createToken)(jwtPayload, config_1.default.jwt_access_secret, config_1.default.jwt_access_expires_in);
@@ -181,7 +182,7 @@ const refreshToken = (token) => __awaiter(void 0, void 0, void 0, function* () {
     const decoded = (0, verifyJWT_1.verifyToken)(token, config_1.default.jwt_refresh_secret);
     const { id, iat } = decoded;
     const userQuery = `
-    SELECT id, name, email, phone, role, status, "passwordChangedAt"
+    SELECT id, name, email, phone, role, status, "passwordChangedAt", "isVerified"
     FROM users 
     WHERE id = $1
   `;
@@ -208,6 +209,7 @@ const refreshToken = (token) => __awaiter(void 0, void 0, void 0, function* () {
         role: user.role,
         status: user.status,
         profilePhoto: user.profilePhoto,
+        isVerified: user.isVerified,
     };
     const accessToken = (0, verifyJWT_1.createToken)(jwtPayload, config_1.default.jwt_access_secret, config_1.default.jwt_access_expires_in);
     return {
@@ -216,7 +218,7 @@ const refreshToken = (token) => __awaiter(void 0, void 0, void 0, function* () {
 });
 const forgetPassword = (email) => __awaiter(void 0, void 0, void 0, function* () {
     const userQuery = `
-    SELECT id, name, email, phone, role, status
+    SELECT id, name, email, phone, role, status, "profilePhoto", "isVerified"
     FROM users 
     WHERE email = $1
   `;
@@ -239,9 +241,10 @@ const forgetPassword = (email) => __awaiter(void 0, void 0, void 0, function* ()
         role: user.role,
         status: user.status,
         profilePhoto: user.profilePhoto,
+        isVerified: user.isVerified,
     };
     const resetToken = (0, verifyJWT_1.createToken)(jwtPayload, config_1.default.jwt_access_secret, '10m');
-    const resetUILink = `${config_1.default.jwt_refresh_expires_in}/reset-password?id=${user.id}&token=${resetToken}`;
+    const resetUILink = `${config_1.default.reset_pass_ui_link}?email=${encodeURIComponent(user.email)}&token=${resetToken}`;
     yield emailSender_1.EmailHelper.sendEmail(user.email, resetUILink);
     return null;
 });
@@ -373,6 +376,7 @@ const verifyOTP = (payload) => __awaiter(void 0, void 0, void 0, function* () {
         role: verifiedUser.role,
         status: verifiedUser.status,
         profilePhoto: verifiedUser.profilePhoto,
+        isVerified: true,
     };
     const accessToken = (0, verifyJWT_1.createToken)(jwtPayload, config_1.default.jwt_access_secret, config_1.default.jwt_access_expires_in);
     const refreshToken = (0, verifyJWT_1.createToken)(jwtPayload, config_1.default.jwt_refresh_secret, config_1.default.jwt_refresh_expires_in);

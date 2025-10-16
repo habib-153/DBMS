@@ -685,43 +685,43 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
                     {/* Crime Category Dropdown - using CTSelect (react-hook-form aware) */}
                     <div className="py-2">
                       <CTSelect
-                        name="category"
                         label="Crime Category"
+                        name="category"
                         options={[
-                          { key: "murder", label: "Murder", value: "MURDER" },
-                          { key: "theft", label: "Theft", value: "THEFT" },
+                          { key: "MURDER", label: "Murder", value: "MURDER" },
+                          { key: "THEFT", label: "Theft", value: "THEFT" },
                           {
-                            key: "pickpocket",
+                            key: "PICKPOCKET",
                             label: "Pickpocket",
                             value: "PICKPOCKET",
                           },
                           {
-                            key: "burglary",
+                            key: "BURGLARY",
                             label: "Burglary",
                             value: "BURGLARY",
                           },
                           {
-                            key: "dacoity",
+                            key: "DACOITY",
                             label: "Dacoity",
                             value: "DACOITY",
                           },
                           {
-                            key: "assault",
+                            key: "ASSAULT",
                             label: "Assault",
                             value: "ASSAULT",
                           },
-                          { key: "fraud", label: "Fraud", value: "FRAUD" },
+                          { key: "FRAUD", label: "Fraud", value: "FRAUD" },
                           {
-                            key: "vandalism",
+                            key: "VANDALISM",
                             label: "Vandalism",
                             value: "VANDALISM",
                           },
                           {
-                            key: "kidnapping",
+                            key: "KIDNAPPING",
                             label: "Kidnapping",
                             value: "KIDNAPPING",
                           },
-                          { key: "others", label: "Others", value: "OTHERS" },
+                          { key: "OTHERS", label: "Others", value: "OTHERS" },
                         ]}
                       />
                     </div>

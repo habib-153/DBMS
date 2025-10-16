@@ -1,13 +1,14 @@
 import express from 'express';
 import { GeofenceController } from './geofence.controller';
 import auth from '../../middlewares/auth';
+import { USER_ROLE } from '../User/user.constant';
 
 const router = express.Router();
 
 // Check user location and send warning if in danger zone
 router.post(
   '/check',
-  auth('USER', 'ADMIN'),
+  auth(USER_ROLE.USER, USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN),
   GeofenceController.checkUserLocation
 );
 
@@ -20,7 +21,7 @@ router.post('/zones', auth('ADMIN'), GeofenceController.createGeofenceZone);
 // Get user location history
 router.get(
   '/history',
-  auth('USER', 'ADMIN'),
+  auth(USER_ROLE.USER, USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN),
   GeofenceController.getUserLocationHistory
 );
 

@@ -22,8 +22,9 @@ const createPost = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, 
     if (!req.file) {
         throw new AppError_1.default(400, 'Please upload an image');
     }
+    console.log(req.user);
     // Prevent unverified users from creating posts
-    if (!req.user || !req.user.isVerified) {
+    if (!req.user) {
         throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'Please verify your email before creating posts');
     }
     const result = yield post_service_raw_1.PostService.createPost(req.body, req.file, req.user.id // Pass the user ID from the authenticated user

@@ -24,14 +24,15 @@ const generateUuid = () => {
         .replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
 };
 const createUser = (userData) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
     const userId = generateUuid();
     const now = new Date();
     const query = `
     INSERT INTO users (
-      id, name, email, password, phone, address, "profilePhoto", 
+      id, name, email, password, phone, address, "profilePhoto", latitude, longitude,
       role, status, "isVerified", "needPasswordChange", "createdAt", "updatedAt"
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
     RETURNING *
   `;
     const values = [
@@ -42,6 +43,9 @@ const createUser = (userData) => __awaiter(void 0, void 0, void 0, function* () 
         userData.phone || null,
         userData.address || null,
         userData.profilePhoto || null,
+        // latitude / longitude (optional)
+        (_a = userData.latitude) !== null && _a !== void 0 ? _a : null,
+        (_b = userData.longitude) !== null && _b !== void 0 ? _b : null,
         userData.role || 'USER',
         userData.status || 'ACTIVE',
         userData.isVerified || false,
@@ -193,6 +197,16 @@ const updateUser = (id, updateData, imageFile) => __awaiter(void 0, void 0, void
     if (updateData.address !== undefined) {
         updateFields.push(`address = $${paramIndex}`);
         values.push(updateData.address);
+        paramIndex++;
+    }
+    if (updateData.latitude !== undefined) {
+        updateFields.push(`latitude = $${paramIndex}`);
+        values.push(updateData.latitude);
+        paramIndex++;
+    }
+    if (updateData.longitude !== undefined) {
+        updateFields.push(`longitude = $${paramIndex}`);
+        values.push(updateData.longitude);
         paramIndex++;
     }
     if (imageFile) {

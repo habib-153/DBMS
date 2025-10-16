@@ -14,7 +14,7 @@ const validateRequest_1 = __importDefault(require("../../middlewares/validateReq
 const comment_controller_1 = require("../Comment/comment.controller");
 const user_constant_1 = require("../User/user.constant");
 const router = express_1.default.Router();
-router.post('/create', (0, auth_1.default)(user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.SUPER_ADMIN), multer_config_1.multerUpload.single('image'), 
+router.post('/create', (0, auth_1.default)(user_constant_1.USER_ROLE.USER, user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.SUPER_ADMIN), multer_config_1.multerUpload.single('image'), 
 //validateImageFileRequest(ImageFilesArrayZodSchema),
 bodyParser_1.parseBody, 
 //validateRequest(PostValidation.createPostValidationSchema),

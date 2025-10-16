@@ -72,13 +72,17 @@ const getHeatmapPoints = (...args_1) => __awaiter(void 0, [...args_1], void 0, f
         paramIndex++;
     }
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    // Posts table stores district/division as IDs (text format like "47", "6")
-    // Join with district table to get coordinates and names
+    // Use latitude and longitude from posts table (exact crime location)
+    // Join with district and division tables to get names only
     const query = `
     SELECT 
       p.id,
       p.title,
+      p.description,
+      p.image,
       p.location,
+      p.latitude,
+      p.longitude,
       p.district as district_id,
       p.division as division_id,
       p."crimeDate",
@@ -86,8 +90,6 @@ const getHeatmapPoints = (...args_1) => __awaiter(void 0, [...args_1], void 0, f
       p."reportCount",
       p."createdAt",
       d.name as district_name,
-      d.lat,
-      d.lon as lng,
       div.name as division_name
     FROM posts p
     LEFT JOIN district d ON p.district::integer = d.id
@@ -104,18 +106,18 @@ const getHeatmapPoints = (...args_1) => __awaiter(void 0, [...args_1], void 0, f
         sampleDistrictName: (_c = result.rows[0]) === null || _c === void 0 ? void 0 : _c.district_name,
         sampleDivisionId: (_d = result.rows[0]) === null || _d === void 0 ? void 0 : _d.division_id,
         sampleDivisionName: (_e = result.rows[0]) === null || _e === void 0 ? void 0 : _e.division_name,
-        sampleLat: (_f = result.rows[0]) === null || _f === void 0 ? void 0 : _f.lat,
-        sampleLng: (_g = result.rows[0]) === null || _g === void 0 ? void 0 : _g.lng,
+        sampleLat: (_f = result.rows[0]) === null || _f === void 0 ? void 0 : _f.latitude,
+        sampleLng: (_g = result.rows[0]) === null || _g === void 0 ? void 0 : _g.longitude,
     });
-    // Parse location and calculate weights
+    // Parse location and calculate weights using post's exact coordinates
     const points = result.rows
         .map((row) => {
-        // Get coordinates from district table join
-        const lat = row.lat ? parseFloat(row.lat) : null;
-        const lng = row.lng ? parseFloat(row.lng) : null;
+        // Use latitude and longitude from posts table (exact crime location)
+        const lat = row.latitude ? parseFloat(row.latitude) : null;
+        const lng = row.longitude ? parseFloat(row.longitude) : null;
         if (lat === null || lng === null) {
             // eslint-disable-next-line no-console
-            console.log(`⚠️ No coordinates for district ID: ${row.district_id} (${row.district_name || 'unknown'})`);
+            console.log(`⚠️ No coordinates for post ID: ${row.id} - "${row.title}"`);
             return null; // Skip if no valid coordinates
         }
         // Calculate days since crime
@@ -128,8 +130,13 @@ const getHeatmapPoints = (...args_1) => __awaiter(void 0, [...args_1], void 0, f
             weight,
             crimeDate: row.crimeDate,
             title: row.title,
+            description: row.description || '',
+            image: row.image || '',
             district: row.district_name || `District ${row.district_id}`,
             division: row.division_name || `Division ${row.division_id}`,
+            postId: row.id,
+            verificationScore: parseFloat(row.verificationScore) || 0,
+            reportCount: parseInt(row.reportCount) || 0,
         };
     })
         .filter((point) => point !== null);
@@ -171,13 +178,13 @@ const getDistrictStats = (...args_1) => __awaiter(void 0, [...args_1], void 0, f
         THEN 1 
       END) as recent_count,
       AVG(100 - p."verificationScore") as avg_severity,
-      d.lat,
-      d.lon as lng
+      AVG(p.latitude) as avg_lat,
+      AVG(p.longitude) as avg_lng
     FROM posts p
     LEFT JOIN district d ON p.district::integer = d.id
     LEFT JOIN division div ON p.division::integer = div.id
-    ${whereClause}
-    GROUP BY d.name, div.name, d.lat, d.lon
+    ${whereClause} AND p.latitude IS NOT NULL AND p.longitude IS NOT NULL
+    GROUP BY d.name, div.name
     ORDER BY crime_count DESC
   `;
     const result = yield database_1.default.query(query, values);
@@ -187,8 +194,8 @@ const getDistrictStats = (...args_1) => __awaiter(void 0, [...args_1], void 0, f
         crimeCount: parseInt(row.crime_count) || 0,
         recentCount: parseInt(row.recent_count) || 0,
         severity: parseFloat(row.avg_severity) || 0,
-        lat: row.lat ? parseFloat(row.lat) : undefined,
-        lng: row.lng ? parseFloat(row.lng) : undefined,
+        lat: row.avg_lat ? parseFloat(row.avg_lat) : undefined,
+        lng: row.avg_lng ? parseFloat(row.avg_lng) : undefined,
     }));
 });
 // Get crime statistics aggregated by division

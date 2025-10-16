@@ -11,6 +11,11 @@ const comment_route_1 = require("../modules/Comment/comment.route");
 const follow_route_1 = require("../modules/Follow/follow.route");
 const admin_route_1 = require("../modules/Admin/admin.route");
 const heatmap_route_1 = require("../modules/Heatmap/heatmap.route");
+const analytics_route_1 = require("../modules/Analytics/analytics.route");
+const session_route_1 = require("../modules/Session/session.route");
+const notification_route_1 = require("../modules/Notification/notification.route");
+const geofence_route_1 = require("../modules/Geofence/geofence.route");
+const push_route_1 = require("../modules/PushNotification/push.route");
 const auth_1 = __importDefault(require("../middlewares/auth"));
 const user_constant_1 = require("../modules/User/user.constant");
 const user_controller_1 = require("../modules/User/user.controller");
@@ -45,6 +50,26 @@ const moduleRoutes = [
     {
         path: '/heatmap',
         route: heatmap_route_1.HeatmapRoutes,
+    },
+    {
+        path: '/analytics',
+        route: analytics_route_1.AnalyticsRoutes,
+    },
+    {
+        path: '/sessions',
+        route: session_route_1.SessionRoutes,
+    },
+    {
+        path: '/notifications',
+        route: notification_route_1.NotificationRoutes,
+    },
+    {
+        path: '/geofence',
+        route: geofence_route_1.GeofenceRoutes,
+    },
+    {
+        path: '/push-notifications',
+        route: push_route_1.PushNotificationRoutes,
     },
 ];
 router.get('/profile', (0, auth_1.default)(user_constant_1.USER_ROLE.USER, user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.SUPER_ADMIN), user_controller_1.UserController.getMyProfile);

@@ -76,33 +76,34 @@ const sendEmail = (email, resetLink) => __awaiter(void 0, void 0, void 0, functi
                     <table role="presentation" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
                         <!-- Header -->
                         <tr>
-                            <td style="background-color: #0d9488; padding: 40px 20px; text-align: center;">
-                                <h1 style="color: #ffffff; margin: 0; font-size: 24px;">Warden</h1>
+                            <td style="background-color: #a50034; padding: 40px 20px; text-align: center;">
+                                <h1 style="color: #ffffff; margin: 0; font-size: 24px;">WARDEN</h1>
                                 <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px;">Password Reset Request</p>
                             </td>
                         </tr>
                         <!-- Content -->
                         <tr>
                             <td style="padding: 40px 30px;">
-                                <h2 style="color: #333333; margin: 0 0 20px 0; font-size: 20px;">Hello, Traveler!</h2>
-                                <p style="color: #555555; margin: 0 0 25px 0; font-size: 16px; line-height: 1.5;">We received a request to reset the password for your Warden account. Don't worry – it happens to the best of explorers!</p>
-                                <p style="color: #555555; margin: 0 0 25px 0; font-size: 16px; line-height: 1.5;">To reset your password, click the button below. This link will expire in ${20} min.</p>
-                                
+                                <h2 style="color: #333333; margin: 0 0 20px 0; font-size: 20px;">Hello!</h2>
+                                <p style="color: #555555; margin: 0 0 25px 0; font-size: 16px; line-height: 1.5;">We received a request to reset the password for your WARDEN account. Your security is our top priority.</p>
+                                <p style="color: #555555; margin: 0 0 25px 0; font-size: 16px; line-height: 1.5;">To reset your password, click the button below. This link will expire in 10 minutes for your security.</p>
+
                                 <!-- Button -->
                                 <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
                                     <tr>
-                                        <td style="border-radius: 4px; background-color: #0d9488;">
-                                            <a href="${resetLink}" target="_blank" style="display: inline-block; padding: 16px 36px; font-size: 16px; color: #ffffff; text-decoration: none;">Reset Password</a>
+                                        <td style="border-radius: 4px; background-color: #a50034;">
+                                            <a href="${resetLink}" target="_blank" style="display: inline-block; padding: 16px 36px; font-size: 16px; color: #ffffff; text-decoration: none; font-weight: bold;">Reset Password</a>
                                         </td>
                                     </tr>
                                 </table>
                                 <p style="color: #555555; margin: 25px 0 0 0; font-size: 16px; line-height: 1.5;">If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.</p>
+                                <p style="color: #999999; margin: 20px 0 0 0; font-size: 14px;">For security reasons, this link will expire in 10 minutes.</p>
                             </td>
                         </tr>
                         <!-- Footer -->
                         <tr>
                             <td style="background-color: #f8fafa; padding: 30px; text-align: center; border-top: 1px solid #eeeeee;">
-                                <p style="color: #999999; margin: 0; font-size: 14px;">Warden - Your Journey, Your Story</p>
+                                <p style="color: #999999; margin: 0; font-size: 14px;">WARDEN - Secure Crime Reporting Platform</p>
                                 <p style="color: #999999; margin: 10px 0 0 0; font-size: 12px;">This is an automated message, please do not reply.</p>
                             </td>
                         </tr>

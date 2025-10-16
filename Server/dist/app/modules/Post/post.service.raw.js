@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -35,12 +58,13 @@ const generateUuid = () => {
         .replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
 };
 const createPost = (postData, imageFile, authorId) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
     const postId = generateUuid();
     const crimeDate = new Date(postData.crimeDate);
     const now = new Date();
     const query = `
-    INSERT INTO posts (id, title, description, image, location, district, division, "crimeDate", "authorId", status, "isDeleted", "postDate", "createdAt", "updatedAt")
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'PENDING', false, $10, $11, $12)
+    INSERT INTO posts (id, title, description, image, location, district, division, "crimeDate", category, "authorId", latitude, longitude, status, "isDeleted", "postDate", "createdAt", "updatedAt")
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'PENDING', false, $13, $14, $15)
     RETURNING *
   `;
     const values = [
@@ -52,7 +76,11 @@ const createPost = (postData, imageFile, authorId) => __awaiter(void 0, void 0, 
         postData.district,
         postData.division,
         crimeDate,
+        postData.category || 'OTHERS',
         authorId,
+        // latitude and longitude: accept numbers or null
+        (_a = postData.latitude) !== null && _a !== void 0 ? _a : null,
+        (_b = postData.longitude) !== null && _b !== void 0 ? _b : null,
         now,
         now,
         now,
@@ -61,6 +89,18 @@ const createPost = (postData, imageFile, authorId) => __awaiter(void 0, void 0, 
     const createdPost = result.rows[0];
     if (!createdPost) {
         throw new AppError_1.default(http_status_1.default.INTERNAL_SERVER_ERROR, 'Failed to create post');
+    }
+    // Trigger AI analysis asynchronously (non-blocking)
+    if (imageFile && imageFile.path) {
+        // Import AIAnalysisService dynamically to avoid circular dependencies
+        Promise.resolve().then(() => __importStar(require('../AIAnalysis/aianalysis.service'))).then(({ AIAnalysisService }) => {
+            AIAnalysisService.analyzeImageWithRoboflow(imageFile.path, createdPost.id).catch((error) => {
+                console.error('AI analysis failed:', error);
+            });
+        })
+            .catch((err) => {
+            console.error('Failed to import AI service:', err);
+        });
     }
     // Get post with author details
     const postWithDetails = yield getSinglePost(createdPost.id);
@@ -97,6 +137,11 @@ const getAllPosts = (filters, user) => __awaiter(void 0, void 0, void 0, functio
     if (filterData.status) {
         conditions.push(`p.status = $${paramIndex}`);
         values.push(filterData.status);
+        paramIndex++;
+    }
+    if (filterData.category) {
+        conditions.push(`p.category = $${paramIndex}`);
+        values.push(filterData.category);
         paramIndex++;
     }
     const isAdmin = (user === null || user === void 0 ? void 0 : user.role) === 'ADMIN' || (user === null || user === void 0 ? void 0 : user.role) === 'SUPER_ADMIN';
@@ -299,6 +344,22 @@ const updatePost = (id, updateData, imageFile, user) => __awaiter(void 0, void 0
         values.push(new Date(updateData.crimeDate));
         paramIndex++;
     }
+    // Latitude / Longitude may be provided or explicitly set to null to clear
+    if (updateData.latitude !== undefined) {
+        updateFields.push(`latitude = $${paramIndex}`);
+        values.push(updateData.latitude);
+        paramIndex++;
+    }
+    if (updateData.longitude !== undefined) {
+        updateFields.push(`longitude = $${paramIndex}`);
+        values.push(updateData.longitude);
+        paramIndex++;
+    }
+    if (updateData.category !== undefined) {
+        updateFields.push(`category = $${paramIndex}`);
+        values.push(updateData.category);
+        paramIndex++;
+    }
     // Allow admin to update post status
     if (updateData.status !== undefined && isAdmin) {
         updateFields.push(`status = $${paramIndex}`);
@@ -328,6 +389,15 @@ const updatePost = (id, updateData, imageFile, user) => __awaiter(void 0, void 0
     const updatedPost = result.rows[0];
     if (!updatedPost) {
         throw new AppError_1.default(http_status_1.default.INTERNAL_SERVER_ERROR, 'Failed to update post');
+    }
+    // Send push notification if status was changed by admin
+    if (updateData.status !== undefined &&
+        isAdmin &&
+        post.status !== updateData.status) {
+        Promise.resolve().then(() => __importStar(require('../PushNotification/push.service'))).then(({ PushNotificationService }) => {
+            PushNotificationService.sendPostStatusPush(post.authorId, post.title, updateData.status).catch((err) => console.error('Failed to send post status push notification:', err));
+        })
+            .catch((err) => console.error('Failed to import PushNotificationService:', err));
     }
     // Return post with details
     return yield getSinglePost(updatedPost.id);

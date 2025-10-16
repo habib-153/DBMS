@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const app_1 = __importDefault(require("./app"));
 const config_1 = __importDefault(require("./app/config"));
 const seeding_1 = require("./app/utils/seeding");
+const firebase_config_1 = require("./app/config/firebase.config");
 let server;
 process.on('uncaughtException', (error) => {
     console.error('Uncaught Exception:', error);
@@ -36,6 +37,8 @@ function bootstrap() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             console.log('🛢 Database connected successfully (With PostgreSQL)');
+            // Initialize Firebase for push notifications
+            firebase_config_1.FirebaseService.initializeFirebase();
             yield (0, seeding_1.seed)();
             server = app_1.default.listen(config_1.default.port, () => {
                 console.log(config_1.default.port);
