@@ -42,6 +42,7 @@ export interface IInput {
   type?: string;
   label: string;
   name: string;
+  defaultValue?: any;
   disabled?: boolean;
 }
 

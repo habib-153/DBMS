@@ -35,8 +35,8 @@ const createPost = async (
   const now = new Date();
 
   const query = `
-    INSERT INTO posts (id, title, description, image, location, district, division, "crimeDate", "authorId", latitude, longitude, status, "isDeleted", "postDate", "createdAt", "updatedAt")
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'PENDING', false, $12, $13, $14)
+    INSERT INTO posts (id, title, description, image, location, district, division, "crimeDate", category, "authorId", latitude, longitude, status, "isDeleted", "postDate", "createdAt", "updatedAt")
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'PENDING', false, $13, $14, $15)
     RETURNING *
   `;
 
@@ -49,6 +49,7 @@ const createPost = async (
     postData.district,
     postData.division,
     crimeDate,
+    postData.category || 'OTHERS',
     authorId,
     // latitude and longitude: accept numbers or null
     postData.latitude ?? null,
@@ -66,6 +67,23 @@ const createPost = async (
       httpStatus.INTERNAL_SERVER_ERROR,
       'Failed to create post'
     );
+  }
+
+  // Trigger AI analysis asynchronously (non-blocking)
+  if (imageFile && imageFile.path) {
+    // Import AIAnalysisService dynamically to avoid circular dependencies
+    import('../AIAnalysis/aianalysis.service')
+      .then(({ AIAnalysisService }) => {
+        AIAnalysisService.analyzeImageWithRoboflow(
+          imageFile.path,
+          createdPost.id
+        ).catch((error) => {
+          console.error('AI analysis failed:', error);
+        });
+      })
+      .catch((err) => {
+        console.error('Failed to import AI service:', err);
+      });
   }
 
   // Get post with author details
@@ -122,6 +140,12 @@ const getAllPosts = async (
   if (filterData.status) {
     conditions.push(`p.status = $${paramIndex}`);
     values.push(filterData.status);
+    paramIndex++;
+  }
+
+  if (filterData.category) {
+    conditions.push(`p.category = $${paramIndex}`);
+    values.push(filterData.category);
     paramIndex++;
   }
 
@@ -407,6 +431,12 @@ const updatePost = async (
     paramIndex++;
   }
 
+  if (updateData.category !== undefined) {
+    updateFields.push(`category = $${paramIndex}`);
+    values.push(updateData.category);
+    paramIndex++;
+  }
+
   // Allow admin to update post status
   if (updateData.status !== undefined && isAdmin) {
     updateFields.push(`status = $${paramIndex}`);
@@ -446,6 +476,27 @@ const updatePost = async (
       httpStatus.INTERNAL_SERVER_ERROR,
       'Failed to update post'
     );
+  }
+
+  // Send push notification if status was changed by admin
+  if (
+    updateData.status !== undefined &&
+    isAdmin &&
+    post.status !== updateData.status
+  ) {
+    import('../PushNotification/push.service')
+      .then(({ PushNotificationService }) => {
+        PushNotificationService.sendPostStatusPush(
+          post.authorId,
+          post.title,
+          updateData.status as 'APPROVED' | 'REJECTED'
+        ).catch((err) =>
+          console.error('Failed to send post status push notification:', err)
+        );
+      })
+      .catch((err) =>
+        console.error('Failed to import PushNotificationService:', err)
+      );
   }
 
   // Return post with details

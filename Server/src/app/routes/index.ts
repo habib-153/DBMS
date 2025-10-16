@@ -7,6 +7,10 @@ import { FollowRoutes } from '../modules/Follow/follow.route';
 import { AdminRoutes } from '../modules/Admin/admin.route';
 import { HeatmapRoutes } from '../modules/Heatmap/heatmap.route';
 import { AnalyticsRoutes } from '../modules/Analytics/analytics.route';
+import { SessionRoutes } from '../modules/Session/session.route';
+import { NotificationRoutes } from '../modules/Notification/notification.route';
+import { GeofenceRoutes } from '../modules/Geofence/geofence.route';
+import { PushNotificationRoutes } from '../modules/PushNotification/push.route';
 import auth from '../middlewares/auth';
 import { USER_ROLE } from '../modules/User/user.constant';
 import { UserController } from '../modules/User/user.controller';
@@ -47,6 +51,22 @@ const moduleRoutes = [
   {
     path: '/analytics',
     route: AnalyticsRoutes,
+  },
+  {
+    path: '/sessions',
+    route: SessionRoutes,
+  },
+  {
+    path: '/notifications',
+    route: NotificationRoutes,
+  },
+  {
+    path: '/geofence',
+    route: GeofenceRoutes,
+  },
+  {
+    path: '/push-notifications',
+    route: PushNotificationRoutes,
   },
 ];
 

@@ -61,6 +61,19 @@
   transition: background-color 0.2s ease;
 }
 
+/* Make the suggestions list scrollable and capped in height to avoid overflowing the modal */
+.mapboxgl-ctrl-geocoder .suggestions {
+  max-height: 220px; /* limit height */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ensure the suggestions popup appears above other elements (modals, maps) */
+.mapboxgl-ctrl-geocoder .suggestions,
+.mapboxgl-ctrl-geocoder .suggestions .suggestion {
+  z-index: 9999;
+}
+
 .mapboxgl-ctrl-geocoder--suggestion:hover,
 .mapboxgl-ctrl-geocoder--suggestion.active {
   background-color: rgba(165, 0, 52, 0.05);

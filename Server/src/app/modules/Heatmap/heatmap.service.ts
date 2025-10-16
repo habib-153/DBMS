@@ -7,8 +7,13 @@ interface HeatmapPoint {
   weight: number;
   crimeDate: Date;
   title: string;
+  description: string;
+  image: string;
   district: string;
   division: string;
+  postId: string;
+  verificationScore: number;
+  reportCount: number;
 }
 
 interface DistrictStats {
@@ -112,13 +117,17 @@ const getHeatmapPoints = async (
   const whereClause =
     conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-  // Posts table stores district/division as IDs (text format like "47", "6")
-  // Join with district table to get coordinates and names
+  // Use latitude and longitude from posts table (exact crime location)
+  // Join with district and division tables to get names only
   const query = `
     SELECT 
       p.id,
       p.title,
+      p.description,
+      p.image,
       p.location,
+      p.latitude,
+      p.longitude,
       p.district as district_id,
       p.division as division_id,
       p."crimeDate",
@@ -126,8 +135,6 @@ const getHeatmapPoints = async (
       p."reportCount",
       p."createdAt",
       d.name as district_name,
-      d.lat,
-      d.lon as lng,
       div.name as division_name
     FROM posts p
     LEFT JOIN district d ON p.district::integer = d.id
@@ -146,23 +153,21 @@ const getHeatmapPoints = async (
     sampleDistrictName: result.rows[0]?.district_name,
     sampleDivisionId: result.rows[0]?.division_id,
     sampleDivisionName: result.rows[0]?.division_name,
-    sampleLat: result.rows[0]?.lat,
-    sampleLng: result.rows[0]?.lng,
+    sampleLat: result.rows[0]?.latitude,
+    sampleLng: result.rows[0]?.longitude,
   });
 
-  // Parse location and calculate weights
+  // Parse location and calculate weights using post's exact coordinates
   const points: HeatmapPoint[] = result.rows
     .map((row: any) => {
-      // Get coordinates from district table join
-      const lat = row.lat ? parseFloat(row.lat) : null;
-      const lng = row.lng ? parseFloat(row.lng) : null;
+      // Use latitude and longitude from posts table (exact crime location)
+      const lat = row.latitude ? parseFloat(row.latitude) : null;
+      const lng = row.longitude ? parseFloat(row.longitude) : null;
 
       if (lat === null || lng === null) {
         // eslint-disable-next-line no-console
         console.log(
-          `⚠️ No coordinates for district ID: ${row.district_id} (${
-            row.district_name || 'unknown'
-          })`
+          `⚠️ No coordinates for post ID: ${row.id} - "${row.title}"`
         );
         return null; // Skip if no valid coordinates
       }
@@ -185,8 +190,13 @@ const getHeatmapPoints = async (
         weight,
         crimeDate: row.crimeDate,
         title: row.title,
+        description: row.description || '',
+        image: row.image || '',
         district: row.district_name || `District ${row.district_id}`,
         division: row.division_name || `Division ${row.division_id}`,
+        postId: row.id,
+        verificationScore: parseFloat(row.verificationScore) || 0,
+        reportCount: parseInt(row.reportCount) || 0,
       };
     })
     .filter((point: HeatmapPoint | null) => point !== null) as HeatmapPoint[];
@@ -238,13 +248,13 @@ const getDistrictStats = async (
         THEN 1 
       END) as recent_count,
       AVG(100 - p."verificationScore") as avg_severity,
-      d.lat,
-      d.lon as lng
+      AVG(p.latitude) as avg_lat,
+      AVG(p.longitude) as avg_lng
     FROM posts p
     LEFT JOIN district d ON p.district::integer = d.id
     LEFT JOIN division div ON p.division::integer = div.id
-    ${whereClause}
-    GROUP BY d.name, div.name, d.lat, d.lon
+    ${whereClause} AND p.latitude IS NOT NULL AND p.longitude IS NOT NULL
+    GROUP BY d.name, div.name
     ORDER BY crime_count DESC
   `;
 
@@ -256,8 +266,8 @@ const getDistrictStats = async (
     crimeCount: parseInt(row.crime_count) || 0,
     recentCount: parseInt(row.recent_count) || 0,
     severity: parseFloat(row.avg_severity) || 0,
-    lat: row.lat ? parseFloat(row.lat) : undefined,
-    lng: row.lng ? parseFloat(row.lng) : undefined,
+    lat: row.avg_lat ? parseFloat(row.avg_lat) : undefined,
+    lng: row.avg_lng ? parseFloat(row.avg_lng) : undefined,
   }));
 };
 

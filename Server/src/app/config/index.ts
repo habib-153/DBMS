@@ -22,4 +22,7 @@ export default {
   sender_email: process.env.SENDER_EMAIL,
   sender_app_password: process.env.SENDER_APP_PASS,
   reset_pass_ui_link: process.env.CLIENT_URL,
+  roboflowApiKey: process.env.ROBOFLOW_API_KEY,
+  roboflowModel: process.env.ROBOFLOW_MODEL || 'crime-detection/1',
+  firebaseServiceAccount: process.env.FIREBASE_SERVICE_ACCOUNT,
 };

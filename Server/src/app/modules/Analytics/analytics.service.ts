@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import database from '../../../shared/database';
 
 /**
@@ -45,17 +44,19 @@ const crimeTrendWithMovingAvg = async () => {
 
 const hotspotDistricts = async () => {
   const q = `
-    WITH recent AS (
-      SELECT p.id, p.district::int as district_id, p."crimeDate"
-      FROM posts p
-      WHERE p.status = 'APPROVED' AND p."isDeleted" = false AND p."crimeDate" >= NOW() - INTERVAL '30 days'
-    )
-    SELECT d.name as district, COUNT(r.id) as cnt, d.lat::double precision as lat, d.lon::double precision as lon
-    FROM recent r
-    LEFT JOIN district d ON d.id = r.district_id
+    SELECT 
+      d.name as district, 
+      COUNT(p.id) as cnt, 
+      d.lat::double precision as lat, 
+      d.lon::double precision as lon,
+      json_agg(DISTINCT p.category) FILTER (WHERE p.category IS NOT NULL) as top_categories
+    FROM posts p
+    LEFT JOIN district d ON d.id = p.district::int
+    WHERE p.status = 'APPROVED' AND p."isDeleted" = false
     GROUP BY d.name, d.lat, d.lon
+    HAVING COUNT(p.id) > 0
     ORDER BY cnt DESC
-    LIMIT 10;
+    LIMIT 15;
   `;
 
   const r = await database.query(q);
@@ -126,18 +127,84 @@ const topContributors = async () => {
 };
 
 const crimeTypeDistribution = async () => {
-  // crude crime type grouping by keyword in title (example)
+  // Use the explicit `category` column (enum) in posts for accurate distribution
   const q = `
-    SELECT category, COUNT(*) as cnt FROM (
-      SELECT CASE
-        WHEN LOWER(title) ~ 'theft|robbery|steal' THEN 'Theft'
-        WHEN LOWER(title) ~ 'assault|attack' THEN 'Assault'
-        WHEN LOWER(title) ~ 'fraud|scam' THEN 'Fraud'
-        ELSE 'Other' END as category
-      FROM posts
-      WHERE "isDeleted" = false
-    ) s
-    GROUP BY category;
+    SELECT 
+      category, 
+      COUNT(*) as cnt,
+      ROUND(AVG("verificationScore")::numeric, 2) as avg_verification,
+      COUNT(*) FILTER (WHERE status = 'APPROVED') as approved_cnt,
+      COUNT(*) FILTER (WHERE status = 'PENDING') as pending_cnt
+    FROM posts
+    WHERE "isDeleted" = false AND category IS NOT NULL
+    GROUP BY category
+    ORDER BY cnt DESC;
+  `;
+
+  const r = await database.query(q);
+  return r.rows;
+};
+
+const statusBreakdown = async () => {
+  const q = `
+    SELECT 
+      status,
+      COUNT(*) as cnt,
+      ROUND(AVG("verificationScore")::numeric, 2) as avg_score
+    FROM posts
+    WHERE "isDeleted" = false
+    GROUP BY status
+    ORDER BY cnt DESC;
+  `;
+
+  const r = await database.query(q);
+  return r.rows;
+};
+
+const divisionStats = async () => {
+  const q = `
+    SELECT 
+      dv.name as division,
+      COUNT(p.id) as cnt,
+      json_agg(DISTINCT p.category) FILTER (WHERE p.category IS NOT NULL) as categories
+    FROM posts p
+    LEFT JOIN division dv ON dv.id = p.division::int
+    WHERE p.status = 'APPROVED' AND p."isDeleted" = false
+    GROUP BY dv.name
+    ORDER BY cnt DESC
+    LIMIT 10;
+  `;
+
+  const r = await database.query(q);
+  return r.rows;
+};
+
+const crimesByDayOfWeek = async () => {
+  const q = `
+    SELECT 
+      TO_CHAR("crimeDate", 'Day') as day_name,
+      EXTRACT(DOW FROM "crimeDate")::int as day_num,
+      COUNT(*) as cnt
+    FROM posts
+    WHERE "isDeleted" = false AND status = 'APPROVED'
+    GROUP BY day_name, day_num
+    ORDER BY day_num;
+  `;
+
+  const r = await database.query(q);
+  return r.rows;
+};
+
+const recentCrimeActivity = async () => {
+  const q = `
+    SELECT 
+      DATE("crimeDate") as date,
+      COUNT(*) as cnt,
+      json_agg(DISTINCT category) FILTER (WHERE category IS NOT NULL) as categories
+    FROM posts
+    WHERE "isDeleted" = false AND status = 'APPROVED' AND "crimeDate" >= NOW() - INTERVAL '14 days'
+    GROUP BY DATE("crimeDate")
+    ORDER BY date DESC;
   `;
 
   const r = await database.query(q);
@@ -153,4 +220,8 @@ export const AnalyticsService = {
   responseEffectiveness,
   topContributors,
   crimeTypeDistribution,
+  statusBreakdown,
+  divisionStats,
+  crimesByDayOfWeek,
+  recentCrimeActivity,
 };

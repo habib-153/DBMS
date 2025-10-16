@@ -1,3 +1,4 @@
+"use client";
 import { Button } from "@heroui/button";
 import {
   Modal,
@@ -8,11 +9,8 @@ import {
 } from "@heroui/modal";
 import { PressEvent } from "@react-types/shared";
 import { ChangeEvent, useRef, useState, useEffect } from "react";
-import mapboxgl from "mapbox-gl";
-import MapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
-import "mapbox-gl/dist/mapbox-gl.css";
-import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
 import "@/src/styles/mapbox-geocoder-custom.css";
+import "leaflet/dist/leaflet.css";
 import { FieldValues, SubmitHandler } from "react-hook-form";
 import { Camera, X, Loader2 } from "lucide-react";
 
@@ -36,12 +34,14 @@ const UpdateProfileModal = ({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
-  const markerRef = useRef<mapboxgl.Marker | null>(null);
+  const mapRef = useRef<any | null>(null);
+  const markerRef = useRef<any | null>(null);
   const [selectedCoords, setSelectedCoords] = useState<{
     latitude: number;
     longitude: number;
   } | null>(null);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const searchTimerRef = useRef<number | null>(null);
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -89,97 +89,165 @@ const UpdateProfileModal = ({
     });
   };
 
-  // Initialize the map when modal opens (show existing user coords if present)
+  // Initialize Leaflet map + Nominatim when modal opens
   useEffect(() => {
     if (!isOpen) return;
 
-    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
-    if (!token) return;
+    let L: any;
 
-    mapboxgl.accessToken = token;
+    const init = async () => {
+      try {
+        L = await import("leaflet");
 
-    if (!mapRef.current && mapContainerRef.current) {
-      mapRef.current = new mapboxgl.Map({
-        container: mapContainerRef.current,
-        style: "mapbox://styles/mapbox/streets-v11",
-        center: [user.longitude || 90.4125, user.latitude || 23.8103],
-        zoom: user.latitude ? 12 : 6,
-      });
+        if (L && L.Icon && L.Icon.Default) {
+          L.Icon.Default.mergeOptions({
+            iconRetinaUrl:
+              "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+            iconUrl:
+              "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+            shadowUrl:
+              "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+          });
+        }
 
-      // Create a single reusable marker with app brand color
-      markerRef.current = new mapboxgl.Marker({
-        color: "#a50034",
-        draggable: true,
-      });
+        if (!mapRef.current && mapContainerRef.current) {
+          const map = L.map(mapContainerRef.current).setView(
+            [user.latitude || 23.8103, user.longitude || 90.4125],
+            user.latitude ? 12 : 6
+          );
 
-      // If user has coords, show marker at that location
-      if (user.latitude && user.longitude) {
-        setSelectedCoords({
-          latitude: user.latitude,
-          longitude: user.longitude,
-        });
-        markerRef.current
-          .setLngLat([user.longitude, user.latitude])
-          .addTo(mapRef.current);
-      }
+          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution:
+              '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          }).addTo(map);
 
-      // Update coords when marker is dragged
-      markerRef.current.on("dragend", () => {
-        const lngLat = markerRef.current!.getLngLat();
-        setSelectedCoords({ latitude: lngLat.lat, longitude: lngLat.lng });
-      });
+          mapRef.current = map;
 
-      mapRef.current.on("click", (e) => {
-        const { lng, lat } = e.lngLat;
-        setSelectedCoords({ latitude: lat, longitude: lng });
-        // Move the single marker to the new position
-        markerRef.current!.setLngLat([lng, lat]).addTo(mapRef.current!);
-      });
+          const marker = L.marker(
+            [user.latitude || 23.8103, user.longitude || 90.4125],
+            { draggable: true }
+          ).addTo(map);
 
-      const geocoder = new MapboxGeocoder({
-        accessToken: mapboxgl.accessToken,
-        mapboxgl: mapboxgl as any,
-        marker: false,
-        placeholder: "Search your address",
-        reverseGeocode: true,
-      });
+          markerRef.current = marker;
 
-      geocoder.on("result", (ev: any) => {
-        const coords = ev.result?.center;
-        if (coords && coords.length >= 2) {
-          const [lng, lat] = coords;
-          setSelectedCoords({ latitude: lat, longitude: lng });
-          if (mapRef.current) {
-            mapRef.current.flyTo({ center: [lng, lat], zoom: 14 });
-            markerRef.current!.setLngLat([lng, lat]).addTo(mapRef.current);
+          if (user.latitude && user.longitude) {
+            setSelectedCoords({
+              latitude: user.latitude,
+              longitude: user.longitude,
+            });
+          }
+
+          marker.on("dragend", () => {
+            const pos = marker.getLatLng();
+
+            setSelectedCoords({ latitude: pos.lat, longitude: pos.lng });
+          });
+
+          map.on("click", (e: any) => {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+
+            marker.setLatLng([lat, lng]);
+            setSelectedCoords({ latitude: lat, longitude: lng });
+          });
+
+          const input = document.getElementById(
+            "gm-search-input"
+          ) as HTMLInputElement | null;
+
+          if (input) {
+            const onInput = (evt: any) => {
+              const q = input.value.trim();
+
+              if (searchTimerRef.current) {
+                window.clearTimeout(searchTimerRef.current);
+              }
+              if (!q) {
+                setSuggestions([]);
+
+                return;
+              }
+              searchTimerRef.current = window.setTimeout(async () => {
+                try {
+                  const resp = await fetch(
+                    `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=7&countrycodes=bd&q=${encodeURIComponent(
+                      q
+                    )}`
+                  );
+                  const data = await resp.json();
+
+                  setSuggestions(data || []);
+                } catch (e) {
+                  setSuggestions([]);
+                }
+              }, 300);
+            };
+
+            input.addEventListener("input", onInput);
+            (input as any).__nominatimHandler = onInput;
           }
         }
-      });
+      } catch (err) {
+        console.error("Failed to load Leaflet", err);
+      }
+    };
 
-      mapRef.current.addControl(geocoder as any);
-
-      // Style the geocoder to match app theme
-      setTimeout(() => {
-        const geocoderContainer = document.querySelector(
-          ".mapboxgl-ctrl-geocoder"
-        );
-        if (geocoderContainer) {
-          geocoderContainer.classList.add("shadow-sm");
-        }
-      }, 100);
-    }
+    init();
 
     return () => {
-      if (markerRef.current) {
-        markerRef.current.remove();
-        markerRef.current = null;
-      }
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
+      try {
+        if (searchTimerRef.current) {
+          window.clearTimeout(searchTimerRef.current);
+          searchTimerRef.current = null;
+        }
+        setSuggestions([]);
+        const input = document.getElementById(
+          "gm-search-input"
+        ) as HTMLInputElement | null;
+
+        if (input && (input as any).__nominatimHandler) {
+          input.removeEventListener("input", (input as any).__nominatimHandler);
+          delete (input as any).__nominatimHandler;
+        }
+        if (markerRef.current && markerRef.current.remove) {
+          markerRef.current.remove();
+          markerRef.current = null;
+        }
+        if (mapRef.current && mapRef.current.remove) {
+          mapRef.current.remove();
+          mapRef.current = null;
+        }
+      } catch (e) {
+        // ignore
       }
     };
   }, [isOpen, user.latitude, user.longitude]);
+
+  const handleSuggestionClick = (item: any) => {
+    const lat = parseFloat(item.lat);
+    const lon = parseFloat(item.lon);
+
+    if (mapRef.current) {
+      mapRef.current.setView([lat, lon], 14);
+    }
+    if (markerRef.current) {
+      markerRef.current.setLatLng([lat, lon]);
+    }
+    setSelectedCoords({ latitude: lat, longitude: lon });
+    setSuggestions([]);
+    const input = document.getElementById(
+      "gm-search-input"
+    ) as HTMLInputElement | null;
+
+    if (input) input.value = item.display_name || "";
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && suggestions.length > 0) {
+      e.preventDefault();
+      handleSuggestionClick(suggestions[0]);
+    }
+  };
 
   const handleSubmit = () => {
     if (formRef.current && !isPending) {
@@ -337,22 +405,52 @@ const UpdateProfileModal = ({
                 {/* Map selector */}
                 <div className="py-4">
                   <label
-                    htmlFor="map-coords-input"
                     className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                    htmlFor="map-coords-input"
                   >
                     Set exact address (click map)
                   </label>
                   <input
-                    id="map-coords-input"
-                    type="text"
                     readOnly
                     aria-hidden="true"
                     className="sr-only"
+                    id="map-coords-input"
+                    type="text"
                   />
+                  <div className="mb-2">
+                    <input
+                      className="w-full rounded-md border px-3 py-2 text-sm"
+                      id="gm-search-input"
+                      placeholder="Search address, place, or location"
+                      type="text"
+                      onKeyDown={handleSearchKeyDown}
+                    />
+                  </div>
+                  {suggestions.length > 0 && (
+                    <div className="mb-2">
+                      <div className="max-h-56 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-[9999]">
+                        {suggestions.map((s, idx) => (
+                          <button
+                            key={s.place_id || idx}
+                            className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700"
+                            type="button"
+                            onClick={() => handleSuggestionClick(s)}
+                          >
+                            <div className="text-sm font-medium text-gray-800 dark:text-gray-100">
+                              {s.display_name.split(",")[0]}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-300 truncate">
+                              {s.display_name}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div
-                    id="map-container"
                     ref={mapContainerRef}
                     className="w-full h-56 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700"
+                    id="map-container"
                   />
                   <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
                     {selectedCoords ? (

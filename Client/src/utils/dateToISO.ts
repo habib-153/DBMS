@@ -6,6 +6,13 @@ interface IDate {
   era?: string;
   month?: number | string;
   year?: number | string;
+  // optional time parts (some date pickers return these alongside calendar fields)
+  hour?: number | string;
+  hours?: number | string;
+  minute?: number | string;
+  minutes?: number | string;
+  second?: number | string;
+  seconds?: number | string;
 }
 
 type DateInput = IDate | Date | string | undefined | null;
@@ -41,15 +48,32 @@ const dateToISO = (date: DateInput): string => {
     return nowISO;
   }
 
-  // Try IDate shape
+  // Try IDate shape (calendar-like objects from some datepickers)
   try {
-    const month = Number((date as IDate)?.month ?? NaN);
-    const day = Number((date as IDate)?.day ?? NaN);
-    const year = Number((date as IDate)?.year ?? NaN);
+    const idx = date as IDate;
+    const month = Number(idx?.month ?? NaN);
+    const day = Number(idx?.day ?? NaN);
+    const year = Number(idx?.year ?? NaN);
+
+    // Try to pull time parts if present (support both singular/plural keys)
+    const hour = Number((idx?.hour ?? idx?.hours ?? 0) as number | string);
+    const minute = Number(
+      (idx?.minute ?? idx?.minutes ?? 0) as number | string
+    );
+    const second = Number(
+      (idx?.second ?? idx?.seconds ?? 0) as number | string
+    );
 
     if (![month, day, year].some((v) => isNaN(v))) {
       // Note: JS Date months are 0-based when using Date(year, month-1, day)
-      const dt = new Date(year, month - 1, day);
+      const dt = new Date(
+        year,
+        month - 1,
+        day,
+        isNaN(hour) ? 0 : hour,
+        isNaN(minute) ? 0 : minute,
+        isNaN(second) ? 0 : second
+      );
       if (!isNaN(dt.getTime())) return dt.toISOString();
     }
   } catch (e) {

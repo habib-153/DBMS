@@ -2,6 +2,7 @@ import { Server } from 'http';
 import app from './app';
 import config from './app/config';
 import { seed } from './app/utils/seeding';
+import { FirebaseService } from './app/config/firebase.config';
 
 let server: Server;
 
@@ -25,9 +26,13 @@ process.on('unhandledRejection', (error) => {
 async function bootstrap() {
   try {
     console.log('🛢 Database connected successfully (With PostgreSQL)');
+
+    // Initialize Firebase for push notifications
+    FirebaseService.initializeFirebase();
+
     await seed();
     server = app.listen(config.port, () => {
-      console.log(config.port)
+      console.log(config.port);
       console.log(`🚀 Application is running on port ${config.port}`);
     });
   } catch (err) {

@@ -185,6 +185,10 @@ export default function EditPostModal({
       era: "AD",
       month: date.getMonth() + 1,
       year: date.getFullYear(),
+      // include time parts so the DatePicker can prefill time fields
+      hour: date.getHours(),
+      minute: date.getMinutes(),
+      second: date.getSeconds(),
     };
   };
 

@@ -1,5 +1,17 @@
 export type PostStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
+export type CrimeCategory =
+  | 'MURDER'
+  | 'THEFT'
+  | 'PICKPOCKET'
+  | 'BURGLARY'
+  | 'DACOITY'
+  | 'ASSAULT'
+  | 'FRAUD'
+  | 'VANDALISM'
+  | 'KIDNAPPING'
+  | 'OTHERS';
+
 export interface TPost {
   id: string;
   title: string;
@@ -8,10 +20,12 @@ export interface TPost {
   district: string;
   division: string;
   crimeDate: Date;
+  category?: CrimeCategory;
   image?: string;
   authorId: string;
   status: PostStatus;
   isDeleted: boolean;
+  aiVerificationScore?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,6 +39,7 @@ export interface TCreatePost {
   district: string;
   division: string;
   crimeDate: string; // Will be converted to Date
+  category?: CrimeCategory;
 }
 
 export interface TUpdatePost {
@@ -36,6 +51,7 @@ export interface TUpdatePost {
   district?: string;
   division?: string;
   crimeDate?: string;
+  category?: CrimeCategory;
   status?: PostStatus;
 }
 
@@ -45,6 +61,7 @@ export interface TPostFilterableFields {
   district?: string;
   division?: string;
   status?: PostStatus;
+  category?: CrimeCategory;
   authorId?: string;
   searchTerm?: string;
 }
