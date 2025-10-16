@@ -42,11 +42,9 @@ import {
 import { useUser } from "@/src/context/user.provider";
 import AuthModal from "@/src/components/UI/modal/AuthModal/AuthModal";
 import { usePostAComment, useGetPostComments } from "@/src/hooks/comment.hook";
-import CommentVoteButtons from "@/src/components/Comment/CommentVoteButtons";
 import CommentTree from "@/src/components/Comment/CommentTree";
 import { FollowButton } from "@/src/components/modules/Shared";
 import ReportPostModal from "@/src/components/UI/modal/ReportPostModal";
-import VerificationScoreBadge from "@/src/components/UI/VerificationScoreBadge";
 
 const PostDetails = () => {
   const { id } = useParams();
@@ -54,7 +52,6 @@ const PostDetails = () => {
   const { data, isLoading } = useGetSinglePost(id as string);
   const postData = data?.data;
   const { user } = useUser();
-console.log(postData)
   const [isVoting, setIsVoting] = useState(false);
   const [openAuthModal, setOpenAuthModal] = useState(false);
   const [comment, setComment] = useState("");
@@ -234,7 +231,7 @@ console.log(postData)
       </div>
 
       {/* Verification Score Badge */}
-      {postData && (
+      {/* {postData && (
         <div className="mb-4 ">
           <VerificationScoreBadge
             reportCount={postData.reportCount || 0}
@@ -242,7 +239,7 @@ console.log(postData)
             showLabel={true}
           />
         </div>
-      )}
+      )} */}
 
       {/* Main Post Card */}
       <Card className="mb-6">
@@ -262,7 +259,7 @@ console.log(postData)
                   target.src = "/api/placeholder/800/400";
                 }}
               />
-              <div className="absolute top-4 right-4">
+              {/* <div className="absolute top-4 right-4">
                 <Chip
                   className="backdrop-blur-md"
                   color={getStatusColor(postData.status)}
@@ -271,7 +268,7 @@ console.log(postData)
                 >
                   {postData.status}
                 </Chip>
-              </div>
+              </div> */}
             </div>
           )}
 

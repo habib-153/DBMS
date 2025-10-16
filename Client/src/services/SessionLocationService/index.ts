@@ -52,9 +52,9 @@ export const SessionLocationService = {
       const { data } = await axiosInstance.get(
         `/geofence/location-history?limit=${limit}`
       );
+
       return data.data;
     } catch (error) {
-      console.error("Failed to get location history:", error);
       throw error;
     }
   },
@@ -65,9 +65,29 @@ export const SessionLocationService = {
   getActiveGeofenceZones: async () => {
     try {
       const { data } = await axiosInstance.get("/geofence/zones");
+
       return data.data;
     } catch (error) {
-      console.error("Failed to get geofence zones:", error);
+      throw error;
+    }
+  },
+  /**
+   * Admin: Trigger server-side geofence check for a given user and coordinates
+   */
+  testGeofenceCheck: async (payload: {
+    userId: string;
+    latitude: number;
+    longitude: number;
+  }) => {
+    try {
+      const { data } = await axiosInstance.post(
+        "/geofence/test-check",
+        payload
+      );
+
+      return data;
+    } catch (error) {
+      console.error("Failed to run geofence test-check:", error);
       throw error;
     }
   },

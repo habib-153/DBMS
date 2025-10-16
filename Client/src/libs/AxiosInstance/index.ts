@@ -4,6 +4,8 @@ import envConfig from "@/src/config/envConfig";
 
 const axiosInstance = axios.create({
   baseURL: envConfig.baseApi,
+  // send cookies (httpOnly) with cross-site requests
+  withCredentials: true,
 });
 
 axiosInstance.interceptors.request.use(
@@ -28,20 +30,9 @@ axiosInstance.interceptors.request.use(
           // dynamic import failed; ignore
         }
       } else {
-        // Client-side - read from document.cookie
-        const match = document.cookie.match(
-          new RegExp("(^| )" + "accessToken" + "=([^;]+)")
-        );
-        const accessToken = match ? match[2] : null;
-
-        if (accessToken) {
-          config.headers = config.headers || {};
-          // Ensure Bearer prefix for client-side cookies
-          // @ts-ignore
-          config.headers["Authorization"] = accessToken.startsWith("Bearer ")
-            ? accessToken
-            : `Bearer ${accessToken}`;
-        }
+        // Client-side: we rely on cookies being sent (withCredentials=true)
+        // to allow server middleware to read token from http-only cookie.
+        // Do not attempt to read httpOnly cookie from document.cookie.
       }
     } catch (e) {
       // ignore and continue

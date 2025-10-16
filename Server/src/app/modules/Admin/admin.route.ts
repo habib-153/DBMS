@@ -16,4 +16,16 @@ router.get(
   AdminControllers.getDashboardOverview
 );
 
+router.get(
+  '/active-sessions',
+  auth('ADMIN', 'SUPER_ADMIN'),
+  AdminControllers.getActiveSessions
+);
+
+router.get(
+  '/location-stats',
+  auth('ADMIN', 'SUPER_ADMIN'),
+  AdminControllers.getLocationStats
+);
+
 export const AdminRoutes = router;

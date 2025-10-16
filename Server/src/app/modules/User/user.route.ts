@@ -16,7 +16,11 @@ export const UserRoutes = router;
 // router.post('/send-otp', UserController.sendOTPController);
 // router.post('/verify-otp', UserController.verifyOTPController);
 
-router.get('/', auth(USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN), UserController.getAllUsers);
+router.get(
+  '/',
+  auth(USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN),
+  UserController.getAllUsers
+);
 
 router.post(
   '/follow/:followedId',
@@ -30,9 +34,20 @@ router.delete(
 );
 
 router.get('/:id', UserController.getUserById);
+
+router.get(
+  '/:id/connections-locations',
+  auth(USER_ROLE.USER, USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN),
+  UserController.getConnectionsLocations
+);
+
 router.put(
   '/:id',
   auth(USER_ROLE.ADMIN, USER_ROLE.USER, USER_ROLE.SUPER_ADMIN),
   UserController.updateUser
 );
-router.delete('/:id', auth(USER_ROLE.ADMIN, USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN), UserController.deleteUser);
+router.delete(
+  '/:id',
+  auth(USER_ROLE.ADMIN, USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN),
+  UserController.deleteUser
+);

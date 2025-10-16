@@ -26,6 +26,7 @@ import { useCreatePost } from "@/src/hooks/post.hook";
 import { useUser } from "@/src/context/user.provider";
 import dateToISO from "@/src/utils/dateToISO";
 import { IPost } from "@/src/types";
+import { useGeolocation } from "@/src/hooks/geolocation.hook";
 
 interface IPostModalProps {
   isOpen: boolean;
@@ -73,6 +74,52 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
   } | null>(null);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const searchTimerRef = useRef<number | null>(null);
+  const [loadingMyLocation, setLoadingMyLocation] = useState(false);
+
+  const { getUserLocation } = useGeolocation();
+
+  // Handler for "Use My Location" button
+  const handleUseMyLocation = async () => {
+    setLoadingMyLocation(true);
+    try {
+      const location = await getUserLocation();
+
+      if (location && mapRef.current && markerRef.current) {
+        const { latitude, longitude } = location;
+
+        setSelectedCoords({ latitude, longitude });
+        markerRef.current.setLatLng([latitude, longitude]);
+        mapRef.current.setView([latitude, longitude], 15);
+
+        // Reverse geocode to get address
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+          );
+          const data = await response.json();
+
+          if (data.display_name) {
+            const searchInput = document.getElementById(
+              "gm-search-input"
+            ) as HTMLInputElement;
+
+            if (searchInput) {
+              searchInput.value = data.display_name;
+            }
+          }
+        } catch (e) {
+          console.error("Failed to reverse geocode:", e);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to get user location:", error);
+      alert(
+        "Could not get your location. Please ensure location permissions are enabled."
+      );
+    } finally {
+      setLoadingMyLocation(false);
+    }
+  };
 
   // Load divisions when modal opens
   useEffect(() => {
@@ -532,6 +579,25 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
                           </div>
                         )}
                       </div>
+
+                      {/* Use My Location Button */}
+                      <div className="mb-2">
+                        <Button
+                          className="w-full"
+                          color="primary"
+                          isLoading={loadingMyLocation}
+                          size="sm"
+                          startContent={!loadingMyLocation && <span>📍</span>}
+                          type="button"
+                          variant="flat"
+                          onPress={handleUseMyLocation}
+                        >
+                          {loadingMyLocation
+                            ? "Getting your location..."
+                            : "Use My Current Location"}
+                        </Button>
+                      </div>
+
                       <div
                         ref={mapContainerRef}
                         className="w-full h-64 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700"

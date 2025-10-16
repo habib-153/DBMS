@@ -5,6 +5,8 @@ interface GeolocationData {
   longitude: number;
   accuracy: number;
   address?: string;
+  city?: string;
+  country?: string;
 }
 
 interface IPLocationData {
@@ -20,11 +22,46 @@ export const useGeolocation = () => {
   const [error, setError] = useState<string | null>(null);
 
   /**
+   * Reverse geocode coordinates to get address, city, and country
+   */
+  const reverseGeocode = useCallback(async (lat: number, lng: number) => {
+    try {
+      // Using Nominatim (OpenStreetMap) for free reverse geocoding
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+        {
+          headers: {
+            "User-Agent": "Warden Crime Reporting App",
+          },
+        }
+      );
+
+      if (!response.ok) return null;
+
+      const data = await response.json();
+
+      return {
+        address: data.display_name || "",
+        city:
+          data.address?.city ||
+          data.address?.town ||
+          data.address?.village ||
+          data.address?.county ||
+          "",
+        country: data.address?.country || "",
+      };
+    } catch (err) {
+      console.error("Reverse geocoding failed:", err);
+      return null;
+    }
+  }, []);
+
+  /**
    * Get user's location using browser Geolocation API
-   * Requests permission and returns precise GPS coordinates
+   * Requests permission and returns precise GPS coordinates with address
    */
   const getUserLocation = useCallback((): Promise<GeolocationData | null> => {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
       setIsLoading(true);
       setError(null);
 
@@ -32,16 +69,27 @@ export const useGeolocation = () => {
         setError("Geolocation is not supported by your browser");
         setIsLoading(false);
         resolve(null);
+
         return;
       }
 
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
+          const latitude = position.coords.latitude;
+          const longitude = position.coords.longitude;
+
+          // Get address via reverse geocoding
+          const geocodeResult = await reverseGeocode(latitude, longitude);
+
           const locationData: GeolocationData = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
+            latitude,
+            longitude,
             accuracy: position.coords.accuracy,
+            address: geocodeResult?.address,
+            city: geocodeResult?.city,
+            country: geocodeResult?.country,
           };
+
           setIsLoading(false);
           resolve(locationData);
         },
@@ -66,18 +114,13 @@ export const useGeolocation = () => {
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
+          timeout: 30000, // Increased from 10s to 30s for better GPS lock
           maximumAge: 0,
         }
       );
     });
-  }, []);
+  }, [reverseGeocode]);
 
-  /**
-   * Get approximate location from IP address
-   * This works even if user denies GPS permission
-   * Uses ipapi.co free tier (1000 requests/day)
-   */
   const getIPLocation =
     useCallback(async (): Promise<IPLocationData | null> => {
       setIsLoading(true);
@@ -103,19 +146,16 @@ export const useGeolocation = () => {
         };
 
         setIsLoading(false);
+
         return ipLocationData;
       } catch (err) {
         setError("Failed to get location from IP");
         setIsLoading(false);
+
         return null;
       }
     }, []);
 
-  /**
-   * Get location with fallback strategy:
-   * 1. Try GPS (most accurate)
-   * 2. Fall back to IP-based location
-   */
   const getLocationWithFallback = useCallback(async (): Promise<{
     gpsLocation: GeolocationData | null;
     ipLocation: IPLocationData | null;
@@ -137,6 +177,7 @@ export const useGeolocation = () => {
     return new Promise((resolve) => {
       if (!navigator.geolocation) {
         resolve(false);
+
         return;
       }
 
@@ -153,6 +194,7 @@ export const useGeolocation = () => {
     getIPLocation,
     getLocationWithFallback,
     requestLocationPermission,
+    reverseGeocode,
     isLoading,
     error,
   };

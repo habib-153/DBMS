@@ -34,16 +34,6 @@ const commonLinks = [
     href: "/posts",
     icon: <MessageSquareQuote size={18} />,
   },
-  {
-    label: "About",
-    href: "/about",
-    icon: <ContactRound size={18} />,
-  },
-  {
-    label: "Contact",
-    href: "/contact",
-    icon: <Contact size={18} />,
-  },
 ];
 
 const Sidebar = ({ specificLinks, title }: SidebarProps) => {
@@ -54,14 +44,26 @@ const Sidebar = ({ specificLinks, title }: SidebarProps) => {
   const router = useRouter();
   const pathname = usePathname();
 
-  const handleLogout = () => {
-    logout();
-    userLoading(true);
+  const handleLogout = async () => {
+    try {
+      userLoading(true);
+      // wait for server-side logout to mark session inactive
+      await logout();
 
-    if (protectedRoutes.some((route) => pathname.match(route))) {
-      router.push("/");
+      if (protectedRoutes.some((route) => pathname.match(route))) {
+        router.push("/");
+      }
+      toast.success("Logged out successfully");
+    } catch (err) {
+      console.error("Logout failed", err);
+      // still navigate away to clear client state
+      if (protectedRoutes.some((route) => pathname.match(route))) {
+        router.push("/");
+      }
+      toast.error("Logout encountered an issue");
+    } finally {
+      userLoading(false);
     }
-    toast.success("Logged out successfully");
   };
 
   const handleClick = (event: MouseEvent) => {
@@ -109,7 +111,7 @@ const Sidebar = ({ specificLinks, title }: SidebarProps) => {
           tabIndex={0}
           onClick={() => setIsOpen(false)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
+            if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
               setIsOpen(false);
             }
@@ -137,20 +139,17 @@ const Sidebar = ({ specificLinks, title }: SidebarProps) => {
         <div className="flex-1 flex flex-col p-4 overflow-y-auto">
           {/* Logo/Title */}
           <Link href="/" onClick={() => setIsOpen(false)}>
-            <div className="mb-6 text-center py-4">
+            <div className="text-center py-4">
               <h2 className="text-2xl font-bold bg-gradient-to-r from-[#a50034] to-pink-600 bg-clip-text text-transparent">
                 {title || "Warden"}
               </h2>
             </div>
           </Link>
 
-          <Divider className="mb-4" />
+          <Divider />
 
           {/* Specific Links (Dashboard Links) */}
-          <div className="mb-4">
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2 px-3">
-              Dashboard
-            </p>
+          <div className="">
             <nav className="space-y-1">
               {specificLinks.map((link) => (
                 <Link
@@ -170,13 +169,10 @@ const Sidebar = ({ specificLinks, title }: SidebarProps) => {
             </nav>
           </div>
 
-          <Divider className="my-4" />
+          <Divider className="mt-3" />
 
           {/* Common Links */}
-          <div className="mb-4">
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2 px-3">
-              Navigation
-            </p>
+          <div className="">
             <nav className="space-y-1">
               {commonLinks.map((link) => (
                 <Link
@@ -196,7 +192,7 @@ const Sidebar = ({ specificLinks, title }: SidebarProps) => {
             </nav>
           </div>
 
-          <Divider className="my-4" />
+          <Divider className="mt-3" />
 
           {/* Logout Button */}
           <button

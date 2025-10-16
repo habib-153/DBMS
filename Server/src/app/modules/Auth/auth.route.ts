@@ -21,6 +21,12 @@ router.post(
 );
 
 router.post(
+  '/logout',
+  auth('USER', 'ADMIN', 'SUPER_ADMIN'),
+  AuthControllers.logoutUser
+);
+
+router.post(
   '/send-otp',
   validateRequest(AuthValidation.sendOTPValidationSchema),
   AuthControllers.sendOTP

@@ -7,6 +7,7 @@ import {
   onMessageListener,
 } from "@/src/config/firebase.config";
 import { useUser } from "@/src/context/user.provider";
+import axiosInstance from "@/src/libs/AxiosInstance";
 
 interface NotificationPayload {
   notification?: {
@@ -76,19 +77,11 @@ export const useNotifications = () => {
           ? "android"
           : "web";
 
-      await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_API}/push-notifications/register`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-          body: JSON.stringify({
-            token: fcmToken,
-            platform,
-          }),
-        }
+      // Register push token using axiosInstance so Authorization header is added from cookies
+      await axiosInstance.post(
+        "/push-notifications/register",
+        { token: fcmToken, platform },
+        { withCredentials: true }
       );
 
       console.log("✅ Push token registered with backend");

@@ -134,6 +134,36 @@ const recordLocation = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const triggerCheck = catchAsync(async (req: Request, res: Response) => {
+  // Admin testing endpoint to force a geofence check for any user
+  const { userId, latitude, longitude } = req.body;
+
+  if (!userId || !latitude || !longitude) {
+    return sendResponse(res, {
+      statusCode: httpStatus.BAD_REQUEST,
+      success: false,
+      message: 'userId, latitude and longitude are required',
+      data: null,
+    });
+  }
+
+  const result = await GeofenceService.recordUserLocation(
+    {
+      userId,
+      latitude,
+      longitude,
+    },
+    userId
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Test geofence check executed',
+    data: result,
+  });
+});
+
 const autoGenerateZones = catchAsync(async (req: Request, res: Response) => {
   await GeofenceService.autoGenerateGeofenceZones();
 
@@ -145,11 +175,41 @@ const autoGenerateZones = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const updateGeofenceZone = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const updateData = req.body;
+
+  const result = await GeofenceService.updateGeofenceZone(id, updateData);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Geofence zone updated successfully',
+    data: result,
+  });
+});
+
+const deleteGeofenceZone = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  await GeofenceService.deleteGeofenceZone(id);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Geofence zone deleted successfully',
+    data: null,
+  });
+});
+
 export const GeofenceController = {
   checkUserLocation,
   getGeofenceZones,
   createGeofenceZone,
+  updateGeofenceZone,
+  deleteGeofenceZone,
   getUserLocationHistory,
   recordLocation,
   autoGenerateZones,
+  triggerCheck,
 };

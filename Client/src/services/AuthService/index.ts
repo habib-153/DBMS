@@ -87,7 +87,15 @@ export const verifyOTP = async (payload: { email: string; otp: string }) => {
   }
 };
 
-export const logout = () => {
+export const logout = async () => {
+  try {
+    // Call backend to mark session as inactive
+    await axiosInstance.post("/auth/logout");
+  } catch (error) {
+    // Continue with logout even if backend call fails
+    console.error("Error logging out on server:", error);
+  }
+
   cookies().delete("accessToken");
   cookies().delete("refreshToken");
 };

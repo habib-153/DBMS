@@ -1,5 +1,5 @@
 "use client";
-import ProfilePage from "./_profilePage/ProfilePage.tsx";
+import ProfilePage from "./_profilePage/ProfilePage";
 
 import ProfileSkeleton from "@/src/components/UI/ProfileSkeleton";
 import { useGetMyProfile } from "@/src/hooks/auth.hook";

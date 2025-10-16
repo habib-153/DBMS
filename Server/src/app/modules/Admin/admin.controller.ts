@@ -25,7 +25,31 @@ const getDashboardOverview = catchAsync(async (req, res) => {
   });
 });
 
+const getActiveSessions = catchAsync(async (req, res) => {
+  const result = await AdminService.getActiveSessions();
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Active sessions retrieved successfully',
+    data: result,
+  });
+});
+
+const getLocationStats = catchAsync(async (req, res) => {
+  const result = await AdminService.getLocationStats();
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Location statistics retrieved successfully',
+    data: result,
+  });
+});
+
 export const AdminControllers = {
   getAdminStats,
   getDashboardOverview,
+  getActiveSessions,
+  getLocationStats,
 };

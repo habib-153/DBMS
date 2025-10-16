@@ -556,6 +556,80 @@ const getUserStats = async (
   };
 };
 
+const getConnectionsLocations = async (userId: string) => {
+  // Get followers with their latest location
+  const followersQuery = `
+    SELECT 
+      u.id,
+      u.name,
+      u.email,
+      u."profilePhoto",
+  COALESCE(ulh.latitude, us.latitude, u.latitude) as latitude,
+  COALESCE(ulh.longitude, us.longitude, u.longitude) as longitude,
+      us.city,
+      us.country,
+      COALESCE(ulh.timestamp, us."lastActivity") as "lastActivity"
+    FROM follows uf
+    JOIN users u ON uf."followerId" = u.id
+    LEFT JOIN LATERAL (
+      SELECT latitude, longitude, timestamp
+      FROM user_location_history
+      WHERE "userId" = u.id
+      ORDER BY timestamp DESC
+      LIMIT 1
+    ) ulh ON true
+    LEFT JOIN LATERAL (
+      SELECT latitude, longitude, city, country, "lastActivity"
+      FROM user_sessions
+      WHERE "userId" = u.id AND "isActive" = true
+      ORDER BY "lastActivity" DESC
+      LIMIT 1
+    ) us ON true
+    WHERE uf."followingId" = $1
+    AND u.status != 'DELETED'
+  `;
+
+  // Get following with their latest location
+  const followingQuery = `
+    SELECT 
+      u.id,
+      u.name,
+      u.email,
+      u."profilePhoto",
+  COALESCE(ulh.latitude, us.latitude, u.latitude) as latitude,
+  COALESCE(ulh.longitude, us.longitude, u.longitude) as longitude,
+      us.city,
+      us.country,
+      COALESCE(ulh.timestamp, us."lastActivity") as "lastActivity"
+    FROM follows uf
+    JOIN users u ON uf."followingId" = u.id
+    LEFT JOIN LATERAL (
+      SELECT latitude, longitude, timestamp
+      FROM user_location_history
+      WHERE "userId" = u.id
+      ORDER BY timestamp DESC
+      LIMIT 1
+    ) ulh ON true
+    LEFT JOIN LATERAL (
+      SELECT latitude, longitude, city, country, "lastActivity"
+      FROM user_sessions
+      WHERE "userId" = u.id AND "isActive" = true
+      ORDER BY "lastActivity" DESC
+      LIMIT 1
+    ) us ON true
+    WHERE uf."followerId" = $1
+    AND u.status != 'DELETED'
+  `;
+
+  const followersResult = await database.query(followersQuery, [userId]);
+  const followingResult = await database.query(followingQuery, [userId]);
+
+  return {
+    followers: followersResult.rows,
+    following: followingResult.rows,
+  };
+};
+
 export const UserService = {
   createUser,
   getAllUsers,
@@ -568,4 +642,5 @@ export const UserService = {
   getUserFollowers,
   getUserFollowing,
   getUserStats,
+  getConnectionsLocations,
 };

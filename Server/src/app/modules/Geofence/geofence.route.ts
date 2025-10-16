@@ -12,11 +12,36 @@ router.post(
   GeofenceController.checkUserLocation
 );
 
+// Admin-only test endpoint to trigger geofence check for arbitrary user/coords
+router.post(
+  '/test-check',
+  auth('ADMIN', 'SUPER_ADMIN'),
+  GeofenceController.triggerCheck
+);
+
 // Get all active geofence zones
 router.get('/zones', GeofenceController.getGeofenceZones);
 
 // Create new geofence zone (admin only)
-router.post('/zones', auth('ADMIN'), GeofenceController.createGeofenceZone);
+router.post(
+  '/zones',
+  auth('ADMIN', 'SUPER_ADMIN'),
+  GeofenceController.createGeofenceZone
+);
+
+// Update geofence zone (admin only)
+router.patch(
+  '/zones/:id',
+  auth('ADMIN', 'SUPER_ADMIN'),
+  GeofenceController.updateGeofenceZone
+);
+
+// Delete geofence zone (admin only)
+router.delete(
+  '/zones/:id',
+  auth('ADMIN', 'SUPER_ADMIN'),
+  GeofenceController.deleteGeofenceZone
+);
 
 // Get user location history
 router.get(

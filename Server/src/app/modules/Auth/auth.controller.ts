@@ -131,9 +131,25 @@ const verifyOTP = catchAsync(async (req, res) => {
   });
 });
 
+const logoutUser = catchAsync(async (req, res) => {
+  const userId = req.user?.id;
+
+  if (userId) {
+    await AuthServices.logoutUser(userId);
+  }
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Logged out successfully!',
+    data: null,
+  });
+});
+
 export const AuthControllers = {
   registerUser,
   loginUser,
+  logoutUser,
   changePassword,
   refreshToken,
   forgotPassword,

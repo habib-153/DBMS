@@ -18,6 +18,7 @@ import { IUser } from "@/src/types";
 import { useUpdateUser } from "@/src/hooks/user.hook";
 import FXForm from "@/src/components/form/FXForm";
 import FXInput from "@/src/components/form/FXInput";
+import { useGeolocation } from "@/src/hooks/geolocation.hook";
 
 interface UpdateProfileModalProps {
   isOpen: boolean;
@@ -42,6 +43,30 @@ const UpdateProfileModal = ({
   } | null>(null);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const searchTimerRef = useRef<number | null>(null);
+  const [loadingMyLocation, setLoadingMyLocation] = useState(false);
+
+  const { getUserLocation } = useGeolocation();
+
+  // Handler for "Use My Location" button
+  const handleUseMyLocation = async () => {
+    setLoadingMyLocation(true);
+    try {
+      const location = await getUserLocation();
+
+      if (location && mapRef.current && markerRef.current) {
+        const { latitude, longitude } = location;
+
+        setSelectedCoords({ latitude, longitude });
+        markerRef.current.setLatLng([latitude, longitude]);
+        mapRef.current.setView([latitude, longitude], 15);
+      }
+    } catch (error) {
+      console.error("Failed to get user location:", error);
+      alert("Could not get your location. Please ensure location permissions are enabled.");
+    } finally {
+      setLoadingMyLocation(false);
+    }
+  };
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -270,6 +295,7 @@ const UpdateProfileModal = ({
       }}
       isDismissable={!isPending}
       isOpen={isOpen}
+      scrollBehavior="outside"
       size="2xl"
       onOpenChange={onOpenChange}
     >
@@ -277,7 +303,7 @@ const UpdateProfileModal = ({
         {(onClose: ((e: PressEvent) => void) | undefined) => (
           <>
             <ModalHeader className="flex flex-col gap-1">
-              <h2 className="text-2xl font-bold bg-brand-gradient bg-clip-text text-transparent">
+              <h2 className="text-2xl font-bold">
                 Update Profile
               </h2>
               <p className="text-sm text-gray-500 font-normal">
@@ -426,6 +452,23 @@ const UpdateProfileModal = ({
                       onKeyDown={handleSearchKeyDown}
                     />
                   </div>
+                  
+                  {/* Use My Location Button */}
+                  <div className="mb-2">
+                    <Button
+                      className="w-full"
+                      color="primary"
+                      isLoading={loadingMyLocation}
+                      size="sm"
+                      startContent={!loadingMyLocation && <span>📍</span>}
+                      type="button"
+                      variant="flat"
+                      onPress={handleUseMyLocation}
+                    >
+                      {loadingMyLocation ? "Getting your location..." : "Use My Current Location"}
+                    </Button>
+                  </div>
+                  
                   {suggestions.length > 0 && (
                     <div className="mb-2">
                       <div className="max-h-56 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-[9999]">

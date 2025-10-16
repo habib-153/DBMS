@@ -25,7 +25,7 @@ interface RecentCrimeReportsProps {
   isHome?: boolean;
 }
 
-const CrimeReportCard = ({ post }: { post: IPost }) => {
+const CrimeReportCard = ({ post, user }: { post: IPost; user: any }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "APPROVED":
@@ -80,13 +80,16 @@ const CrimeReportCard = ({ post }: { post: IPost }) => {
               <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100 line-clamp-1">
                 {post.title}
               </h3>
-              <Chip
-                color={getStatusColor(post.status)}
-                size="sm"
-                variant="flat"
-              >
-                {post.status}
-              </Chip>
+              {user?.role == "ADMIN" ||
+                (user?.role == "SUPER_ADMIN" && (
+                  <Chip
+                    color={getStatusColor(post.status)}
+                    size="sm"
+                    variant="flat"
+                  >
+                    {post.status}
+                  </Chip>
+                ))}
             </div>
 
             <p className="text-gray-600 dark:text-gray-400 text-sm mb-3 line-clamp-2">
@@ -121,7 +124,9 @@ const CrimeReportCard = ({ post }: { post: IPost }) => {
             {post.location && (
               <div className="flex items-center gap-1 mt-2 text-xs text-gray-500 dark:text-gray-400">
                 <MapPin className="w-4 h-4" />
-                <span>{post.location}</span>
+                <span>
+                  {post.location.split(", ")[1]}, {post.location.split(", ")[0]}
+                </span>
               </div>
             )}
           </div>
@@ -243,7 +248,7 @@ export default function RecentCrimeReports({
         ) : displayPosts.length > 0 ? (
           <>
             {displayPosts.map((post) => (
-              <CrimeReportCard key={post.id} post={post} />
+              <CrimeReportCard key={post.id} post={post} user={user} />
             ))}
 
             {/* Load More Section for Infinite Scroll */}

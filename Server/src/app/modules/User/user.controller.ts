@@ -8,7 +8,6 @@ import pick from '../../../shared/pick';
 import { FollowService } from '../Follow/follow.service';
 
 const getAllUsers = catchAsync(async (req: Request, res: Response) => {
-
   const filters = pick(req.query, userSearchableFields);
   const paginationOptions = pick(req.query, [
     'limit',
@@ -79,7 +78,7 @@ const deleteUser = catchAsync(async (req: Request, res: Response) => {
 // });
 
 const getMyProfile = catchAsync(async (req: Request, res: Response) => {
-  const userId = req.user.id; 
+  const userId = req.user.id;
   const result = await UserService.getSingleUser(userId);
 
   sendResponse(res, {
@@ -131,6 +130,20 @@ const unfollowUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getConnectionsLocations = catchAsync(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const result = await UserService.getConnectionsLocations(id);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: 'Connections locations retrieved successfully',
+      data: result,
+    });
+  }
+);
+
 export const UserController = {
   getAllUsers,
   getUserById,
@@ -140,4 +153,5 @@ export const UserController = {
   unfollowUser,
   getMyProfile,
   updateMyProfile,
+  getConnectionsLocations,
 };

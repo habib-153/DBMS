@@ -29,6 +29,7 @@ import { PostCard } from "@/src/components/modules/Posts";
 import { transformPostsData } from "@/src/utils/transformPostData";
 import DeletePostModal from "@/src/components/UI/modal/DeletePostModal";
 import EditPostModal from "@/src/components/UI/modal/EditPostModal";
+import ConnectionsLocationMap from "@/src/components/modules/profile/ConnectionsLocationMap";
 
 const ProfilePage = ({ user }: { user: IUser }) => {
   const router = useRouter();
@@ -229,7 +230,7 @@ const ProfilePage = ({ user }: { user: IUser }) => {
       <div className="flex justify-center mb-6">
         <Tabs
           classNames={{
-            base: "w-full max-w-md",
+            base: "w-full max-w-lg",
             tabList: "bg-default-100 p-1 rounded-lg",
             tab: "data-[selected=true]:bg-brand-primary data-[selected=true]:text-white",
             cursor: "bg-brand-primary",
@@ -263,6 +264,15 @@ const ProfilePage = ({ user }: { user: IUser }) => {
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5" />
                 <span className="font-semibold">Following</span>
+              </div>
+            }
+          />
+          <Tab
+            key="location"
+            title={
+              <div className="flex items-center gap-1">
+                <span>🗺️</span>
+                <span className="font-semibold">Map</span>
               </div>
             }
           />
@@ -465,6 +475,11 @@ const ProfilePage = ({ user }: { user: IUser }) => {
               </Card>
             )}
           </>
+        )}
+        {activeTab === "location" && (
+          <div className="max-w-6xl mx-auto">
+            <ConnectionsLocationMap isOwnProfile={true} userId={user?.id} />
+          </div>
         )}
       </div>
 

@@ -652,9 +652,21 @@ const verifyOTP = async (payload: TVerifyOTP) => {
   return { message: 'User verified successfully', accessToken, refreshToken };
 };
 
+const logoutUser = async (userId: string): Promise<void> => {
+  // Mark all active sessions as inactive
+  const updateQuery = `
+    UPDATE user_sessions 
+    SET "isActive" = false, "lastActivity" = NOW()
+    WHERE "userId" = $1 AND "isActive" = true
+  `;
+
+  await database.query(updateQuery, [userId]);
+};
+
 export const AuthServices = {
   registerUser,
   loginUser,
+  logoutUser,
   changePassword,
   refreshToken,
   forgetPassword,

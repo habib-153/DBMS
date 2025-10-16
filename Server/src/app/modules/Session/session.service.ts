@@ -14,6 +14,42 @@ const generateUuid = (): string => {
     .replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
 };
 
+// Reverse geocode coordinates to get city and country
+const reverseGeocode = async (
+  latitude: number,
+  longitude: number
+): Promise<{ city: string | null; country: string | null }> => {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
+      {
+        headers: {
+          'User-Agent': 'Warden Crime Reporting Server',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      return { city: null, country: null };
+    }
+
+    const data = await response.json();
+
+    return {
+      city:
+        data.address?.city ||
+        data.address?.town ||
+        data.address?.village ||
+        data.address?.county ||
+        null,
+      country: data.address?.country || null,
+    };
+  } catch (error) {
+    console.error('Reverse geocoding failed:', error);
+    return { city: null, country: null };
+  }
+};
+
 // Parse User-Agent string to extract browser, OS, and device info
 const parseUserAgent = (
   userAgent: string
@@ -62,6 +98,19 @@ const createSession = async (
     device = parsed.device;
   }
 
+  // Get city and country if coordinates provided but location info missing
+  let city = sessionData.city;
+  let country = sessionData.country;
+
+  if (sessionData.latitude && sessionData.longitude && (!city || !country)) {
+    const geocoded = await reverseGeocode(
+      sessionData.latitude,
+      sessionData.longitude
+    );
+    city = city || (geocoded.city as string);
+    country = country || (geocoded.country as string);
+  }
+
   const query = `
     INSERT INTO user_sessions (
       id, "userId", "sessionToken", "ipAddress", "userAgent",
@@ -81,8 +130,8 @@ const createSession = async (
     browser || null,
     os || null,
     device || null,
-    sessionData.country || null,
-    sessionData.city || null,
+    country || null,
+    city || null,
     sessionData.latitude || null,
     sessionData.longitude || null,
     now,
@@ -169,6 +218,19 @@ const updateActiveSessionLocation = async (
     address?: string;
   }
 ): Promise<void> => {
+  // Get city and country if coordinates provided but location info missing
+  let city = locationData.city;
+  let country = locationData.country;
+
+  if (locationData.latitude && locationData.longitude && (!city || !country)) {
+    const geocoded = await reverseGeocode(
+      locationData.latitude,
+      locationData.longitude
+    );
+    city = city || (geocoded.city as string);
+    country = country || (geocoded.country as string);
+  }
+
   const updates: string[] = [];
   const values: (number | string | Date)[] = [];
   let paramIndex = 1;
@@ -183,14 +245,14 @@ const updateActiveSessionLocation = async (
     values.push(locationData.longitude);
   }
 
-  if (locationData.country !== undefined) {
+  if (country !== undefined) {
     updates.push(`country = $${paramIndex++}`);
-    values.push(locationData.country);
+    values.push(country);
   }
 
-  if (locationData.city !== undefined) {
+  if (city !== undefined) {
     updates.push(`city = $${paramIndex++}`);
-    values.push(locationData.city);
+    values.push(city);
   }
 
   if (updates.length === 0) {

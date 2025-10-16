@@ -166,6 +166,31 @@ const recordUserLocation = async (
     }
   }
 
+  // Debug: log computed distances and entered zone
+  try {
+    console.debug(
+      '[Geofence] user:',
+      userId,
+      'lat:',
+      locationData.latitude,
+      'lng:',
+      locationData.longitude
+    );
+    if (enteredZone) {
+      console.debug(
+        '[Geofence] Entered zone detected:',
+        enteredZone.id,
+        enteredZone.name,
+        'risk:',
+        enteredZone.riskLevel
+      );
+    } else {
+      console.debug('[Geofence] No geofence zone detected for this location');
+    }
+  } catch (err) {
+    // swallow logging errors
+  }
+
   // Check if notification was already sent for this zone recently (within 1 hour)
   let notificationSent = false;
   if (enteredZone) {
@@ -183,12 +208,44 @@ const recordUserLocation = async (
 
     if (recentCheck.rows.length === 0) {
       // Send notification
-      await NotificationService.createGeofenceWarning(
-        userId,
-        enteredZone.name,
-        enteredZone.riskLevel
-      );
-      notificationSent = true;
+      // Debug: log recentCheck rows
+      try {
+        console.debug('[Geofence] recentCheck rows:', recentCheck.rows);
+      } catch (err) {
+        /* ignore */
+      }
+
+      // Debug: fetch user's push tokens
+      try {
+        const tokensResult = await database.query(
+          `SELECT * FROM push_notification_tokens WHERE "userId" = $1 AND "isActive" = true`,
+          [userId]
+        );
+        console.debug('[Geofence] user push tokens:', tokensResult.rows);
+      } catch (err) {
+        console.error('[Geofence] Failed to fetch push tokens:', err);
+      }
+
+      // Send notification
+      try {
+        await NotificationService.createGeofenceWarning(
+          userId,
+          enteredZone.name,
+          enteredZone.riskLevel
+        );
+        notificationSent = true;
+        console.debug(
+          '[Geofence] Notification created for user',
+          userId,
+          'zone',
+          enteredZone.id
+        );
+      } catch (err) {
+        console.error(
+          '[Geofence] Failed to create geofence notification:',
+          err
+        );
+      }
     }
   }
 
@@ -306,10 +363,90 @@ const autoGenerateGeofenceZones = async (): Promise<void> => {
   }
 };
 
+const updateGeofenceZone = async (
+  zoneId: string,
+  updateData: Partial<TCreateGeofenceZone>
+): Promise<TGeofenceZone> => {
+  const now = new Date();
+
+  // Build dynamic update query
+  const fields = [];
+  const values = [];
+  let paramIndex = 1;
+
+  if (updateData.name !== undefined) {
+    fields.push(`name = $${paramIndex++}`);
+    values.push(updateData.name);
+  }
+  if (updateData.centerLatitude !== undefined) {
+    fields.push(`"centerLatitude" = $${paramIndex++}`);
+    values.push(updateData.centerLatitude);
+  }
+  if (updateData.centerLongitude !== undefined) {
+    fields.push(`"centerLongitude" = $${paramIndex++}`);
+    values.push(updateData.centerLongitude);
+  }
+  if (updateData.radiusMeters !== undefined) {
+    fields.push(`"radiusMeters" = $${paramIndex++}`);
+    values.push(updateData.radiusMeters);
+  }
+  if (updateData.riskLevel !== undefined) {
+    fields.push(`"riskLevel" = $${paramIndex++}`);
+    values.push(updateData.riskLevel);
+  }
+  if (updateData.district !== undefined) {
+    fields.push(`district = $${paramIndex++}`);
+    values.push(updateData.district);
+  }
+  if (updateData.division !== undefined) {
+    fields.push(`division = $${paramIndex++}`);
+    values.push(updateData.division);
+  }
+
+  fields.push(`"updatedAt" = $${paramIndex++}`);
+  values.push(now);
+
+  values.push(zoneId);
+
+  const query = `
+    UPDATE geofence_zones
+    SET ${fields.join(', ')}
+    WHERE id = $${paramIndex}
+    RETURNING *
+  `;
+
+  const result = await database.query<TGeofenceZone>(query, values);
+  const updatedZone = result.rows[0];
+
+  if (!updatedZone) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Geofence zone not found');
+  }
+
+  return updatedZone;
+};
+
+const deleteGeofenceZone = async (zoneId: string): Promise<void> => {
+  // Soft delete by setting isActive to false
+  const query = `
+    UPDATE geofence_zones
+    SET "isActive" = false, "updatedAt" = $1
+    WHERE id = $2
+    RETURNING id
+  `;
+
+  const result = await database.query(query, [new Date(), zoneId]);
+
+  if (result.rows.length === 0) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Geofence zone not found');
+  }
+};
+
 export const GeofenceService = {
   createGeofenceZone,
   getActiveGeofenceZones,
   updateGeofenceStats,
+  updateGeofenceZone,
+  deleteGeofenceZone,
   recordUserLocation,
   getUserLocationHistory,
   autoGenerateGeofenceZones,
