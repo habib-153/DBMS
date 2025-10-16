@@ -1,5 +1,6 @@
-import axiosInstance from "@/src/libs/AxiosInstance";
 import { getCurrentUser } from "../AuthService";
+
+import axiosInstance from "@/src/libs/AxiosInstance";
 
 export const createPost = async (formData: FormData): Promise<any> => {
   try {

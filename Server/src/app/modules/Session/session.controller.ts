@@ -51,9 +51,42 @@ const endAllSessions = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const updateSessionLocation = catchAsync(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+    const { latitude, longitude, accuracy, country, city, address } = req.body;
+
+    if (!userId) {
+      return sendResponse(res, {
+        statusCode: httpStatus.UNAUTHORIZED,
+        success: false,
+        message: 'User not authenticated',
+        data: null,
+      });
+    }
+
+    await SessionService.updateActiveSessionLocation(userId, {
+      latitude,
+      longitude,
+      accuracy,
+      country,
+      city,
+      address,
+    });
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: 'Session location updated successfully',
+      data: null,
+    });
+  }
+);
+
 export const SessionController = {
   getUserSessions,
   getActiveSessions,
   endSession,
   endAllSessions,
+  updateSessionLocation,
 };

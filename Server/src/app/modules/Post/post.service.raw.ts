@@ -478,12 +478,42 @@ const updatePost = async (
     );
   }
 
-  // Send push notification if status was changed by admin
+  // Send push notification and create notification if status was changed by admin
   if (
     updateData.status !== undefined &&
     isAdmin &&
     post.status !== updateData.status
   ) {
+    // Create notification in database
+    import('../Notification/notification.service')
+      .then(({ NotificationService }) => {
+        const isApproved = updateData.status === 'APPROVED';
+        const notificationType = isApproved ? 'POST_APPROVED' : 'POST_REJECTED';
+        const notificationTitle = isApproved
+          ? '✅ Post Approved!'
+          : '❌ Post Rejected';
+        const notificationMessage = isApproved
+          ? `Your post "${post.title}" has been approved and is now visible to everyone.`
+          : `Your post "${post.title}" has been rejected by admin.`;
+
+        NotificationService.createNotification({
+          userId: post.authorId,
+          type: notificationType,
+          title: notificationTitle,
+          message: notificationMessage,
+          data: {
+            postId: post.id,
+            postTitle: post.title,
+            status: updateData.status,
+          },
+          isPush: true,
+        }).catch((err) => console.error('Failed to create notification:', err));
+      })
+      .catch((err) =>
+        console.error('Failed to import NotificationService:', err)
+      );
+
+    // Send push notification
     import('../PushNotification/push.service')
       .then(({ PushNotificationService }) => {
         PushNotificationService.sendPostStatusPush(

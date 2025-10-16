@@ -106,21 +106,24 @@ const analyzeImageWithRoboflow = async (
   try {
     // Roboflow API configuration
     const ROBOFLOW_API_KEY =
-      config.roboflowApiKey || process.env.ROBOFLOW_API_KEY;
-    const ROBOFLOW_MODEL = config.roboflowModel || 'crime-detection/1'; // Your model
-    const ROBOFLOW_API_URL = `https://detect.roboflow.com/${ROBOFLOW_MODEL}?api_key=${ROBOFLOW_API_KEY}`;
+      config.roboflowApiKey ||
+      process.env.ROBOFLOW_API_KEY ||
+      'DkTFGFZcj5BLj4yqgOef';
+    const ROBOFLOW_MODEL = config.roboflowModel || 'crime-detection-dupwb/1'; // Updated to correct model
+    const ROBOFLOW_API_URL = `https://serverless.roboflow.com/${ROBOFLOW_MODEL}`;
 
     if (!ROBOFLOW_API_KEY) {
       throw new Error('Roboflow API key not configured');
     }
 
-    // Make request to Roboflow
+    // Make request to Roboflow using correct Serverless API format
     const response = await axios.post<RoboflowResponse>(
       ROBOFLOW_API_URL,
-      imageUrl,
+      null, // No body needed
       {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+        params: {
+          api_key: ROBOFLOW_API_KEY,
+          image: imageUrl, 
         },
         timeout: 30000, // 30 seconds timeout
       }

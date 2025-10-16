@@ -1,7 +1,10 @@
 import Footer from "@/src/components/modules/Shared/Footer";
 import { Navbar } from "@/src/components/UI/Navbar/Navbar";
+import NotificationToast from "@/src/components/UI/NotificationToast";
 
-export default function layout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function layout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <div className="relative flex flex-col h-screen">
       <Navbar />
@@ -9,6 +12,7 @@ export default function layout({ children }: Readonly<{ children: React.ReactNod
         {children}
       </main>
       <Footer />
+      <NotificationToast />
     </div>
   );
 }

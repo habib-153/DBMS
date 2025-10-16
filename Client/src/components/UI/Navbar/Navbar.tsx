@@ -18,6 +18,7 @@ import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
 import { ThemeSwitch } from "../theme-switch";
+import NotificationBell from "../NotificationBell";
 
 import NavbarDropdown from "./NavbarDropdown";
 
@@ -32,14 +33,14 @@ export const Navbar = () => {
   const pathname = usePathname();
 
   const { theme, resolvedTheme } = useTheme();
-    const [mounted, setMounted] = useState(false);
-  
-    // Ensure component is mounted before accessing theme
-    useEffect(() => {
-      setMounted(true);
-    }, []);
+  const [mounted, setMounted] = useState(false);
 
-    const currentTheme = mounted ? theme : "light";
+  // Ensure component is mounted before accessing theme
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const currentTheme = mounted ? theme : "light";
   const Logo = currentTheme === "dark" ? Logo_dark : Logo_light;
 
   const isActiveLink = (href: string) => {
@@ -51,7 +52,11 @@ export const Navbar = () => {
   };
 
   return (
-    <NextUINavbar className="border-b border-gray-200 dark:border-gray-700" maxWidth="xl" position="sticky">
+    <NextUINavbar
+      className="border-b border-gray-200 dark:border-gray-700"
+      maxWidth="xl"
+      position="sticky"
+    >
       {/* Left: Logo */}
       <NavbarContent className="basis-1/5 sm:basis-1/4" justify="start">
         <NavbarBrand as="li" className="gap-3 max-w-fit">
@@ -98,7 +103,8 @@ export const Navbar = () => {
           <ThemeSwitch className="hidden sm:block" />
         </NavbarItem>
         {user?.email ? (
-          <NavbarItem className="flex gap-2">
+          <NavbarItem className="flex gap-2 items-center">
+            <NotificationBell />
             <NavbarDropdown user={user} />
           </NavbarItem>
         ) : (
@@ -131,7 +137,7 @@ export const Navbar = () => {
               </NextLink>
             </NavbarMenuItem>
           ))}
-          
+
           {/* Mobile Theme Switch */}
           <NavbarMenuItem>
             <div className="px-4 py-3">

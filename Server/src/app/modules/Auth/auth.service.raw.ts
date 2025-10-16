@@ -16,6 +16,8 @@ import {
   TSendOTP,
   TVerifyOTP,
 } from './auth.interface';
+import { SessionService } from '../Session/session.service';
+import { GeofenceService } from '../Geofence/geofence.service';
 
 // Simple UUID generator
 const generateUuid = (): string => {
@@ -143,7 +145,15 @@ const registerUser = async (payload: TRegisterUser) => {
   };
 };
 
-const loginUser = async (payload: TLoginUser) => {
+const loginUser = async (
+  payload: TLoginUser,
+  requestMetadata?: {
+    ipAddress?: string | null;
+    userAgent?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+  }
+) => {
   const userQuery = `
     SELECT id, name, email, password, phone, role, status, "profilePhoto", "isVerified"
     FROM users
@@ -217,6 +227,34 @@ const loginUser = async (payload: TLoginUser) => {
     config.jwt_refresh_secret as string,
     config.jwt_refresh_expires_in as string
   );
+
+  // Track user session asynchronously (don't block login)
+  if (requestMetadata) {
+    SessionService.createSession({
+      userId: user.id,
+      sessionToken: generateUuid(),
+      ipAddress: requestMetadata.ipAddress || undefined,
+      userAgent: requestMetadata.userAgent || undefined,
+    }).catch((err) => {
+      // Log error but don't fail login
+      console.error('Failed to create session:', err);
+    });
+
+    // Track user location if provided
+    if (requestMetadata.latitude && requestMetadata.longitude) {
+      GeofenceService.recordUserLocation(
+        {
+          userId: user.id,
+          latitude: requestMetadata.latitude as number,
+          longitude: requestMetadata.longitude as number,
+        },
+        user.id
+      ).catch((err) => {
+        // Log error but don't fail login
+        console.error('Failed to record location:', err);
+      });
+    }
+  }
 
   return {
     accessToken,
@@ -402,9 +440,9 @@ const forgetPassword = async (email: string) => {
     '10m'
   );
 
-  const resetUILink = `${
-    config.reset_pass_ui_link
-  }?email=${encodeURIComponent(user.email)}&token=${resetToken}`;
+  const resetUILink = `${config.reset_pass_ui_link}?email=${encodeURIComponent(
+    user.email
+  )}&token=${resetToken}`;
 
   await EmailHelper.sendEmail(user.email, resetUILink);
 

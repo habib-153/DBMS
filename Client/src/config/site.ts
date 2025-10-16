@@ -14,8 +14,8 @@ export const siteConfig = {
       href: "/heatmap",
     },
     {
-      label: "Contact",
-      href: "/contact",
+      label: "Analytics",
+      href: "/analytics",
     },
     {
       label: "About",

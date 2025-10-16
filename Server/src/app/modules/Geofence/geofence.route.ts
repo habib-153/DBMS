@@ -25,6 +25,20 @@ router.get(
   GeofenceController.getUserLocationHistory
 );
 
+// Record user location (for tracking and geofence detection)
+router.post(
+  '/location',
+  auth(USER_ROLE.USER, USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN),
+  GeofenceController.recordLocation
+);
+
+// Get user location history with limit
+router.get(
+  '/location-history',
+  auth(USER_ROLE.USER, USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN),
+  GeofenceController.getUserLocationHistory
+);
+
 // Auto-generate geofence zones from crime data (admin only)
 router.post(
   '/auto-generate',

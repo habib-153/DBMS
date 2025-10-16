@@ -158,6 +158,59 @@ const endAllUserSessions = async (userId: string): Promise<void> => {
   await database.query(query, [new Date(), userId]);
 };
 
+const updateActiveSessionLocation = async (
+  userId: string,
+  locationData: {
+    latitude?: number;
+    longitude?: number;
+    accuracy?: number;
+    country?: string;
+    city?: string;
+    address?: string;
+  }
+): Promise<void> => {
+  const updates: string[] = [];
+  const values: (number | string | Date)[] = [];
+  let paramIndex = 1;
+
+  if (locationData.latitude !== undefined) {
+    updates.push(`latitude = $${paramIndex++}`);
+    values.push(locationData.latitude);
+  }
+
+  if (locationData.longitude !== undefined) {
+    updates.push(`longitude = $${paramIndex++}`);
+    values.push(locationData.longitude);
+  }
+
+  if (locationData.country !== undefined) {
+    updates.push(`country = $${paramIndex++}`);
+    values.push(locationData.country);
+  }
+
+  if (locationData.city !== undefined) {
+    updates.push(`city = $${paramIndex++}`);
+    values.push(locationData.city);
+  }
+
+  if (updates.length === 0) {
+    return; // Nothing to update
+  }
+
+  updates.push(`"lastActivity" = $${paramIndex++}`);
+  values.push(new Date());
+
+  values.push(userId);
+
+  const query = `
+    UPDATE user_sessions
+    SET ${updates.join(', ')}
+    WHERE "userId" = $${paramIndex} AND "isActive" = true
+  `;
+
+  await database.query(query, values);
+};
+
 export const SessionService = {
   createSession,
   getActiveUserSessions,
@@ -165,5 +218,6 @@ export const SessionService = {
   updateSessionActivity,
   endSession,
   endAllUserSessions,
+  updateActiveSessionLocation,
   parseUserAgent,
 };

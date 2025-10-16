@@ -92,6 +92,48 @@ const getUserLocationHistory = catchAsync(
   }
 );
 
+const recordLocation = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  const { latitude, longitude, accuracy, address, activity } = req.body;
+
+  if (!userId) {
+    return sendResponse(res, {
+      statusCode: httpStatus.UNAUTHORIZED,
+      success: false,
+      message: 'User not authenticated',
+      data: null,
+    });
+  }
+
+  if (!latitude || !longitude) {
+    return sendResponse(res, {
+      statusCode: httpStatus.BAD_REQUEST,
+      success: false,
+      message: 'Latitude and longitude are required',
+      data: null,
+    });
+  }
+
+  const result = await GeofenceService.recordUserLocation(
+    {
+      userId,
+      latitude,
+      longitude,
+      accuracy,
+      address,
+      activity,
+    },
+    userId
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: 'Location recorded successfully',
+    data: result,
+  });
+});
+
 const autoGenerateZones = catchAsync(async (req: Request, res: Response) => {
   await GeofenceService.autoGenerateGeofenceZones();
 
@@ -108,5 +150,6 @@ export const GeofenceController = {
   getGeofenceZones,
   createGeofenceZone,
   getUserLocationHistory,
+  recordLocation,
   autoGenerateZones,
 };

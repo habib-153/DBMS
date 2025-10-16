@@ -24,6 +24,8 @@ import {
   MotionSpan,
 } from "@/src/components/motion-components";
 import VerifyOtpModal from "@/src/components/UI/modal/AuthModal/VerifyOtpModal";
+import { useGeolocation } from "@/src/hooks/geolocation.hook";
+import { SessionLocationService } from "@/src/services/SessionLocationService";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -33,8 +35,10 @@ export default function LoginPage() {
   const { setIsLoading: userLoading } = useUser();
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [locationRequested, setLocationRequested] = useState(false);
 
   const redirect = searchParams.get("redirect");
+  const { getLocationWithFallback } = useGeolocation();
 
   // Ensure component is mounted before accessing theme
   useEffect(() => {
@@ -59,15 +63,76 @@ export default function LoginPage() {
     userLoading(true);
   };
 
+  // Handle location tracking after successful login
   useEffect(() => {
-    if (!isPending && isSuccess) {
-      if (redirect) {
-        router.push(redirect);
-      } else {
-        router.push("/");
+    const handleLocationTracking = async () => {
+      if (!isPending && isSuccess && !locationRequested) {
+        setLocationRequested(true);
+
+        try {
+          // Get location data (GPS + IP fallback)
+          const { gpsLocation, ipLocation } = await getLocationWithFallback();
+
+          // Prepare location payload
+          const locationPayload: any = {};
+
+          if (gpsLocation) {
+            locationPayload.latitude = gpsLocation.latitude;
+            locationPayload.longitude = gpsLocation.longitude;
+            locationPayload.accuracy = gpsLocation.accuracy;
+          } else if (ipLocation) {
+            // Fallback to IP location if GPS denied
+            locationPayload.latitude = ipLocation.latitude;
+            locationPayload.longitude = ipLocation.longitude;
+          }
+
+          if (ipLocation) {
+            locationPayload.country = ipLocation.country;
+            locationPayload.city = ipLocation.city;
+          }
+
+          // Update session with location data
+          if (Object.keys(locationPayload).length > 0) {
+            await SessionLocationService.updateSessionLocation(locationPayload);
+
+            // Also record in location history if we have coordinates
+            if (locationPayload.latitude && locationPayload.longitude) {
+              await SessionLocationService.recordUserLocation({
+                latitude: locationPayload.latitude,
+                longitude: locationPayload.longitude,
+                accuracy: locationPayload.accuracy,
+                address: ipLocation?.city
+                  ? `${ipLocation.city}, ${ipLocation.country}`
+                  : undefined,
+                activity: "login",
+              });
+            }
+
+            toast.success("Location tracked successfully");
+          }
+        } catch (error) {
+          console.error("Location tracking error:", error);
+          // Don't block login flow if location fails
+        }
+
+        // Navigate after location attempt (don't wait)
+        if (redirect) {
+          router.push(redirect);
+        } else {
+          router.push("/");
+        }
       }
-    }
-  }, [isPending, isSuccess]);
+    };
+
+    handleLocationTracking();
+  }, [
+    isPending,
+    isSuccess,
+    locationRequested,
+    getLocationWithFallback,
+    redirect,
+    router,
+  ]);
 
   // Select the appropriate background image based on theme
   const currentTheme = mounted ? theme : "light";

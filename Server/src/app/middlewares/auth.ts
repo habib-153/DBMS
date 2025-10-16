@@ -12,12 +12,12 @@ type UserRoleType = 'USER' | 'ADMIN' | 'SUPER_ADMIN';
 const auth = (...requiredRoles: UserRoleType[]) => {
   return catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const token = req.headers.authorization;
-
+console.log(token)
     // checking if the token is missing
     if (!token) {
       throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
     }
-
+console.log('Token ache');
     // Remove 'Bearer ' prefix if present
     const cleanToken = token.startsWith('Bearer ') ? token.slice(7) : token;
 

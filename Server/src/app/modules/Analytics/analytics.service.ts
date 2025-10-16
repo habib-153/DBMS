@@ -136,7 +136,7 @@ const crimeTypeDistribution = async () => {
       COUNT(*) FILTER (WHERE status = 'APPROVED') as approved_cnt,
       COUNT(*) FILTER (WHERE status = 'PENDING') as pending_cnt
     FROM posts
-    WHERE "isDeleted" = false AND category IS NOT NULL
+    WHERE "isDeleted" = false AND status = 'APPROVED' AND category IS NOT NULL
     GROUP BY category
     ORDER BY cnt DESC;
   `;

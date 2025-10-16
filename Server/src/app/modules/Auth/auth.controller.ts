@@ -25,7 +25,19 @@ const registerUser = catchAsync(async (req, res) => {
 
 const loginUser = catchAsync(async (req, res) => {
   const payload = req.body;
-  const result = await AuthServices.loginUser(payload);
+
+  // Extract request metadata for session tracking
+  const requestMetadata = {
+    ipAddress:
+      (req.headers['x-forwarded-for'] as string) ||
+      req.socket.remoteAddress ||
+      null,
+    userAgent: req.headers['user-agent'] || null,
+    latitude: payload.latitude || null,
+    longitude: payload.longitude || null,
+  };
+
+  const result = await AuthServices.loginUser(payload, requestMetadata);
   const { refreshToken, accessToken } = result;
 
   res.cookie('refreshToken', refreshToken, {

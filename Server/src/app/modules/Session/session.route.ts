@@ -33,4 +33,11 @@ router.post(
   SessionController.endAllSessions
 );
 
+// Update current session with location data
+router.patch(
+  '/update-location',
+  auth(USER_ROLE.USER, USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN),
+  SessionController.updateSessionLocation
+);
+
 export const SessionRoutes = router;
