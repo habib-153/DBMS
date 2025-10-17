@@ -929,7 +929,7 @@ const CreatePostModal = ({ isOpen, setIsOpen }: IPostModalProps) => {
                       <Button
                         className={`px-6 py-2 font-medium transition-all duration-200 ${
                           isFormValid()
-                            ? "bg-brand-gradient text-white shadow-lg hover:shadow-xl hover:scale-105"
+                            ? "bg-brand-primary text-white shadow-lg hover:shadow-xl hover:scale-105"
                             : "bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                         }`}
                         isDisabled={!isFormValid() || createPostPending}

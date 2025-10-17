@@ -1,5 +1,13 @@
 "use client";
-import { AwaitedReactNode, JSXElementConstructor, Key, ReactElement, ReactNode, ReactPortal, useState } from "react";
+import {
+  AwaitedReactNode,
+  JSXElementConstructor,
+  Key,
+  ReactElement,
+  ReactNode,
+  ReactPortal,
+  useState,
+} from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Spinner, Card, CardBody, CardHeader, Tabs, Tab } from "@heroui/react";
 import { ParentSize } from "@visx/responsive";
@@ -25,6 +33,7 @@ import {
   EnhancedBarChart,
   EnhancedPieChart,
 } from "@/src/components/modules/analytics/EnhancedCharts";
+import PolarHeatmap from "@/src/components/modules/analytics/PolarHeatmap";
 
 const COLORS = [
   "#0088FE",
@@ -95,14 +104,14 @@ const EnhancedAnalytics = () => {
     },
   });
 
-  const { data: statusData, isLoading: statusLoading } = useQuery({
-    queryKey: ["statusBreakdown"],
+  const { data: crimeHourData, isLoading: crimeHourLoading } = useQuery({
+    queryKey: ["crimeByHour"],
     queryFn: async () => {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_API}/analytics/status-breakdown`
+        `${process.env.NEXT_PUBLIC_BASE_API}/analytics/time-pattern`
       );
 
-      if (!res.ok) throw new Error("Failed to fetch status data");
+      if (!res.ok) throw new Error("Failed to fetch crime hour data");
 
       return res.json();
     },
@@ -152,7 +161,7 @@ const EnhancedAnalytics = () => {
     trendLoading ||
     categoryLoading ||
     hotspotLoading ||
-    statusLoading ||
+    crimeHourLoading ||
     divisionLoading ||
     dayOfWeekLoading ||
     recentActivityLoading;
@@ -169,7 +178,7 @@ const EnhancedAnalytics = () => {
   const trends = trendData?.data || [];
   const categories = categoryData?.data || [];
   const hotspots = hotspotData?.data || [];
-  const statusBreakdown = statusData?.data || [];
+  const crimeByHour = crimeHourData?.data || [];
   const divisions = divisionData?.data || [];
   const dayOfWeek = dayOfWeekData?.data || [];
   const recentActivity = recentActivityData?.data || [];
@@ -198,10 +207,9 @@ const EnhancedAnalytics = () => {
     color: "#FF8042",
   }));
 
-  const statusChartData = statusBreakdown.map((item: any, index: number) => ({
-    label: item.status,
-    value: parseInt(item.cnt),
-    color: COLORS[index % COLORS.length],
+  const crimeHourChartData = crimeByHour.map((item: any) => ({
+    hour: `${item.hour_of_day}:00`,
+    crimes: parseInt(item.cnt),
   }));
 
   const divisionChartData = divisions.map((item: any) => ({
@@ -226,7 +234,7 @@ const EnhancedAnalytics = () => {
     }));
 
   const totalCrimes = categories.reduce(
-    (sum: number, item: { cnt: string; }) => sum + parseInt(item.cnt),
+    (sum: number, item: { cnt: string }) => sum + parseInt(item.cnt),
     0
   );
   const mostCommonCrime = categories[0]?.category || "N/A";
@@ -314,6 +322,7 @@ const EnhancedAnalytics = () => {
           <Tab key="trends" title="📈 Trends" />
           <Tab key="geographic" title="🗺️ Geographic" />
           <Tab key="temporal" title="⏰ Temporal" />
+          <Tab key="polar" title="🎯 Polar Analytics" />
         </Tabs>
 
         {/* Overview Tab */}
@@ -342,55 +351,106 @@ const EnhancedAnalytics = () => {
                   )}
                 </ParentSize>
                 <div className="mt-4 grid grid-cols-2 gap-2">
-                  {categoryChartData.map((cat: { color: any; label: string | number | bigint | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<AwaitedReactNode> | null | undefined; value: string | number | bigint | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<AwaitedReactNode> | null | undefined; }, i: Key | null | undefined) => (
-                    <div key={i} className="flex items-center gap-2 text-sm">
-                      <div
-                        className="w-3 h-3 rounded"
-                        style={{ backgroundColor: cat.color }}
-                      />
-                      <span className="text-gray-700 dark:text-gray-300">
-                        {cat.label}: {cat.value}
-                      </span>
-                    </div>
-                  ))}
+                  {categoryChartData.map(
+                    (
+                      cat: {
+                        color: any;
+                        label:
+                          | string
+                          | number
+                          | bigint
+                          | boolean
+                          | ReactElement<
+                              any,
+                              string | JSXElementConstructor<any>
+                            >
+                          | Iterable<ReactNode>
+                          | ReactPortal
+                          | Promise<AwaitedReactNode>
+                          | null
+                          | undefined;
+                        value:
+                          | string
+                          | number
+                          | bigint
+                          | boolean
+                          | ReactElement<
+                              any,
+                              string | JSXElementConstructor<any>
+                            >
+                          | Iterable<ReactNode>
+                          | ReactPortal
+                          | Promise<AwaitedReactNode>
+                          | null
+                          | undefined;
+                      },
+                      i: Key | null | undefined
+                    ) => (
+                      <div key={i} className="flex items-center gap-2 text-sm">
+                        <div
+                          className="w-3 h-3 rounded"
+                          style={{ backgroundColor: cat.color }}
+                        />
+                        <span className="text-gray-700 dark:text-gray-300">
+                          {cat.label}: {cat.value}
+                        </span>
+                      </div>
+                    )
+                  )}
                 </div>
               </CardBody>
             </Card>
 
-            {/* Status Breakdown */}
+            {/* Crime by Hour of Day */}
             <Card>
               <CardHeader className="pb-0">
                 <div>
-                  <h2 className="text-xl font-bold">Report Status Breakdown</h2>
+                  <h2 className="text-xl font-bold">Most Dangerous Hours</h2>
                   <p className="text-sm text-gray-500">
-                    Current status of all reports
+                    Crimes by hour of day (last 60 days)
                   </p>
                 </div>
               </CardHeader>
               <CardBody className="pt-4">
-                <ParentSize>
-                  {({ width }) => (
-                    <EnhancedPieChart
-                      data={statusChartData}
-                      height={400}
-                      width={width}
+                <ResponsiveContainer height={400} width="100%">
+                  <LineChart data={crimeHourChartData}>
+                    <CartesianGrid opacity={0.1} strokeDasharray="3 3" />
+                    <XAxis dataKey="hour" fontSize={12} stroke="currentColor" />
+                    <YAxis fontSize={12} stroke="currentColor" />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "rgba(0,0,0,0.8)",
+                        border: "none",
+                        borderRadius: "8px",
+                        color: "white",
+                      }}
                     />
-                  )}
-                </ParentSize>
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                {statusChartData.map(
-                    (status: { label: string; value: number; color: string }, i: number) => (
-                        <div key={i} className="flex items-center gap-2 text-sm">
-                            <div
-                                className="w-3 h-3 rounded"
-                                style={{ backgroundColor: status.color }}
-                            />
-                            <span className="text-gray-700 dark:text-gray-300">
-                                {status.label}: {status.value}
-                            </span>
-                        </div>
-                    )
-                )}
+                    <Line
+                      activeDot={{ r: 6 }}
+                      dataKey="crimes"
+                      dot={{ r: 4 }}
+                      stroke="#FF8042"
+                      strokeWidth={2}
+                      type="monotone"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+                <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                    <strong>Peak Hour:</strong>{" "}
+                    {crimeHourChartData.length > 0
+                      ? crimeHourChartData.reduce((max: any, item: any) =>
+                          item.crimes > max.crimes ? item : max
+                        ).hour
+                      : "N/A"}{" "}
+                    with{" "}
+                    {crimeHourChartData.length > 0
+                      ? crimeHourChartData.reduce((max: any, item: any) =>
+                          item.crimes > max.crimes ? item : max
+                        ).crimes
+                      : 0}{" "}
+                    crimes
+                  </p>
                 </div>
               </CardBody>
             </Card>
@@ -432,7 +492,7 @@ const EnhancedAnalytics = () => {
                   </h2>
                   <p className="text-sm text-gray-500">
                     Daily reports with 7-day moving average
-               </p>
+                  </p>
                 </div>
               </CardHeader>
               <CardBody className="pt-4">
@@ -549,11 +609,13 @@ const EnhancedAnalytics = () => {
                 <ParentSize>
                   {({ width }) => (
                     <EnhancedBarChart
-                      data={divisionChartData.map((d: { division: any; crimes: any; }) => ({
-                        label: d.division,
-                        value: d.crimes,
-                        color: "#00C49F",
-                      }))}
+                      data={divisionChartData.map(
+                        (d: { division: any; crimes: any }) => ({
+                          label: d.division,
+                          value: d.crimes,
+                          color: "#00C49F",
+                        })
+                      )}
                       height={400}
                       width={width}
                     />
@@ -606,6 +668,13 @@ const EnhancedAnalytics = () => {
                 </div>
               </CardBody>
             </Card>
+          </div>
+        )}
+
+        {/* Polar Analytics Tab */}
+        {selectedTab === "polar" && (
+          <div className="grid grid-cols-1 gap-6">
+            <PolarHeatmap />
           </div>
         )}
 
@@ -666,11 +735,13 @@ const EnhancedAnalytics = () => {
                 <ParentSize>
                   {({ width }) => (
                     <EnhancedBarChart
-                      data={dayOfWeekChartData.map((d: { day: any; crimes: any; }) => ({
-                        label: d.day,
-                        value: d.crimes,
-                        color: "#8884D8",
-                      }))}
+                      data={dayOfWeekChartData.map(
+                        (d: { day: any; crimes: any }) => ({
+                          label: d.day,
+                          value: d.crimes,
+                          color: "#8884D8",
+                        })
+                      )}
                       height={350}
                       width={width}
                     />

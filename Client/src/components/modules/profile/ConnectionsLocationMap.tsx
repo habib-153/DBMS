@@ -279,7 +279,7 @@ const ConnectionsLocationMap: React.FC<ConnectionsMapProps> = ({
                     </div>
                   )}
                   <a
-                    className="inline-block mt-2 px-3 py-1 bg-blue-600 text-white rounded"
+                    className="inline-block mt-2 px-3 py-1 bg-[#a50034] text-white rounded hover:bg-[#8b0000] transition-colors"
                     href={`/profile/${selectedConnection.id}`}
                   >
                     View profile
@@ -330,7 +330,11 @@ const ConnectionsLocationMap: React.FC<ConnectionsMapProps> = ({
                     onClick={() => {
                       const mapObj = mapRef.current?.getMap();
 
-                      if (mapObj && connection.latitude && connection.longitude) {
+                      if (
+                        mapObj &&
+                        connection.latitude &&
+                        connection.longitude
+                      ) {
                         mapObj.flyTo({
                           center: [connection.longitude, connection.latitude],
                           zoom: 14,

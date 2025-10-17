@@ -165,13 +165,13 @@ const triggerCheck = catchAsync(async (req: Request, res: Response) => {
 });
 
 const autoGenerateZones = catchAsync(async (req: Request, res: Response) => {
-  await GeofenceService.autoGenerateGeofenceZones();
+  const result = await GeofenceService.autoGenerateGeofenceZones();
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: 'Geofence zones auto-generated successfully',
-    data: null,
+    message: `Auto-generated ${result.created} geofence zones from ${result.totalHotspots} hotspots (${result.skipped} skipped - already exist)`,
+    data: result,
   });
 });
 

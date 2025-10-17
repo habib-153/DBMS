@@ -54,6 +54,7 @@ interface PopupInfo {
   latitude: number;
   district: string;
   division: string;
+  address?: string;
   reports: CrimeReport[];
 }
 
@@ -443,13 +444,37 @@ export default function InteractiveHeatmap({ className }: HeatmapProps) {
           reportsCount: reportsAtLocation.length,
         });
 
-        setPopupInfo({
-          longitude,
-          latitude,
-          district: firstReport.district,
-          division: firstReport.division,
-          reports: reportsAtLocation,
-        });
+        // Fetch readable address from coordinates
+        fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`
+        )
+          .then((res) => res.json())
+          .then((data) => {
+            const address =
+              data.display_name ||
+              `${firstReport.district}, ${firstReport.division}`;
+
+            setPopupInfo({
+              longitude,
+              latitude,
+              district: firstReport.district,
+              division: firstReport.division,
+              address,
+              reports: reportsAtLocation,
+            });
+          })
+          .catch(() => {
+            // Fallback if geocoding fails
+            setPopupInfo({
+              longitude,
+              latitude,
+              district: firstReport.district,
+              division: firstReport.division,
+              address: `${firstReport.district}, ${firstReport.division}`,
+              reports: reportsAtLocation,
+            });
+          });
+
         setCurrentSlide(0); // Reset to first slide
       } else {
         console.warn("⚠️ No reports found at clicked location");
@@ -755,7 +780,8 @@ export default function InteractiveHeatmap({ className }: HeatmapProps) {
                                   <div className="text-xs text-gray-600 dark:text-gray-300 space-y-1">
                                     <div>
                                       <strong>Location:</strong>{" "}
-                                      {popupInfo.district}, {popupInfo.division}
+                                      {popupInfo.address ||
+                                        `${popupInfo.district}, ${popupInfo.division}`}
                                     </div>
                                     <div>
                                       <strong>Date:</strong>{" "}
@@ -769,7 +795,7 @@ export default function InteractiveHeatmap({ className }: HeatmapProps) {
                                         minute: "2-digit",
                                       })}
                                     </div>
-                                    <div>
+                                    {/* <div>
                                       <strong>Verification Score:</strong>{" "}
                                       <span
                                         className={`font-medium ${
@@ -782,8 +808,8 @@ export default function InteractiveHeatmap({ className }: HeatmapProps) {
                                       >
                                         {report.verificationScore.toFixed(0)}%
                                       </span>
-                                    </div>
-                                    <div className="mt-2">
+                                    </div> */}
+                                    {/* <div className="mt-2">
                                       <div className="flex items-center justify-between text-xs">
                                         <span className="font-medium">
                                           Severity
@@ -808,7 +834,7 @@ export default function InteractiveHeatmap({ className }: HeatmapProps) {
                                           }}
                                         />
                                       </div>
-                                    </div>
+                                    </div> */}
                                   </div>
 
                                   {/* View Details Button */}

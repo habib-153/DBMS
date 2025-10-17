@@ -21,12 +21,12 @@ export default function HomePage() {
   const [openCreatePostModal, setOpenCreatePostModal] = useState(false);
   const [posts, setPosts] = useState<IPost[]>([]);
 
-  // Build API URL for recent posts
+  // Build API URL for recent posts (5 most recent by crime date)
   const apiUrl = `${envConfig.baseApi}/posts?${new URLSearchParams({
-    sortBy: "createdAt",
+    sortBy: "crimeDate",
     sortOrder: "desc",
     page: "1",
-    limit: "10",
+    limit: "5",
   }).toString()}`;
 
   const { data: postData, isLoading } = useGetAllPosts(apiUrl);

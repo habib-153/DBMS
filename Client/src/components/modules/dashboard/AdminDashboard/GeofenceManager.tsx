@@ -55,13 +55,7 @@ const GeofenceManager: React.FC<GeofenceManagerProps> = ({
   const [isCreating, setIsCreating] = useState(false);
   const [selectedZone, setSelectedZone] = useState<GeofenceZone | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
-  // Admin test-check form state
-  const [testForm, setTestForm] = useState({
-    userId: "",
-    latitude: 0,
-    longitude: 0,
-  });
-  const [testResult, setTestResult] = useState<any | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -268,6 +262,26 @@ const GeofenceManager: React.FC<GeofenceManagerProps> = ({
     }
   };
 
+  const handleAutoGenerate = async () => {
+    if (
+      !confirm(
+        "This will auto-generate geofence zones from crime data (last 90 days). Continue?"
+      )
+    )
+      return;
+
+    setIsGenerating(true);
+    try {
+      const { data } = await axiosInstance.post("/geofence/auto-generate");
+      toast.success(data.message || "Geofence zones generated successfully!");
+      onZoneUpdated();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to generate zones");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div className="relative w-full h-[600px]">
       <Map
@@ -303,96 +317,31 @@ const GeofenceManager: React.FC<GeofenceManagerProps> = ({
       </Map>
 
       {/* Instructions */}
-      <div className="absolute top-4 left-4 bg-white p-4 rounded-lg shadow-lg max-w-xs">
+      <div className="absolute top-4 left-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-xs">
         <h4 className="font-semibold mb-2">🛡️ Geofence Manager</h4>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
           Click the <strong>point tool</strong> in the top-left to place a new
           geofence zone on the map. Click existing zones to edit or delete them.
         </p>
+        <Button
+          className="w-full bg-[#a50034] text-white"
+          isLoading={isGenerating}
+          size="sm"
+          onClick={handleAutoGenerate}
+        >
+          {isGenerating ? "Generating..." : "🤖 Auto-Generate Zones"}
+        </Button>
       </div>
 
       {/* Zone List */}
-      <div className="absolute top-4 right-4 bg-white p-4 rounded-lg shadow-lg max-w-xs max-h-96 overflow-y-auto">
+      <div className="absolute top-4 right-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-xs max-h-96 overflow-y-auto">
         <h4 className="font-semibold mb-2">Existing Zones ({zones.length})</h4>
-        {/* Admin Test Check Panel */}
-        <div className="mb-3 border-t pt-3">
-          <h5 className="font-medium text-sm mb-2">
-            Admin: Run geofence check
-          </h5>
-          <input
-            className="w-full border px-2 py-1 mb-1"
-            placeholder="User ID"
-            value={testForm.userId}
-            onChange={(e) =>
-              setTestForm({ ...testForm, userId: e.target.value })
-            }
-          />
-          <div className="grid grid-cols-2 gap-2 mb-2">
-            <input
-              className="w-full border px-2 py-1"
-              placeholder="Latitude"
-              value={testForm.latitude?.toString()}
-              onChange={(e) =>
-                setTestForm({
-                  ...testForm,
-                  latitude: parseFloat(e.target.value) || 0,
-                })
-              }
-            />
-            <input
-              className="w-full border px-2 py-1"
-              placeholder="Longitude"
-              value={testForm.longitude?.toString()}
-              onChange={(e) =>
-                setTestForm({
-                  ...testForm,
-                  longitude: parseFloat(e.target.value) || 0,
-                })
-              }
-            />
-          </div>
-          <div className="flex gap-2">
-            <button
-              className="px-3 py-1 bg-blue-600 text-white rounded"
-              onClick={async () => {
-                try {
-                  setTestResult(null);
-                  const res = await SessionLocationService.testGeofenceCheck({
-                    userId: testForm.userId,
-                    latitude: testForm.latitude,
-                    longitude: testForm.longitude,
-                  });
-
-                  setTestResult(res);
-                  toast.success("Test check run — see result below");
-                } catch (err: any) {
-                  toast.error(
-                    err?.response?.data?.message || "Failed to run test check"
-                  );
-                }
-              }}
-            >
-              Run Test
-            </button>
-            <button
-              className="px-3 py-1 bg-gray-200 rounded"
-              onClick={() => setTestResult(null)}
-            >
-              Clear
-            </button>
-          </div>
-          {testResult && (
-            <pre className="mt-2 max-h-40 overflow-auto text-xs bg-gray-50 p-2 rounded">
-              {JSON.stringify(testResult, null, 2)}
-            </pre>
-          )}
-        </div>
         <div className="space-y-2">
           {zones.map((zone) => (
             <button
               key={zone.id}
               aria-label={`View ${zone.name} on map`}
-              className="w-full text-left p-2 border rounded hover:bg-gray-50"
+              className="w-full text-left p-2 border rounded hover:bg-gray-50 dark:hover:bg-gray-700"
               type="button"
               onClick={() => {
                 mapRef.current?.flyTo({
@@ -480,7 +429,10 @@ const GeofenceManager: React.FC<GeofenceManagerProps> = ({
               }
             />
             <div className="flex gap-2 pt-2">
-              <Button color="primary" onClick={handleCreateZone}>
+              <Button
+                className="bg-[#a50034] text-white"
+                onClick={handleCreateZone}
+              >
                 Create Zone
               </Button>
               <Button
@@ -562,7 +514,10 @@ const GeofenceManager: React.FC<GeofenceManagerProps> = ({
             <Button variant="flat" onClick={() => setShowEditModal(false)}>
               Cancel
             </Button>
-            <Button color="primary" onClick={handleUpdateZone}>
+            <Button
+              className="bg-[#a50034] text-white"
+              onClick={handleUpdateZone}
+            >
               Update Zone
             </Button>
           </ModalFooter>

@@ -60,9 +60,37 @@ const endAllSessions = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void
         data: null,
     });
 }));
+const updateSessionLocation = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+    const { latitude, longitude, accuracy, country, city, address } = req.body;
+    if (!userId) {
+        return (0, sendResponse_1.default)(res, {
+            statusCode: http_status_1.default.UNAUTHORIZED,
+            success: false,
+            message: 'User not authenticated',
+            data: null,
+        });
+    }
+    yield session_service_1.SessionService.updateActiveSessionLocation(userId, {
+        latitude,
+        longitude,
+        accuracy,
+        country,
+        city,
+        address,
+    });
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: 'Session location updated successfully',
+        data: null,
+    });
+}));
 exports.SessionController = {
     getUserSessions,
     getActiveSessions,
     endSession,
     endAllSessions,
+    updateSessionLocation,
 };

@@ -20,7 +20,16 @@ const verifyJWT_1 = require("../utils/verifyJWT");
 const database_1 = __importDefault(require("../../shared/database"));
 const auth = (...requiredRoles) => {
     return (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-        const token = req.headers.authorization;
+        var _a;
+        // Prefer Authorization header but fall back to http-only cookie named 'accessToken'
+        let token = req.headers.authorization;
+        if (!token) {
+            // Try cookie fallback
+            const cookieToken = (_a = req.cookies) === null || _a === void 0 ? void 0 : _a.accessToken;
+            if (cookieToken) {
+                token = cookieToken;
+            }
+        }
         // checking if the token is missing
         if (!token) {
             throw new AppError_1.default(http_status_1.default.UNAUTHORIZED, 'You are not authorized!');

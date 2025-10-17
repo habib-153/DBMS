@@ -1,7 +1,15 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useMemo } from "react";
-import Map, { Marker, Popup, MapRef, NavigationControl, FullscreenControl, Layer, Source } from "react-map-gl/mapbox";
+import Map, {
+  Marker,
+  Popup,
+  MapRef,
+  NavigationControl,
+  FullscreenControl,
+  Layer,
+  Source,
+} from "react-map-gl/mapbox";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { CircleLayer } from "mapbox-gl";
@@ -13,6 +21,7 @@ interface ActiveSession {
   userId: string;
   userName: string;
   userEmail: string;
+  profilePhoto?: string;
   latitude?: number;
   longitude?: number;
   country?: string;
@@ -44,13 +53,18 @@ const MapContainer: React.FC<MapContainerProps> = ({
   geofenceZones,
 }) => {
   const mapRef = useRef<MapRef | null>(null);
-  const [selectedSession, setSelectedSession] = useState<ActiveSession | null>(null);
+  const [selectedSession, setSelectedSession] = useState<ActiveSession | null>(
+    null
+  );
 
   // Fit map to show all active sessions
   useEffect(() => {
-    if (!mapRef.current || !activeSessions || activeSessions.length === 0) return;
+    if (!mapRef.current || !activeSessions || activeSessions.length === 0)
+      return;
 
-    const sessionsWithLocation = activeSessions.filter(s => s.latitude && s.longitude);
+    const sessionsWithLocation = activeSessions.filter(
+      (s) => s.latitude && s.longitude
+    );
 
     if (sessionsWithLocation.length === 0) return;
 
@@ -59,7 +73,10 @@ const MapContainer: React.FC<MapContainerProps> = ({
       const bounds = new mapboxgl.LngLatBounds();
 
       sessionsWithLocation.forEach((session) => {
-        bounds.extend([session.longitude as number, session.latitude as number]);
+        bounds.extend([
+          session.longitude as number,
+          session.latitude as number,
+        ]);
       });
 
       mapObj.fitBounds(bounds, { padding: 80, maxZoom: 12 });
@@ -75,8 +92,8 @@ const MapContainer: React.FC<MapContainerProps> = ({
     return {
       type: "FeatureCollection" as const,
       features: geofenceZones
-        .filter(zone => zone.isActive)
-        .map(zone => ({
+        .filter((zone) => zone.isActive)
+        .map((zone) => ({
           type: "Feature" as const,
           properties: {
             id: zone.id,
@@ -109,10 +126,14 @@ const MapContainer: React.FC<MapContainerProps> = ({
       "circle-color": [
         "match",
         ["get", "riskLevel"],
-        "CRITICAL", "#ef4444",
-        "HIGH", "#f97316",
-        "MEDIUM", "#eab308",
-        "LOW", "#22c55e",
+        "CRITICAL",
+        "#ef4444",
+        "HIGH",
+        "#f97316",
+        "MEDIUM",
+        "#eab308",
+        "LOW",
+        "#22c55e",
         "#6b7280",
       ],
       "circle-opacity": 0.3,
@@ -120,16 +141,22 @@ const MapContainer: React.FC<MapContainerProps> = ({
       "circle-stroke-color": [
         "match",
         ["get", "riskLevel"],
-        "CRITICAL", "#dc2626",
-        "HIGH", "#ea580c",
-        "MEDIUM", "#ca8a04",
-        "LOW", "#16a34a",
+        "CRITICAL",
+        "#dc2626",
+        "HIGH",
+        "#ea580c",
+        "MEDIUM",
+        "#ca8a04",
+        "LOW",
+        "#16a34a",
         "#4b5563",
       ],
     },
   };
 
-  const sessionsWithLocation = activeSessions.filter(s => s.latitude && s.longitude);
+  const sessionsWithLocation = activeSessions.filter(
+    (s) => s.latitude && s.longitude
+  );
 
   return (
     <div className="relative w-full h-full">
@@ -165,11 +192,21 @@ const MapContainer: React.FC<MapContainerProps> = ({
             >
               <button
                 aria-label={`Open session for ${session.userName || session.userEmail || session.id}`}
-                className="w-10 h-10 rounded-full bg-blue-500 border-2 border-white shadow-lg flex items-center justify-center text-white text-lg hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-300"
+                className="w-10 h-10 rounded-full border-2 border-white shadow-lg hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#a50034] overflow-hidden"
                 type="button"
                 onClick={() => setSelectedSession(session)}
               >
-                👤
+                {session.profilePhoto ? (
+                  <img
+                    alt={`${session.userName || "User"} profile`}
+                    className="w-full h-full object-cover"
+                    src={session.profilePhoto}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-[#a50034] flex items-center justify-center text-white text-lg">
+                    👤
+                  </div>
+                )}
               </button>
             </Marker>
           ))}
@@ -186,12 +223,22 @@ const MapContainer: React.FC<MapContainerProps> = ({
             >
               <div style={{ minWidth: 200 }}>
                 <h3 className="font-bold mb-2">{selectedSession.userName}</h3>
-                <p className="text-xs text-gray-600 mb-1">{selectedSession.userEmail}</p>
+                <p className="text-xs text-gray-600 mb-1">
+                  {selectedSession.userEmail}
+                </p>
                 {selectedSession.city && selectedSession.country && (
-                  <p className="text-xs mb-1">📍 {selectedSession.city}, {selectedSession.country}</p>
+                  <p className="text-xs mb-1">
+                    📍 {selectedSession.city}, {selectedSession.country}
+                  </p>
                 )}
-                <p className="text-xs mb-1">💻 {selectedSession.browser || "Unknown"} on {selectedSession.os || "Unknown"}</p>
-                <p className="text-xs text-gray-500">Last active: {new Date(selectedSession.lastActivity).toLocaleString()}</p>
+                <p className="text-xs mb-1">
+                  💻 {selectedSession.browser || "Unknown"} on{" "}
+                  {selectedSession.os || "Unknown"}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Last active:{" "}
+                  {new Date(selectedSession.lastActivity).toLocaleString()}
+                </p>
               </div>
             </Popup>
           )}
@@ -203,7 +250,7 @@ const MapContainer: React.FC<MapContainerProps> = ({
         <h4 className="font-semibold mb-2 text-sm">Legend</h4>
         <div className="space-y-2 text-xs">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-blue-500 border-2 border-white" />
+            <div className="w-4 h-4 rounded-full bg-[#a50034] border-2 border-white" />
             <span>Active User</span>
           </div>
           <div className="flex items-center gap-2">

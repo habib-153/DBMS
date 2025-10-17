@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GeofenceService = void 0;
+/* eslint-disable no-unused-vars */
 const crypto_1 = require("crypto");
 const database_1 = __importDefault(require("../../../shared/database"));
 const AppError_1 = __importDefault(require("../../errors/AppError"));
@@ -136,6 +137,19 @@ const recordUserLocation = (locationData, userId) => __awaiter(void 0, void 0, v
             break;
         }
     }
+    // Debug: log computed distances and entered zone
+    try {
+        console.debug('[Geofence] user:', userId, 'lat:', locationData.latitude, 'lng:', locationData.longitude);
+        if (enteredZone) {
+            console.debug('[Geofence] Entered zone detected:', enteredZone.id, enteredZone.name, 'risk:', enteredZone.riskLevel);
+        }
+        else {
+            console.debug('[Geofence] No geofence zone detected for this location');
+        }
+    }
+    catch (err) {
+        // swallow logging errors
+    }
     // Check if notification was already sent for this zone recently (within 1 hour)
     let notificationSent = false;
     if (enteredZone) {
@@ -149,8 +163,30 @@ const recordUserLocation = (locationData, userId) => __awaiter(void 0, void 0, v
     `, [userId, enteredZone.id]);
         if (recentCheck.rows.length === 0) {
             // Send notification
-            yield notification_service_1.NotificationService.createGeofenceWarning(userId, enteredZone.name, enteredZone.riskLevel);
-            notificationSent = true;
+            // Debug: log recentCheck rows
+            try {
+                console.debug('[Geofence] recentCheck rows:', recentCheck.rows);
+            }
+            catch (err) {
+                /* ignore */
+            }
+            // Debug: fetch user's push tokens
+            try {
+                const tokensResult = yield database_1.default.query(`SELECT * FROM push_notification_tokens WHERE "userId" = $1 AND "isActive" = true`, [userId]);
+                console.debug('[Geofence] user push tokens:', tokensResult.rows);
+            }
+            catch (err) {
+                console.error('[Geofence] Failed to fetch push tokens:', err);
+            }
+            // Send notification
+            try {
+                yield notification_service_1.NotificationService.createGeofenceWarning(userId, enteredZone.name, enteredZone.riskLevel);
+                notificationSent = true;
+                console.debug('[Geofence] Notification created for user', userId, 'zone', enteredZone.id);
+            }
+            catch (err) {
+                console.error('[Geofence] Failed to create geofence notification:', err);
+            }
         }
     }
     const query = `
@@ -193,10 +229,23 @@ const getUserLocationHistory = (userId_1, ...args_1) => __awaiter(void 0, [userI
 });
 // Auto-generate geofence zones from crime data
 const autoGenerateGeofenceZones = () => __awaiter(void 0, void 0, void 0, function* () {
+    // First, check how many posts we have
+    const postCountQuery = `
+    SELECT COUNT(*) as total 
+    FROM posts 
+    WHERE "isDeleted" = false 
+      AND status = 'APPROVED'
+      AND latitude IS NOT NULL 
+      AND longitude IS NOT NULL
+  `;
+    const postCountResult = yield database_1.default.query(postCountQuery);
+    const totalPosts = parseInt(postCountResult.rows[0].total) || 0;
+    console.log(`[Geofence Auto-Generate] Total approved posts with coordinates: ${totalPosts}`);
     // Find crime hotspots using spatial clustering
+    // Relaxed criteria: Last 365 days instead of 90, and 2+ crimes instead of 3+
     const hotspotsQuery = `
     WITH crime_clusters AS (
-      SELECT 
+      SELECT
         AVG(latitude) as center_lat,
         AVG(longitude) as center_lng,
         COUNT(*) as crime_count,
@@ -204,24 +253,28 @@ const autoGenerateGeofenceZones = () => __awaiter(void 0, void 0, void 0, functi
         division,
         AVG("verificationScore") as avg_score
       FROM posts
-      WHERE "isDeleted" = false 
+      WHERE "isDeleted" = false
         AND status = 'APPROVED'
         AND latitude IS NOT NULL
         AND longitude IS NOT NULL
-        AND "crimeDate" >= NOW() - INTERVAL '90 days'
-      GROUP BY 
+        AND "crimeDate" >= NOW() - INTERVAL '365 days'
+      GROUP BY
         ROUND(latitude::numeric, 2),
         ROUND(longitude::numeric, 2),
         district,
         division
-      HAVING COUNT(*) >= 3
+      HAVING COUNT(*) >= 2
     )
     SELECT * FROM crime_clusters
     ORDER BY crime_count DESC
     LIMIT 20
   `;
     const hotspots = yield database_1.default.query(hotspotsQuery);
+    console.log(`[Geofence Auto-Generate] Found ${hotspots.rows.length} crime hotspots`);
+    let created = 0;
+    let skipped = 0;
     for (const hotspot of hotspots.rows) {
+        console.log(`[Geofence] Processing hotspot at lat:${hotspot.center_lat}, lng:${hotspot.center_lng}, crimes:${hotspot.crime_count}, district:${hotspot.district}`);
         // Check if zone already exists
         const existingZone = yield database_1.default.query(`
       SELECT * FROM geofence_zones
@@ -231,16 +284,23 @@ const autoGenerateGeofenceZones = () => __awaiter(void 0, void 0, void 0, functi
         sin(radians($1)) * sin(radians("centerLatitude"))
       )) <= 500
     `, [hotspot.center_lat, hotspot.center_lng]);
-        if (existingZone.rows.length === 0) {
-            // Create new geofence zone
-            const crimeCount = parseInt(hotspot.crime_count) || 0;
-            let riskLevel = 'MEDIUM';
-            if (crimeCount >= 10)
-                riskLevel = 'CRITICAL';
-            else if (crimeCount >= 7)
-                riskLevel = 'HIGH';
-            else if (crimeCount >= 5)
-                riskLevel = 'MEDIUM';
+        if (existingZone.rows.length > 0) {
+            console.log(`[Geofence] Skipping - zone already exists nearby`);
+            skipped++;
+            continue;
+        }
+        // Create new geofence zone
+        const crimeCount = parseInt(hotspot.crime_count) || 0;
+        let riskLevel = 'MEDIUM';
+        if (crimeCount >= 10)
+            riskLevel = 'CRITICAL';
+        else if (crimeCount >= 7)
+            riskLevel = 'HIGH';
+        else if (crimeCount >= 5)
+            riskLevel = 'MEDIUM';
+        else
+            riskLevel = 'LOW';
+        try {
             yield createGeofenceZone({
                 name: `${hotspot.district || 'Unknown'} Crime Hotspot`,
                 centerLatitude: parseFloat(hotspot.center_lat),
@@ -250,13 +310,89 @@ const autoGenerateGeofenceZones = () => __awaiter(void 0, void 0, void 0, functi
                 district: hotspot.district,
                 division: hotspot.division,
             });
+            created++;
+            console.log(`[Geofence] ✓ Created zone: ${hotspot.district || 'Unknown'} Crime Hotspot (${riskLevel})`);
         }
+        catch (error) {
+            console.error(`[Geofence] ✗ Failed to create zone:`, error);
+        }
+    }
+    console.log(`[Geofence Auto-Generate] Summary - Created: ${created}, Skipped: ${skipped}, Total hotspots: ${hotspots.rows.length}`);
+    return {
+        created,
+        skipped,
+        totalHotspots: hotspots.rows.length,
+    };
+});
+const updateGeofenceZone = (zoneId, updateData) => __awaiter(void 0, void 0, void 0, function* () {
+    const now = new Date();
+    // Build dynamic update query
+    const fields = [];
+    const values = [];
+    let paramIndex = 1;
+    if (updateData.name !== undefined) {
+        fields.push(`name = $${paramIndex++}`);
+        values.push(updateData.name);
+    }
+    if (updateData.centerLatitude !== undefined) {
+        fields.push(`"centerLatitude" = $${paramIndex++}`);
+        values.push(updateData.centerLatitude);
+    }
+    if (updateData.centerLongitude !== undefined) {
+        fields.push(`"centerLongitude" = $${paramIndex++}`);
+        values.push(updateData.centerLongitude);
+    }
+    if (updateData.radiusMeters !== undefined) {
+        fields.push(`"radiusMeters" = $${paramIndex++}`);
+        values.push(updateData.radiusMeters);
+    }
+    if (updateData.riskLevel !== undefined) {
+        fields.push(`"riskLevel" = $${paramIndex++}`);
+        values.push(updateData.riskLevel);
+    }
+    if (updateData.district !== undefined) {
+        fields.push(`district = $${paramIndex++}`);
+        values.push(updateData.district);
+    }
+    if (updateData.division !== undefined) {
+        fields.push(`division = $${paramIndex++}`);
+        values.push(updateData.division);
+    }
+    fields.push(`"updatedAt" = $${paramIndex++}`);
+    values.push(now);
+    values.push(zoneId);
+    const query = `
+    UPDATE geofence_zones
+    SET ${fields.join(', ')}
+    WHERE id = $${paramIndex}
+    RETURNING *
+  `;
+    const result = yield database_1.default.query(query, values);
+    const updatedZone = result.rows[0];
+    if (!updatedZone) {
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Geofence zone not found');
+    }
+    return updatedZone;
+});
+const deleteGeofenceZone = (zoneId) => __awaiter(void 0, void 0, void 0, function* () {
+    // Soft delete by setting isActive to false
+    const query = `
+    UPDATE geofence_zones
+    SET "isActive" = false, "updatedAt" = $1
+    WHERE id = $2
+    RETURNING id
+  `;
+    const result = yield database_1.default.query(query, [new Date(), zoneId]);
+    if (result.rows.length === 0) {
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Geofence zone not found');
     }
 });
 exports.GeofenceService = {
     createGeofenceZone,
     getActiveGeofenceZones,
     updateGeofenceStats,
+    updateGeofenceZone,
+    deleteGeofenceZone,
     recordUserLocation,
     getUserLocationHistory,
     autoGenerateGeofenceZones,

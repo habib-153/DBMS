@@ -32,7 +32,16 @@ const registerUser = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0
 }));
 const loginUser = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const payload = req.body;
-    const result = yield auth_service_raw_1.AuthServices.loginUser(payload);
+    // Extract request metadata for session tracking
+    const requestMetadata = {
+        ipAddress: req.headers['x-forwarded-for'] ||
+            req.socket.remoteAddress ||
+            null,
+        userAgent: req.headers['user-agent'] || null,
+        latitude: payload.latitude || null,
+        longitude: payload.longitude || null,
+    };
+    const result = yield auth_service_raw_1.AuthServices.loginUser(payload, requestMetadata);
     const { refreshToken, accessToken } = result;
     res.cookie('refreshToken', refreshToken, {
         secure: config_1.default.NODE_ENV === 'production',
@@ -113,9 +122,23 @@ const verifyOTP = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, v
         data: result,
     });
 }));
+const logoutUser = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+    if (userId) {
+        yield auth_service_raw_1.AuthServices.logoutUser(userId);
+    }
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: 'Logged out successfully!',
+        data: null,
+    });
+}));
 exports.AuthControllers = {
     registerUser,
     loginUser,
+    logoutUser,
     changePassword,
     refreshToken,
     forgotPassword,

@@ -35,7 +35,27 @@ const getDashboardOverview = (0, catchAsync_1.catchAsync)((req, res) => __awaite
         data: result,
     });
 }));
+const getActiveSessions = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield admin_service_1.AdminService.getActiveSessions();
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: 'Active sessions retrieved successfully',
+        data: result,
+    });
+}));
+const getLocationStats = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield admin_service_1.AdminService.getLocationStats();
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: 'Location statistics retrieved successfully',
+        data: result,
+    });
+}));
 exports.AdminControllers = {
     getAdminStats,
     getDashboardOverview,
+    getActiveSessions,
+    getLocationStats,
 };

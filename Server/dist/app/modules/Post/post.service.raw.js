@@ -57,14 +57,16 @@ const generateUuid = () => {
         .toString('hex')
         .replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
 };
-const createPost = (postData, imageFile, authorId) => __awaiter(void 0, void 0, void 0, function* () {
+const createPost = (postData, imageFile, authorId, userRole) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     const postId = generateUuid();
     const crimeDate = new Date(postData.crimeDate);
     const now = new Date();
+    // Auto-approve posts from admins
+    const status = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' ? 'APPROVED' : 'PENDING';
     const query = `
     INSERT INTO posts (id, title, description, image, location, district, division, "crimeDate", category, "authorId", latitude, longitude, status, "isDeleted", "postDate", "createdAt", "updatedAt")
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'PENDING', false, $13, $14, $15)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, false, $14, $15, $16)
     RETURNING *
   `;
     const values = [
@@ -81,6 +83,7 @@ const createPost = (postData, imageFile, authorId) => __awaiter(void 0, void 0, 
         // latitude and longitude: accept numbers or null
         (_a = postData.latitude) !== null && _a !== void 0 ? _a : null,
         (_b = postData.longitude) !== null && _b !== void 0 ? _b : null,
+        status,
         now,
         now,
         now,
@@ -390,10 +393,35 @@ const updatePost = (id, updateData, imageFile, user) => __awaiter(void 0, void 0
     if (!updatedPost) {
         throw new AppError_1.default(http_status_1.default.INTERNAL_SERVER_ERROR, 'Failed to update post');
     }
-    // Send push notification if status was changed by admin
+    // Send push notification and create notification if status was changed by admin
     if (updateData.status !== undefined &&
         isAdmin &&
         post.status !== updateData.status) {
+        // Create notification in database
+        Promise.resolve().then(() => __importStar(require('../Notification/notification.service'))).then(({ NotificationService }) => {
+            const isApproved = updateData.status === 'APPROVED';
+            const notificationType = isApproved ? 'POST_APPROVED' : 'POST_REJECTED';
+            const notificationTitle = isApproved
+                ? '✅ Post Approved!'
+                : '❌ Post Rejected';
+            const notificationMessage = isApproved
+                ? `Your post "${post.title}" has been approved and is now visible to everyone.`
+                : `Your post "${post.title}" has been rejected by admin.`;
+            NotificationService.createNotification({
+                userId: post.authorId,
+                type: notificationType,
+                title: notificationTitle,
+                message: notificationMessage,
+                data: {
+                    postId: post.id,
+                    postTitle: post.title,
+                    status: updateData.status,
+                },
+                isPush: true,
+            }).catch((err) => console.error('Failed to create notification:', err));
+        })
+            .catch((err) => console.error('Failed to import NotificationService:', err));
+        // Send push notification
         Promise.resolve().then(() => __importStar(require('../PushNotification/push.service'))).then(({ PushNotificationService }) => {
             PushNotificationService.sendPostStatusPush(post.authorId, post.title, updateData.status).catch((err) => console.error('Failed to send post status push notification:', err));
         })

@@ -26,4 +26,6 @@ router.get('/division-stats', analytics_controller_1.AnalyticsControllers.divisi
 router.get('/crimes-by-day', analytics_controller_1.AnalyticsControllers.crimesByDayOfWeek);
 // GET /analytics/recent-activity
 router.get('/recent-activity', analytics_controller_1.AnalyticsControllers.recentActivity);
+// GET /analytics/polar-heatmap
+router.get('/polar-heatmap', analytics_controller_1.AnalyticsControllers.polarHeatmap);
 exports.AnalyticsRoutes = router;

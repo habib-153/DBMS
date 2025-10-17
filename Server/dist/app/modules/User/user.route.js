@@ -21,5 +21,6 @@ router.get('/', (0, auth_1.default)(user_constant_1.USER_ROLE.ADMIN, user_consta
 router.post('/follow/:followedId', (0, auth_1.default)(user_constant_1.USER_ROLE.USER, user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.SUPER_ADMIN), user_controller_1.UserController.followUser);
 router.delete('/unfollow/:followedId', (0, auth_1.default)(user_constant_1.USER_ROLE.USER, user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.SUPER_ADMIN), user_controller_1.UserController.unfollowUser);
 router.get('/:id', user_controller_1.UserController.getUserById);
+router.get('/:id/connections-locations', (0, auth_1.default)(user_constant_1.USER_ROLE.USER, user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.SUPER_ADMIN), user_controller_1.UserController.getConnectionsLocations);
 router.put('/:id', (0, auth_1.default)(user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.USER, user_constant_1.USER_ROLE.SUPER_ADMIN), user_controller_1.UserController.updateUser);
 router.delete('/:id', (0, auth_1.default)(user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.SUPER_ADMIN), user_controller_1.UserController.deleteUser);

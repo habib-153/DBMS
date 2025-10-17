@@ -209,7 +209,7 @@ export default function RecentCrimeReports({
         <div className="flex items-center gap-4">
           {showCreateButton && (
             <Button
-              className="bg-brand-gradient text-white font-medium shadow-lg hover:shadow-xl transition-all"
+              className="bg-brand-primary text-white font-medium shadow-lg hover:shadow-xl transition-all"
               size="sm"
               startContent={<Plus size={16} />}
               onClick={handleCreatePost}

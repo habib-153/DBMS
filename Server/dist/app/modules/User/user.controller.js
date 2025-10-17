@@ -120,6 +120,16 @@ const unfollowUser = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0
         data: result,
     });
 }));
+const getConnectionsLocations = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
+    const result = yield user_service_raw_1.UserService.getConnectionsLocations(id);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: 'Connections locations retrieved successfully',
+        data: result,
+    });
+}));
 exports.UserController = {
     getAllUsers,
     getUserById,
@@ -129,4 +139,5 @@ exports.UserController = {
     unfollowUser,
     getMyProfile,
     updateMyProfile,
+    getConnectionsLocations,
 };

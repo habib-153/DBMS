@@ -116,6 +116,32 @@ const recentActivity = (0, catchAsync_1.catchAsync)((_req, res) => __awaiter(voi
         data: stats,
     });
 }));
+const polarHeatmap = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { latitude, longitude, radius, startDate, endDate, category } = req.query;
+    // Validate required parameters
+    if (!latitude || !longitude || !radius) {
+        return res.status(http_status_1.default.BAD_REQUEST).json({
+            success: false,
+            message: 'latitude, longitude, and radius are required',
+        });
+    }
+    const lat = parseFloat(latitude);
+    const lng = parseFloat(longitude);
+    const rad = parseFloat(radius);
+    if (isNaN(lat) || isNaN(lng) || isNaN(rad)) {
+        return res.status(http_status_1.default.BAD_REQUEST).json({
+            success: false,
+            message: 'Invalid numeric values for latitude, longitude, or radius',
+        });
+    }
+    const data = yield analytics_service_1.AnalyticsService.polarHeatmapData(lat, lng, rad, startDate, endDate, category);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: 'Polar heatmap data retrieved successfully',
+        data,
+    });
+}));
 exports.AnalyticsControllers = {
     dashboard,
     crimeTrend,
@@ -126,4 +152,5 @@ exports.AnalyticsControllers = {
     divisionStats,
     crimesByDayOfWeek,
     recentActivity,
+    polarHeatmap,
 };

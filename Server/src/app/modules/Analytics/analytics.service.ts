@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import database from '../../../shared/database';
 
 /**
@@ -211,6 +212,72 @@ const recentCrimeActivity = async () => {
   return r.rows;
 };
 
+const polarHeatmapData = async (
+  latitude: number,
+  longitude: number,
+  radiusKm: number,
+  startDate?: string,
+  endDate?: string,
+  category?: string
+) => {
+  // Use Haversine formula to filter crimes within radius
+  // Then aggregate by hour of day (0-23) and day of week (0-6, 0=Sunday)
+  let dateFilter = '';
+  let categoryFilter = '';
+  const params: any[] = [latitude, longitude, radiusKm];
+  let paramIndex = 4;
+
+  if (startDate && endDate) {
+    dateFilter = `AND p."crimeDate" >= $${paramIndex} AND p."crimeDate" <= $${
+      paramIndex + 1
+    }`;
+    params.push(startDate, endDate);
+    paramIndex += 2;
+  }
+
+  if (category && category !== 'ALL') {
+    categoryFilter = `AND p.category = $${paramIndex}`;
+    params.push(category);
+  }
+
+  const q = `
+    WITH nearby_crimes AS (
+      SELECT 
+        p.id,
+        p."crimeDate",
+        p.category,
+        EXTRACT(HOUR FROM p."crimeDate")::int as hour_of_day,
+        EXTRACT(DOW FROM p."crimeDate")::int as day_of_week,
+        (6371 * acos(
+          cos(radians($1)) * cos(radians(p.latitude)) * 
+          cos(radians(p.longitude) - radians($2)) + 
+          sin(radians($1)) * sin(radians(p.latitude))
+        )) as distance_km
+      FROM posts p
+      WHERE 
+        p."isDeleted" = false 
+        AND p.status = 'APPROVED'
+        AND p.latitude IS NOT NULL 
+        AND p.longitude IS NOT NULL
+        ${dateFilter}
+        ${categoryFilter}
+    )
+    SELECT 
+      hour_of_day,
+      day_of_week,
+      COUNT(*) as crime_count,
+      json_agg(DISTINCT category) FILTER (WHERE category IS NOT NULL) as categories,
+      ROUND(AVG(distance_km)::numeric, 2) as avg_distance
+    FROM nearby_crimes
+    WHERE distance_km <= $3
+    GROUP BY hour_of_day, day_of_week
+    ORDER BY day_of_week, hour_of_day;
+  `;
+
+  const r = await database.query(q, params);
+  return r.rows;
+};
+
 export const AnalyticsService = {
   crimesPerHour,
   crimeTrendWithMovingAvg,
@@ -224,4 +291,5 @@ export const AnalyticsService = {
   divisionStats,
   crimesByDayOfWeek,
   recentCrimeActivity,
+  polarHeatmapData,
 };

@@ -108,11 +108,12 @@ const getDashboardOverview = async () => {
 
 const getActiveSessions = async () => {
   const query = `
-    SELECT 
+    SELECT
       s.id,
       s."userId",
       u.name as "userName",
       u.email as "userEmail",
+      u."profilePhoto",
       s.latitude,
       s.longitude,
       s.country,

@@ -35,6 +35,7 @@ const auth_validation_1 = require("./auth.validation");
 const router = express_1.default.Router();
 router.post('/register', (0, validateRequest_1.default)(auth_validation_1.AuthValidation.registerValidationSchema), auth_controller_1.AuthControllers.registerUser);
 router.post('/login', (0, validateRequest_1.default)(auth_validation_1.AuthValidation.loginValidationSchema), auth_controller_1.AuthControllers.loginUser);
+router.post('/logout', (0, auth_1.default)('USER', 'ADMIN', 'SUPER_ADMIN'), auth_controller_1.AuthControllers.logoutUser);
 router.post('/send-otp', (0, validateRequest_1.default)(auth_validation_1.AuthValidation.sendOTPValidationSchema), auth_controller_1.AuthControllers.sendOTP);
 router.post('/verify-otp', (0, validateRequest_1.default)(auth_validation_1.AuthValidation.verifyOTPValidationSchema), auth_controller_1.AuthControllers.verifyOTP);
 router.post('/change-password', (0, auth_1.default)('USER', 'ADMIN', 'SUPER_ADMIN'), (0, validateRequest_1.default)(auth_validation_1.AuthValidation.changePasswordValidationSchema), auth_controller_1.AuthControllers.changePassword);

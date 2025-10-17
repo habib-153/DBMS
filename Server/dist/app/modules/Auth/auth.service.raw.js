@@ -21,6 +21,8 @@ const database_1 = __importDefault(require("../../../shared/database"));
 const AppError_1 = __importDefault(require("../../errors/AppError"));
 const verifyJWT_1 = require("../../utils/verifyJWT");
 const emailSender_1 = require("../../utils/emailSender");
+const session_service_1 = require("../Session/session.service");
+const geofence_service_1 = require("../Geofence/geofence.service");
 // Simple UUID generator
 const generateUuid = () => {
     return (0, crypto_1.randomBytes)(16)
@@ -100,7 +102,7 @@ const registerUser = (payload) => __awaiter(void 0, void 0, void 0, function* ()
         message: 'OTP sent to email. Please verify to complete registration.',
     };
 });
-const loginUser = (payload) => __awaiter(void 0, void 0, void 0, function* () {
+const loginUser = (payload, requestMetadata) => __awaiter(void 0, void 0, void 0, function* () {
     const userQuery = `
     SELECT id, name, email, password, phone, role, status, "profilePhoto", "isVerified"
     FROM users
@@ -138,6 +140,29 @@ const loginUser = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     // jwtPayload prepared for token creation when needed
     const accessToken = (0, verifyJWT_1.createToken)(jwtPayload, config_1.default.jwt_access_secret, config_1.default.jwt_access_expires_in);
     const refreshToken = (0, verifyJWT_1.createToken)(jwtPayload, config_1.default.jwt_refresh_secret, config_1.default.jwt_refresh_expires_in);
+    // Track user session asynchronously (don't block login)
+    if (requestMetadata) {
+        session_service_1.SessionService.createSession({
+            userId: user.id,
+            sessionToken: generateUuid(),
+            ipAddress: requestMetadata.ipAddress || undefined,
+            userAgent: requestMetadata.userAgent || undefined,
+        }).catch((err) => {
+            // Log error but don't fail login
+            console.error('Failed to create session:', err);
+        });
+        // Track user location if provided
+        if (requestMetadata.latitude && requestMetadata.longitude) {
+            geofence_service_1.GeofenceService.recordUserLocation({
+                userId: user.id,
+                latitude: requestMetadata.latitude,
+                longitude: requestMetadata.longitude,
+            }, user.id).catch((err) => {
+                // Log error but don't fail login
+                console.error('Failed to record location:', err);
+            });
+        }
+    }
     return {
         accessToken,
         refreshToken,
@@ -382,9 +407,19 @@ const verifyOTP = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const refreshToken = (0, verifyJWT_1.createToken)(jwtPayload, config_1.default.jwt_refresh_secret, config_1.default.jwt_refresh_expires_in);
     return { message: 'User verified successfully', accessToken, refreshToken };
 });
+const logoutUser = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    // Mark all active sessions as inactive
+    const updateQuery = `
+    UPDATE user_sessions 
+    SET "isActive" = false, "lastActivity" = NOW()
+    WHERE "userId" = $1 AND "isActive" = true
+  `;
+    yield database_1.default.query(updateQuery, [userId]);
+});
 exports.AuthServices = {
     registerUser,
     loginUser,
+    logoutUser,
     changePassword,
     refreshToken,
     forgetPassword,

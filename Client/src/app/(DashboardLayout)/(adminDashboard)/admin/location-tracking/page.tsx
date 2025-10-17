@@ -28,6 +28,7 @@ interface ActiveSession {
   userId: string;
   userName: string;
   userEmail: string;
+  profilePhoto?: string;
   latitude?: number;
   longitude?: number;
   country?: string;
@@ -110,7 +111,7 @@ const LocationTrackingDashboard = () => {
         classNames={{
           tabList:
             "gap-6 w-full relative rounded-none p-0 border-b border-divider",
-          cursor: "w-full bg-primary",
+          cursor: "w-full bg-[#a50034]",
           tab: "max-w-fit px-0 h-12",
         }}
         color="primary"
@@ -125,7 +126,7 @@ const LocationTrackingDashboard = () => {
               <span>📍</span>
               <span>Live Users Map</span>
               {activeSessions && (
-                <span className="bg-primary text-white text-xs rounded-full px-2 py-1">
+                <span className="bg-[#a50034] text-white text-xs rounded-full px-2 py-1">
                   {
                     activeSessions.filter((s) => s.latitude && s.longitude)
                       .length
@@ -144,7 +145,7 @@ const LocationTrackingDashboard = () => {
                 </p>
               </div>
               <button
-                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80 transition-colors"
+                className="px-4 py-2 bg-[#a50034] text-white rounded-lg hover:bg-[#8b0000] transition-colors"
                 onClick={() => refetchSessions()}
               >
                 🔄 Refresh

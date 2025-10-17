@@ -28,15 +28,20 @@ const generateUuid = (): string => {
 const createPost = async (
   postData: TCreatePost,
   imageFile: TImageFile,
-  authorId: string
+  authorId: string,
+  userRole?: string
 ): Promise<DbPostWithDetails> => {
   const postId = generateUuid();
   const crimeDate = new Date(postData.crimeDate);
   const now = new Date();
 
+  // Auto-approve posts from admins
+  const status =
+    userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' ? 'APPROVED' : 'PENDING';
+
   const query = `
     INSERT INTO posts (id, title, description, image, location, district, division, "crimeDate", category, "authorId", latitude, longitude, status, "isDeleted", "postDate", "createdAt", "updatedAt")
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'PENDING', false, $13, $14, $15)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, false, $14, $15, $16)
     RETURNING *
   `;
 
@@ -54,6 +59,7 @@ const createPost = async (
     // latitude and longitude: accept numbers or null
     postData.latitude ?? null,
     postData.longitude ?? null,
+    status,
     now,
     now,
     now,

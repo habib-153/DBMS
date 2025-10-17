@@ -34,4 +34,7 @@ router.get('/crimes-by-day', AnalyticsControllers.crimesByDayOfWeek);
 // GET /analytics/recent-activity
 router.get('/recent-activity', AnalyticsControllers.recentActivity);
 
+// GET /analytics/polar-heatmap
+router.get('/polar-heatmap', AnalyticsControllers.polarHeatmap);
+
 export const AnalyticsRoutes = router;

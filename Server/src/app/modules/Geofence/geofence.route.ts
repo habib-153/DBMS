@@ -67,7 +67,7 @@ router.get(
 // Auto-generate geofence zones from crime data (admin only)
 router.post(
   '/auto-generate',
-  auth('ADMIN'),
+  auth('ADMIN', USER_ROLE.SUPER_ADMIN),
   GeofenceController.autoGenerateZones
 );
 

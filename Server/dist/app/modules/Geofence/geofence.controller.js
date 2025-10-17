@@ -88,12 +88,91 @@ const getUserLocationHistory = (0, catchAsync_1.catchAsync)((req, res) => __awai
         data: history,
     });
 }));
-const autoGenerateZones = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    yield geofence_service_1.GeofenceService.autoGenerateGeofenceZones();
+const recordLocation = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+    const { latitude, longitude, accuracy, address, activity } = req.body;
+    if (!userId) {
+        return (0, sendResponse_1.default)(res, {
+            statusCode: http_status_1.default.UNAUTHORIZED,
+            success: false,
+            message: 'User not authenticated',
+            data: null,
+        });
+    }
+    if (!latitude || !longitude) {
+        return (0, sendResponse_1.default)(res, {
+            statusCode: http_status_1.default.BAD_REQUEST,
+            success: false,
+            message: 'Latitude and longitude are required',
+            data: null,
+        });
+    }
+    const result = yield geofence_service_1.GeofenceService.recordUserLocation({
+        userId,
+        latitude,
+        longitude,
+        accuracy,
+        address,
+        activity,
+    }, userId);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.CREATED,
+        success: true,
+        message: 'Location recorded successfully',
+        data: result,
+    });
+}));
+const triggerCheck = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    // Admin testing endpoint to force a geofence check for any user
+    const { userId, latitude, longitude } = req.body;
+    if (!userId || !latitude || !longitude) {
+        return (0, sendResponse_1.default)(res, {
+            statusCode: http_status_1.default.BAD_REQUEST,
+            success: false,
+            message: 'userId, latitude and longitude are required',
+            data: null,
+        });
+    }
+    const result = yield geofence_service_1.GeofenceService.recordUserLocation({
+        userId,
+        latitude,
+        longitude,
+    }, userId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
-        message: 'Geofence zones auto-generated successfully',
+        message: 'Test geofence check executed',
+        data: result,
+    });
+}));
+const autoGenerateZones = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield geofence_service_1.GeofenceService.autoGenerateGeofenceZones();
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: `Auto-generated ${result.created} geofence zones from ${result.totalHotspots} hotspots (${result.skipped} skipped - already exist)`,
+        data: result,
+    });
+}));
+const updateGeofenceZone = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
+    const updateData = req.body;
+    const result = yield geofence_service_1.GeofenceService.updateGeofenceZone(id, updateData);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: 'Geofence zone updated successfully',
+        data: result,
+    });
+}));
+const deleteGeofenceZone = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
+    yield geofence_service_1.GeofenceService.deleteGeofenceZone(id);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: 'Geofence zone deleted successfully',
         data: null,
     });
 }));
@@ -101,6 +180,10 @@ exports.GeofenceController = {
     checkUserLocation,
     getGeofenceZones,
     createGeofenceZone,
+    updateGeofenceZone,
+    deleteGeofenceZone,
     getUserLocationHistory,
+    recordLocation,
     autoGenerateZones,
+    triggerCheck,
 };

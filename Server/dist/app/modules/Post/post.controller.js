@@ -27,7 +27,8 @@ const createPost = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, 
     if (!req.user) {
         throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'Please verify your email before creating posts');
     }
-    const result = yield post_service_raw_1.PostService.createPost(req.body, req.file, req.user.id // Pass the user ID from the authenticated user
+    const result = yield post_service_raw_1.PostService.createPost(req.body, req.file, req.user.id, // Pass the user ID from the authenticated user
+    req.user.role // Pass the user role for auto-approval
     );
     (0, sendResponse_1.default)(res, {
         success: true,
