@@ -59,6 +59,7 @@ const getColorForIntensity = (value: number, max: number): string => {
   if (normalized < 0.4) return `rgba(59, 82, 139, ${0.5 + normalized})`;
   if (normalized < 0.6) return `rgba(33, 145, 140, ${0.6 + normalized})`;
   if (normalized < 0.8) return `rgba(253, 231, 37, ${0.7 + normalized})`;
+
   return `rgba(253, 231, 37, ${0.8 + normalized * 0.2})`;
 };
 
@@ -104,12 +105,14 @@ export default function PolarHeatmap({ className }: PolarHeatmapProps) {
 
           marker.on("dragend", () => {
             const pos = marker.getLatLng();
+
             setSelectedCoords({ latitude: pos.lat, longitude: pos.lng });
           });
 
           map.on("click", (e: any) => {
             const lat = e.latlng.lat;
             const lng = e.latlng.lng;
+
             marker.setLatLng([lat, lng]);
             setSelectedCoords({ latitude: lat, longitude: lng });
           });
@@ -186,6 +189,7 @@ export default function PolarHeatmap({ className }: PolarHeatmapProps) {
 
     heatmapData.data.forEach((item: CrimeData) => {
       const count = parseInt(item.crime_count);
+
       matrix[item.day_of_week][item.hour_of_day] = count;
       if (count > max) max = count;
     });
@@ -199,6 +203,7 @@ export default function PolarHeatmap({ className }: PolarHeatmapProps) {
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
+
     if (!ctx) return;
 
     const width = canvas.width;
@@ -249,6 +254,7 @@ export default function PolarHeatmap({ className }: PolarHeatmapProps) {
       const angle = (hour / 24) * 2 * Math.PI - Math.PI / 2;
       const x = centerX + Math.cos(angle) * labelRadius;
       const y = centerY + Math.sin(angle) * labelRadius;
+
       ctx.fillText(`${hour}:00`, x, y);
     });
 
@@ -256,6 +262,7 @@ export default function PolarHeatmap({ className }: PolarHeatmapProps) {
     ctx.font = "12px Arial";
     DAY_NAMES.forEach((day, index) => {
       const radius = (index + 0.5) * ringWidth;
+
       ctx.save();
       ctx.translate(centerX - radius - 50, centerY);
       ctx.rotate(-Math.PI / 2);
@@ -294,6 +301,7 @@ export default function PolarHeatmap({ className }: PolarHeatmapProps) {
 
     data.forEach((item: CrimeData) => {
       const count = parseInt(item.crime_count);
+
       if (count > maxCount) {
         maxCount = count;
         peakHour = item.hour_of_day;
