@@ -14,16 +14,17 @@ interface PostCardProps {
   post: IPost;
   onVote: (postId: string, voteType: "up" | "down") => Promise<void>;
   userId?: string;
+  userRole?: string;
   isVoting: boolean;
   onEdit?: (post: IPost) => void;
   onDelete?: (postId: string) => void;
   showActions?: boolean;
 }
-
 export default function PostCard({
   post,
   onVote,
   userId,
+  userRole,
   isVoting,
   onEdit,
   onDelete,
@@ -100,15 +101,17 @@ export default function PostCard({
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               src={post.image}
             />
+            {/* Status and Actions */}
             <div className="absolute top-3 right-3 flex items-center gap-2">
-              <Chip
-                className="backdrop-blur-md"
-                color={getStatusColor(post.status)}
-                size="sm"
-                variant="flat"
-              >
-                {post.status}
-              </Chip>
+              {(userRole === "ADMIN" || userRole === "SUPER_ADMIN") && (
+                <Chip
+                  color={getStatusColor(post.status)}
+                  size="sm"
+                  variant="flat"
+                >
+                  {post.status}
+                </Chip>
+              )}
               {showActions && isOwner && (
                 <Dropdown placement="bottom-end">
                   <DropdownTrigger>

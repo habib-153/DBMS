@@ -53,8 +53,11 @@ const CrimeReportCard = ({ post, user }: { post: IPost; user: any }) => {
   const isValidImageUrl = (url: string | undefined) => {
     if (!url) return false;
 
-    return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/');
-
+    return (
+      url.startsWith("http://") ||
+      url.startsWith("https://") ||
+      url.startsWith("/")
+    );
   };
 
   return (
@@ -183,7 +186,55 @@ export default function RecentCrimeReports({
 
   // For home page, show only recent posts, for posts page show all
   const transformedPosts = transformPostsData(posts);
-  const displayPosts = isHome ? transformedPosts.slice(0, 6) : transformedPosts;
+
+  // --- START: new filtering + sorting logic (applies home filters client-side) ---
+  const filteredAndSortedPosts = (() => {
+    // filter
+    const filtered = transformedPosts.filter((p) => {
+      // search filter (title, description, location, author name)
+      if (searchInput) {
+        const q = searchInput.toLowerCase();
+        const inTitle = p.title?.toLowerCase().includes(q);
+        const inDesc = p.description?.toLowerCase().includes(q);
+        const inLocation = (p.location || "").toLowerCase().includes(q);
+        const inAuthor = p.author?.name?.toLowerCase().includes(q);
+        if (!(inTitle || inDesc || inLocation || inAuthor)) return false;
+      }
+
+      // division / district filters (if your transformPostsData returns ids use those; adjust if needed)
+      if (selectedDivision && String(p.division) !== String(selectedDivision)) {
+        return false;
+      }
+      if (selectedDistrict && String(p.district) !== String(selectedDistrict)) {
+        return false;
+      }
+
+      return true;
+    });
+
+    // sort
+    const sorted = filtered.sort((a, b) => {
+      if (sort === "votes") {
+        const aUp = (a.votes || []).filter((v) => v.type === "UP").length;
+        const bUp = (b.votes || []).filter((v) => v.type === "UP").length;
+        return bUp - aUp;
+      } else if (sort === "verification") {
+        return (b.verificationScore || 0) - (a.verificationScore || 0);
+      } else {
+        // createdAt (default) — newest first
+        return (
+          new Date(b.createdAt || 0).getTime() -
+          new Date(a.createdAt || 0).getTime()
+        );
+      }
+    });
+
+    return sorted;
+  })();
+
+  const displayPosts = isHome
+    ? filteredAndSortedPosts.slice(0, 6)
+    : filteredAndSortedPosts;
 
   const clearFilters = () => {
     setSearchInput("");
