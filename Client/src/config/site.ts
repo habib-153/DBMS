@@ -2,9 +2,8 @@ export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
   name: "Warden || Crime Reporting and Community Verification Platform",
-  description:
-    "🚀 Your ultimate platform for sharing travel stories, discovering destinations, and connecting with fellow adventurers!",
-  navItems: [
+  description:"" ,
+   navItems: [
     {
       label: "NewsFeed",
       href: "/",
@@ -16,11 +15,7 @@ export const siteConfig = {
     {
       label: "Analytics",
       href: "/analytics",
-    },
-    {
-      label: "About",
-      href: "/about",
-    },
+    }
   ],
   navMenuItems: [
     {
