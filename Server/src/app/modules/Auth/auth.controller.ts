@@ -43,6 +43,8 @@ const loginUser = catchAsync(async (req, res) => {
   res.cookie('refreshToken', refreshToken, {
     secure: config.NODE_ENV === 'production',
     httpOnly: true,
+    sameSite: config.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 
   sendResponse(res, {
@@ -120,6 +122,8 @@ const verifyOTP = catchAsync(async (req, res) => {
     res.cookie('refreshToken', result.refreshToken, {
       secure: config.NODE_ENV === 'production',
       httpOnly: true,
+      sameSite: config.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
   }
 

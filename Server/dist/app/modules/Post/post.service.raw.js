@@ -57,23 +57,24 @@ const generateUuid = () => {
         .toString('hex')
         .replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
 };
-const createPost = (postData, imageFile, authorId, userRole) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b;
+const createPost = (postData, files, authorId, userRole) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d;
     const postId = generateUuid();
     const crimeDate = new Date(postData.crimeDate);
     const now = new Date();
     // Auto-approve posts from admins
     const status = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' ? 'APPROVED' : 'PENDING';
     const query = `
-    INSERT INTO posts (id, title, description, image, location, district, division, "crimeDate", category, "authorId", latitude, longitude, status, "isDeleted", "postDate", "createdAt", "updatedAt")
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, false, $14, $15, $16)
+    INSERT INTO posts (id, title, description, image, video, location, district, division, "crimeDate", category, "authorId", latitude, longitude, status, "isDeleted", "postDate", "createdAt", "updatedAt")
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, false, $15, $16, $17)
     RETURNING *
   `;
     const values = [
         postId,
         postData.title,
         postData.description,
-        imageFile.path,
+        ((_a = files.image) === null || _a === void 0 ? void 0 : _a.path) || null,
+        ((_b = files.video) === null || _b === void 0 ? void 0 : _b.path) || null,
         postData.location,
         postData.district,
         postData.division,
@@ -81,8 +82,8 @@ const createPost = (postData, imageFile, authorId, userRole) => __awaiter(void 0
         postData.category || 'OTHERS',
         authorId,
         // latitude and longitude: accept numbers or null
-        (_a = postData.latitude) !== null && _a !== void 0 ? _a : null,
-        (_b = postData.longitude) !== null && _b !== void 0 ? _b : null,
+        (_c = postData.latitude) !== null && _c !== void 0 ? _c : null,
+        (_d = postData.longitude) !== null && _d !== void 0 ? _d : null,
         status,
         now,
         now,
@@ -93,11 +94,11 @@ const createPost = (postData, imageFile, authorId, userRole) => __awaiter(void 0
     if (!createdPost) {
         throw new AppError_1.default(http_status_1.default.INTERNAL_SERVER_ERROR, 'Failed to create post');
     }
-    // Trigger AI analysis asynchronously (non-blocking)
-    if (imageFile && imageFile.path) {
+    // Trigger AI analysis asynchronously (non-blocking) only if image exists
+    if (files.image && files.image.path) {
         // Import AIAnalysisService dynamically to avoid circular dependencies
         Promise.resolve().then(() => __importStar(require('../AIAnalysis/aianalysis.service'))).then(({ AIAnalysisService }) => {
-            AIAnalysisService.analyzeImageWithRoboflow(imageFile.path, createdPost.id).catch((error) => {
+            AIAnalysisService.analyzeImageWithRoboflow(files.image.path, createdPost.id).catch((error) => {
                 console.error('AI analysis failed:', error);
             });
         })
@@ -297,7 +298,7 @@ const getSinglePost = (id) => __awaiter(void 0, void 0, void 0, function* () {
     return Object.assign(Object.assign({}, post), { upVotes,
         downVotes, voteCount: upVotes + downVotes, commentCount: commentsResult.rows.length, votes: votesResult.rows, comments: commentsResult.rows, reports: reportsResult.rows });
 });
-const updatePost = (id, updateData, imageFile, user) => __awaiter(void 0, void 0, void 0, function* () {
+const updatePost = (id, updateData, files, user) => __awaiter(void 0, void 0, void 0, function* () {
     // First, check if post exists and user owns it
     const checkQuery = `
     SELECT * FROM posts 
@@ -369,9 +370,14 @@ const updatePost = (id, updateData, imageFile, user) => __awaiter(void 0, void 0
         values.push(updateData.status);
         paramIndex++;
     }
-    if (imageFile) {
+    if (files === null || files === void 0 ? void 0 : files.image) {
         updateFields.push(`image = $${paramIndex}`);
-        values.push(imageFile.path);
+        values.push(files.image.path);
+        paramIndex++;
+    }
+    if (files === null || files === void 0 ? void 0 : files.video) {
+        updateFields.push(`video = $${paramIndex}`);
+        values.push(files.video.path);
         paramIndex++;
     }
     if (updateFields.length === 0) {
@@ -426,6 +432,13 @@ const updatePost = (id, updateData, imageFile, user) => __awaiter(void 0, void 0
             PushNotificationService.sendPostStatusPush(post.authorId, post.title, updateData.status).catch((err) => console.error('Failed to send post status push notification:', err));
         })
             .catch((err) => console.error('Failed to import PushNotificationService:', err));
+        // Auto-create geofence zone when post is approved
+        if (updateData.status === 'APPROVED') {
+            Promise.resolve().then(() => __importStar(require('../Geofence/geofence.service'))).then(({ GeofenceService }) => {
+                GeofenceService.createGeofenceForPost(post.id).catch((err) => console.error('Failed to create geofence zone for approved post:', err));
+            })
+                .catch((err) => console.error('Failed to import GeofenceService:', err));
+        }
     }
     // Return post with details
     return yield getSinglePost(updatedPost.id);

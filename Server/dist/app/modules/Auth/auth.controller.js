@@ -46,6 +46,8 @@ const loginUser = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, v
     res.cookie('refreshToken', refreshToken, {
         secure: config_1.default.NODE_ENV === 'production',
         httpOnly: true,
+        sameSite: config_1.default.NODE_ENV === 'production' ? 'none' : 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
@@ -113,6 +115,8 @@ const verifyOTP = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, v
         res.cookie('refreshToken', result.refreshToken, {
             secure: config_1.default.NODE_ENV === 'production',
             httpOnly: true,
+            sameSite: config_1.default.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
     }
     (0, sendResponse_1.default)(res, {

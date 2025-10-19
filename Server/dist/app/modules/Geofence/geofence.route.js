@@ -12,15 +12,15 @@ const router = express_1.default.Router();
 // Check user location and send warning if in danger zone
 router.post('/check', (0, auth_1.default)(user_constant_1.USER_ROLE.USER, user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.SUPER_ADMIN), geofence_controller_1.GeofenceController.checkUserLocation);
 // Admin-only test endpoint to trigger geofence check for arbitrary user/coords
-router.post('/test-check', (0, auth_1.default)('ADMIN', 'SUPER_ADMIN'), geofence_controller_1.GeofenceController.triggerCheck);
+router.post('/test-check', (0, auth_1.default)(user_constant_1.USER_ROLE.SUPER_ADMIN, user_constant_1.USER_ROLE.ADMIN), geofence_controller_1.GeofenceController.triggerCheck);
 // Get all active geofence zones
 router.get('/zones', geofence_controller_1.GeofenceController.getGeofenceZones);
 // Create new geofence zone (admin only)
-router.post('/zones', (0, auth_1.default)('ADMIN', 'SUPER_ADMIN'), geofence_controller_1.GeofenceController.createGeofenceZone);
+router.post('/zones', (0, auth_1.default)(user_constant_1.USER_ROLE.SUPER_ADMIN, user_constant_1.USER_ROLE.ADMIN), geofence_controller_1.GeofenceController.createGeofenceZone);
 // Update geofence zone (admin only)
-router.patch('/zones/:id', (0, auth_1.default)('ADMIN', 'SUPER_ADMIN'), geofence_controller_1.GeofenceController.updateGeofenceZone);
+router.patch('/zones/:id', (0, auth_1.default)(user_constant_1.USER_ROLE.SUPER_ADMIN, user_constant_1.USER_ROLE.ADMIN), geofence_controller_1.GeofenceController.updateGeofenceZone);
 // Delete geofence zone (admin only)
-router.delete('/zones/:id', (0, auth_1.default)('ADMIN', 'SUPER_ADMIN'), geofence_controller_1.GeofenceController.deleteGeofenceZone);
+router.delete('/zones/:id', (0, auth_1.default)(user_constant_1.USER_ROLE.SUPER_ADMIN, user_constant_1.USER_ROLE.ADMIN), geofence_controller_1.GeofenceController.deleteGeofenceZone);
 // Get user location history
 router.get('/history', (0, auth_1.default)(user_constant_1.USER_ROLE.USER, user_constant_1.USER_ROLE.ADMIN, user_constant_1.USER_ROLE.SUPER_ADMIN), geofence_controller_1.GeofenceController.getUserLocationHistory);
 // Record user location (for tracking and geofence detection)

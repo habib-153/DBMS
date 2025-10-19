@@ -19,15 +19,22 @@ const catchAsync_1 = require("../../utils/catchAsync");
 const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
 const post_service_raw_1 = require("./post.service.raw");
 const createPost = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    if (!req.file) {
-        throw new AppError_1.default(400, 'Please upload an image');
-    }
-    console.log(req.user);
+    var _a, _b;
     // Prevent unverified users from creating posts
     if (!req.user) {
         throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'Please verify your email before creating posts');
     }
-    const result = yield post_service_raw_1.PostService.createPost(req.body, req.file, req.user.id, // Pass the user ID from the authenticated user
+    const files = req.files;
+    const imageFile = (_a = files === null || files === void 0 ? void 0 : files['image']) === null || _a === void 0 ? void 0 : _a[0];
+    const videoFile = (_b = files === null || files === void 0 ? void 0 : files['video']) === null || _b === void 0 ? void 0 : _b[0];
+    // At least image is required
+    if (!imageFile) {
+        throw new AppError_1.default(400, 'Please upload an image');
+    }
+    const result = yield post_service_raw_1.PostService.createPost(req.body, {
+        image: imageFile,
+        video: videoFile,
+    }, req.user.id, // Pass the user ID from the authenticated user
     req.user.role // Pass the user role for auto-approval
     );
     (0, sendResponse_1.default)(res, {
@@ -58,8 +65,15 @@ const getSinglePost = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 
     });
 }));
 const updatePost = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
     const { id } = req.params;
-    const result = yield post_service_raw_1.PostService.updatePost(id, req.body, req.file, req.user);
+    const files = req.files;
+    const imageFile = (_a = files === null || files === void 0 ? void 0 : files['image']) === null || _a === void 0 ? void 0 : _a[0];
+    const videoFile = (_b = files === null || files === void 0 ? void 0 : files['video']) === null || _b === void 0 ? void 0 : _b[0];
+    const result = yield post_service_raw_1.PostService.updatePost(id, req.body, {
+        image: imageFile,
+        video: videoFile,
+    }, req.user);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
