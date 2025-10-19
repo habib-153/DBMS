@@ -3,15 +3,11 @@ import AppError from '../../errors/AppError';
 import { TImageFile } from '../../interfaces/image.interface';
 import { catchAsync } from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
-// import { PostService } from './post.service';
+import type { Express } from 'express';
 import { TUser } from '../User/user.interface';
 import { PostService } from './post.service.raw';
 
 const createPost = catchAsync(async (req, res) => {
-  if (!req.file) {
-    throw new AppError(400, 'Please upload an image');
-  }
-  console.log(req.user);
   // Prevent unverified users from creating posts
   if (!req.user) {
     throw new AppError(
@@ -20,9 +16,21 @@ const createPost = catchAsync(async (req, res) => {
     );
   }
 
+  const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+  const imageFile = files?.['image']?.[0];
+  const videoFile = files?.['video']?.[0];
+
+  // At least image is required
+  if (!imageFile) {
+    throw new AppError(400, 'Please upload an image');
+  }
+
   const result = await PostService.createPost(
     req.body,
-    req.file as TImageFile,
+    {
+      image: imageFile as TImageFile,
+      video: videoFile as TImageFile | undefined,
+    },
     req.user.id, // Pass the user ID from the authenticated user
     req.user.role // Pass the user role for auto-approval
   );
@@ -62,10 +70,17 @@ const getSinglePost = catchAsync(async (req, res) => {
 const updatePost = catchAsync(async (req, res) => {
   const { id } = req.params;
 
+  const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+  const imageFile = files?.['image']?.[0];
+  const videoFile = files?.['video']?.[0];
+
   const result = await PostService.updatePost(
     id,
     req.body,
-    req.file as TImageFile,
+    {
+      image: imageFile as TImageFile | undefined,
+      video: videoFile as TImageFile | undefined,
+    },
     req.user
   );
 

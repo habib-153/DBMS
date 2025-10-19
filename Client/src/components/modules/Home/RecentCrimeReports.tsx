@@ -198,6 +198,7 @@ export default function RecentCrimeReports({
         const inDesc = p.description?.toLowerCase().includes(q);
         const inLocation = (p.location || "").toLowerCase().includes(q);
         const inAuthor = p.author?.name?.toLowerCase().includes(q);
+
         if (!(inTitle || inDesc || inLocation || inAuthor)) return false;
       }
 
@@ -217,6 +218,7 @@ export default function RecentCrimeReports({
       if (sort === "votes") {
         const aUp = (a.votes || []).filter((v) => v.type === "UP").length;
         const bUp = (b.votes || []).filter((v) => v.type === "UP").length;
+
         return bUp - aUp;
       } else if (sort === "verification") {
         return (b.verificationScore || 0) - (a.verificationScore || 0);

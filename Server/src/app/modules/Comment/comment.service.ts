@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from 'http-status';
 import { randomBytes } from 'crypto';
 import { PoolClient } from 'pg';
@@ -6,6 +7,7 @@ import { TCreateComment, TUpdateComment } from './comment.interface';
 import database from '../../../shared/database';
 import AppError from '../../errors/AppError';
 import { PostService } from '../Post/post.service.raw';
+import { TImageFile } from '../../interfaces/image.interface';
 
 const generateUuid = (): string =>
   randomBytes(16)
@@ -117,20 +119,26 @@ const removeCommentDownvote = async (commentId: string, userId: string) => {
 export const CommentService = {
   createComment: async (
     commentData: TCreateComment,
-    authorId: string
+    authorId: string,
+    imageFile?: TImageFile
   ): Promise<DbComment> => {
     const commentId = generateUuid();
     const now = new Date();
     // If parentId is provided, validate the parent exists and belongs to same post
     if (commentData.parentId) {
       const parentQuery = `SELECT id, "postId" FROM comments WHERE id = $1 AND "isDeleted" = false`;
-      const parentRes = await database.query(parentQuery, [commentData.parentId]);
+      const parentRes = await database.query(parentQuery, [
+        commentData.parentId,
+      ]);
       const parent = parentRes.rows[0];
       if (!parent) {
         throw new AppError(httpStatus.NOT_FOUND, 'Parent comment not found');
       }
       if (parent.postId !== commentData.postId) {
-        throw new AppError(httpStatus.BAD_REQUEST, 'Parent comment does not belong to the same post');
+        throw new AppError(
+          httpStatus.BAD_REQUEST,
+          'Parent comment does not belong to the same post'
+        );
       }
     }
 
@@ -143,7 +151,7 @@ export const CommentService = {
     const values = [
       commentId,
       commentData.content,
-      commentData.image || null,
+      imageFile?.path || commentData.image || null,
       commentData.postId,
       commentData.parentId || null,
       authorId,
@@ -170,7 +178,8 @@ export const CommentService = {
   updateComment: async (
     id: string,
     updateData: TUpdateComment,
-    userId: string
+    userId: string,
+    imageFile?: TImageFile
   ): Promise<DbComment> => {
     // Check if comment exists and user owns it
     const checkQuery = `
@@ -203,7 +212,11 @@ export const CommentService = {
       paramIndex++;
     }
 
-    if (updateData.image !== undefined) {
+    if (imageFile) {
+      updateFields.push(`image = $${paramIndex}`);
+      values.push(imageFile.path);
+      paramIndex++;
+    } else if (updateData.image !== undefined) {
       updateFields.push(`image = $${paramIndex}`);
       values.push(updateData.image);
       paramIndex++;
@@ -279,7 +292,7 @@ export const CommentService = {
     >(query, [postId]);
     const comments = result.rows;
 
-  const commentIds = comments.map((c) => c.id);
+    const commentIds = comments.map((c) => c.id);
     if (commentIds.length === 0) return comments;
 
     const votesQuery = `

@@ -1,7 +1,27 @@
 "use client";
 
-import { Card, CardBody, Avatar, Chip, Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
-import { ThumbsUp, ThumbsDown, Eye, MoreVertical, Edit, Trash2 } from "lucide-react";
+import {
+  Card,
+  CardBody,
+  Avatar,
+  Chip,
+  Button,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+} from "@heroui/react";
+import {
+  ThumbsUp,
+  ThumbsDown,
+  Eye,
+  MoreVertical,
+  Edit,
+  Trash2,
+  EllipsisVerticalIcon,
+  PencilIcon,
+  TrashIcon,
+} from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
 import Image from "next/image";
@@ -9,6 +29,7 @@ import { toast } from "sonner";
 
 import { IPost } from "@/src/types/post.types";
 import { FollowButton } from "@/src/components/modules/Shared";
+import { MotionDiv } from "@/src/components/motion-components";
 
 interface PostCardProps {
   post: IPost;
@@ -87,222 +108,370 @@ export default function PostCard({
     }
   };
 
-
   return (
-    <Card className="w-full h-full hover:shadow-xl transition-all duration-300 border-1 border-gray-200 dark:border-gray-700 group">
-      <CardBody className="p-0 h-full flex flex-col">
-        {/* Image */}
-        {post.image && (
-          <div className="relative overflow-hidden rounded-t-xl h-48">
-            <Image
-              fill
-              alt={post.title}
-              className="object-cover group-hover:scale-105 transition-transform duration-500"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              src={post.image}
-            />
-            {/* Status and Actions */}
-            <div className="absolute top-3 right-3 flex items-center gap-2">
-              {(userRole === "ADMIN" || userRole === "SUPER_ADMIN") && (
-                <Chip
-                  color={getStatusColor(post.status)}
-                  size="sm"
-                  variant="flat"
-                >
-                  {post.status}
-                </Chip>
-              )}
-              {showActions && isOwner && (
-                <Dropdown placement="bottom-end">
-                  <DropdownTrigger>
-                    <Button
-                      isIconOnly
-                      className="backdrop-blur-md bg-white/80 dark:bg-gray-800/80 hover:bg-brand-primary hover:text-white transition-all"
-                      size="sm"
-                      variant="flat"
-                    >
-                      <MoreVertical size={16} />
-                    </Button>
-                  </DropdownTrigger>
-                  <DropdownMenu aria-label="Post actions">
-                    <DropdownItem
-                      key="edit"
-                      className="text-brand-primary"
-                      startContent={<Edit size={16} />}
-                      onPress={handleEdit}
-                    >
-                      Edit Post
-                    </DropdownItem>
-                    <DropdownItem
-                      key="delete"
-                      className="text-danger"
-                      color="danger"
-                      startContent={<Trash2 size={16} />}
-                      onPress={handleDelete}
-                    >
-                      Delete Post
-                    </DropdownItem>
-                  </DropdownMenu>
-                </Dropdown>
-              )}
+    <MotionDiv
+      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, y: 20 }}
+      transition={{ duration: 0.5 }}
+      whileHover={{ y: -5, scale: 1.01 }}
+    >
+      <Card className="w-full h-full hover:shadow-xl transition-all duration-300 border-1 border-gray-200 dark:border-gray-700 group">
+        <CardBody className="p-0 h-full flex flex-col">
+          {/* Image and/or Video Grid */}
+          {post.image && post.video ? (
+            // Both image and video - Grid layout like Facebook
+            <div className="relative overflow-hidden rounded-t-xl">
+              <div className="grid grid-cols-2 gap-1 bg-gray-100 dark:bg-gray-900">
+                {/* Image */}
+                <div className="relative h-48 overflow-hidden">
+                  <Image
+                    fill
+                    alt={post.title}
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 16vw"
+                    src={post.image}
+                  />
+                </div>
+                {/* Video */}
+                <div className="relative h-48 bg-black overflow-hidden">
+                  <video
+                    controls
+                    className="w-full h-full object-cover"
+                    poster={post.image}
+                  >
+                    <track
+                      default
+                      kind="captions"
+                      label="English"
+                      src={(post as any).captions || ""}
+                      srcLang="en"
+                    />
+                    <source src={post.video} type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              </div>
+              {/* Status and Actions */}
+              <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
+                {(userRole === "ADMIN" || userRole === "SUPER_ADMIN") && (
+                  <Chip
+                    color={getStatusColor(post.status)}
+                    size="sm"
+                    variant="flat"
+                  >
+                    {post.status}
+                  </Chip>
+                )}
+                {showActions && isOwner && (
+                  <Dropdown placement="bottom-end">
+                    <DropdownTrigger>
+                      <Button
+                        isIconOnly
+                        className="backdrop-blur-md bg-white/80 dark:bg-gray-800/80 hover:bg-brand-primary hover:text-white transition-all"
+                        size="sm"
+                        variant="flat"
+                      >
+                        <MoreVertical size={16} />
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu aria-label="Post actions">
+                      <DropdownItem
+                        key="edit"
+                        className="text-brand-primary"
+                        startContent={<Edit size={16} />}
+                        onPress={handleEdit}
+                      >
+                        Edit Post
+                      </DropdownItem>
+                      <DropdownItem
+                        key="delete"
+                        className="text-danger"
+                        color="danger"
+                        startContent={<Trash2 size={16} />}
+                        onPress={handleDelete}
+                      >
+                        Delete Post
+                      </DropdownItem>
+                    </DropdownMenu>
+                  </Dropdown>
+                )}
+              </div>
             </div>
-          </div>
-        )}
-
-        {/* Content */}
-        <div className="p-4 flex-1 flex flex-col">
-          {/* Header */}
-          <div className="flex items-start gap-2 mb-3">
-            <Link href={`/profile/${post.author.id}`}>
-              <Avatar
-                className="border-2 border-white shadow-sm flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                name={post.author?.name}
-                size="sm"
-                src={post.author?.profilePhoto}
-              />
-            </Link>
-            <div className="min-w-0 flex-1">
-              <Link
-                className="hover:underline"
-                href={`/profile/${post.author.id}`}
+          ) : post.video ? (
+            // Video only
+            <div className="relative overflow-hidden rounded-t-xl h-48 bg-black">
+              <video
+                controls
+                className="w-full h-full object-contain"
+                poster={post.image}
               >
-                <p className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
-                  {post.author?.name}
-                </p>
+                <track
+                  default
+                  kind="captions"
+                  label="English"
+                  src={(post as any).captions || ""}
+                  srcLang="en"
+                />
+                <source src={post.video} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+              {/* Status and Actions */}
+              <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
+                {(userRole === "ADMIN" || userRole === "SUPER_ADMIN") && (
+                  <Chip
+                    color={getStatusColor(post.status)}
+                    size="sm"
+                    variant="flat"
+                  >
+                    {post.status}
+                  </Chip>
+                )}
+                {showActions && isOwner && (
+                  <Dropdown placement="bottom-end">
+                    <DropdownTrigger>
+                      <Button
+                        isIconOnly
+                        className="backdrop-blur-md bg-white/80 dark:bg-gray-800/80 hover:bg-brand-primary hover:text-white transition-all"
+                        radius="full"
+                        size="sm"
+                        variant="flat"
+                      >
+                        <EllipsisVerticalIcon className="w-5 h-5" />
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu aria-label="Post actions">
+                      <DropdownItem
+                        key="edit"
+                        startContent={<PencilIcon className="w-4 h-4" />}
+                      >
+                        Edit
+                      </DropdownItem>
+                      <DropdownItem
+                        key="delete"
+                        className="text-danger"
+                        color="danger"
+                        startContent={<TrashIcon className="w-4 h-4" />}
+                      >
+                        Delete
+                      </DropdownItem>
+                    </DropdownMenu>
+                  </Dropdown>
+                )}
+              </div>
+            </div>
+          ) : post.image ? (
+            // Image only
+            <div className="relative overflow-hidden rounded-t-xl h-48">
+              <Image
+                fill
+                alt={post.title}
+                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                src={post.image}
+              />
+              {/* Status and Actions */}
+              <div className="absolute top-3 right-3 flex items-center gap-2">
+                {(userRole === "ADMIN" || userRole === "SUPER_ADMIN") && (
+                  <Chip
+                    color={getStatusColor(post.status)}
+                    size="sm"
+                    variant="flat"
+                  >
+                    {post.status}
+                  </Chip>
+                )}
+                {showActions && isOwner && (
+                  <Dropdown placement="bottom-end">
+                    <DropdownTrigger>
+                      <Button
+                        isIconOnly
+                        className="backdrop-blur-md bg-white/80 dark:bg-gray-800/80 hover:bg-brand-primary hover:text-white transition-all"
+                        size="sm"
+                        variant="flat"
+                      >
+                        <MoreVertical size={16} />
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu aria-label="Post actions">
+                      <DropdownItem
+                        key="edit"
+                        className="text-brand-primary"
+                        startContent={<Edit size={16} />}
+                        onPress={handleEdit}
+                      >
+                        Edit Post
+                      </DropdownItem>
+                      <DropdownItem
+                        key="delete"
+                        className="text-danger"
+                        color="danger"
+                        startContent={<Trash2 size={16} />}
+                        onPress={handleDelete}
+                      >
+                        Delete Post
+                      </DropdownItem>
+                    </DropdownMenu>
+                  </Dropdown>
+                )}
+              </div>
+            </div>
+          ) : null}
+
+          {/* Content */}
+          <div className="p-4 flex-1 flex flex-col">
+            {/* Header */}
+            <div className="flex items-start gap-2 mb-3">
+              <Link href={`/profile/${post.author.id}`}>
+                <Avatar
+                  className="border-2 border-white shadow-sm flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                  name={post.author?.name}
+                  size="sm"
+                  src={post.author?.profilePhoto}
+                />
               </Link>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                {formatDate(post.createdAt)}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                <FollowButton
-                  size="sm"
-                  userId={post.author.id}
-                  userName={post.author?.name || "User"}
-                  variant="light"
-                />
-              </div>
-              {!post.image && showActions && isOwner && (
-                <Dropdown placement="bottom-end">
-                  <DropdownTrigger>
-                    <Button
-                      isIconOnly
-                      className="bg-gray-100 dark:bg-gray-800 hover:bg-brand-primary hover:text-white transition-all"
-                      size="sm"
-                      variant="flat"
-                    >
-                      <MoreVertical size={16} />
-                    </Button>
-                  </DropdownTrigger>
-                  <DropdownMenu aria-label="Post actions">
-                    <DropdownItem
-                      key="edit"
-                      className="text-brand-primary"
-                      startContent={<Edit size={16} />}
-                      onPress={handleEdit}
-                    >
-                      Edit Post
-                    </DropdownItem>
-                    <DropdownItem
-                      key="delete"
-                      className="text-danger"
-                      color="danger"
-                      startContent={<Trash2 size={16} />}
-                      onPress={handleDelete}
-                    >
-                      Delete Post
-                    </DropdownItem>
-                  </DropdownMenu>
-                </Dropdown>
-              )}
-            </div>
-          </div>
-
-          {/* Title */}
-          <Link href={`/posts/${post.id}`}>
-            <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 leading-tight line-clamp-2 mb-2 hover:text-brand-primary transition-colors cursor-pointer">
-              {post.title}
-            </h3>
-          </Link>
-
-          {/* Description */}
-          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-3 flex-1 mb-3">
-            {post.description}
-          </p>
-
-          {/* Footer */}
-          <div className="space-y-3 mt-auto">
-            {/* Location and Date Info */}
-            <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
-              <div className="flex items-center gap-4">
-                {post.location && (
-                  <span className="truncate max-w-32">{post.location}</span>
-                )}
-                {post.crimeDate && (
-                  <span>{format(new Date(post.crimeDate), "MMM dd")}</span>
-                )}
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
-              {/* Vote Section */}
-              <div className="flex items-center gap-1">
-                <Button
-                  className={`min-w-8 h-7 px-2 ${
-                    isUpvoted
-                      ? "text-white bg-brand-primary"
-                      : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
-                  } transition-colors`}
-                  isDisabled={isVoting}
-                  size="sm"
-                  startContent={<ThumbsUp size={14} />}
-                  variant="flat"
-                  onClick={() => handleVote("up")}
-                />
-
-                <span
-                  className={`font-bold text-sm px-2 ${
-                    voteCount > 0
-                      ? "text-emerald-600"
-                      : voteCount < 0
-                        ? "text-red-600"
-                        : "text-gray-600"
-                  }`}
+              <div className="min-w-0 flex-1">
+                <Link
+                  className="hover:underline"
+                  href={`/profile/${post.author.id}`}
                 >
-                  {voteCount}
-                </span>
-
-                <Button
-                  className={`min-w-8 h-7 px-2 ${
-                    isDownvoted
-                      ? "text-white bg-red-500"
-                      : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
-                  } transition-colors`}
-                  isDisabled={isVoting}
-                  size="sm"
-                  startContent={<ThumbsDown size={14} />}
-                  variant="flat"
-                  onClick={() => handleVote("down")}
-                />
+                  <p className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
+                    {post.author?.name}
+                  </p>
+                </Link>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {formatDate(post.createdAt)}
+                </p>
               </div>
-
-              {/* Share and View */}
               <div className="flex items-center gap-2">
-                <Button
-                  className="min-w-8 h-7 px-2 bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-brand-primary hover:text-white transition-colors"
-                  size="sm"
-                  startContent={<Eye size={14} />}
-                  variant="flat"
-                >
-                  <Link href={`/posts/${post.id}`}>View</Link>
-                </Button>
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <FollowButton
+                    size="sm"
+                    userId={post.author.id}
+                    userName={post.author?.name || "User"}
+                    variant="light"
+                  />
+                </div>
+                {!post.image && showActions && isOwner && (
+                  <Dropdown placement="bottom-end">
+                    <DropdownTrigger>
+                      <Button
+                        isIconOnly
+                        className="bg-gray-100 dark:bg-gray-800 hover:bg-brand-primary hover:text-white transition-all"
+                        size="sm"
+                        variant="flat"
+                      >
+                        <MoreVertical size={16} />
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu aria-label="Post actions">
+                      <DropdownItem
+                        key="edit"
+                        className="text-brand-primary"
+                        startContent={<Edit size={16} />}
+                        onPress={handleEdit}
+                      >
+                        Edit Post
+                      </DropdownItem>
+                      <DropdownItem
+                        key="delete"
+                        className="text-danger"
+                        color="danger"
+                        startContent={<Trash2 size={16} />}
+                        onPress={handleDelete}
+                      >
+                        Delete Post
+                      </DropdownItem>
+                    </DropdownMenu>
+                  </Dropdown>
+                )}
+              </div>
+            </div>
+
+            {/* Title */}
+            <Link href={`/posts/${post.id}`}>
+              <h3 className="text-base font-bold text-gray-900 dark:text-gray-100 leading-tight line-clamp-2 mb-2 hover:text-brand-primary transition-colors cursor-pointer">
+                {post.title}
+              </h3>
+            </Link>
+
+            {/* Description */}
+            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-3 flex-1 mb-3">
+              {post.description}
+            </p>
+
+            {/* Footer */}
+            <div className="space-y-3 mt-auto">
+              {/* Location and Date Info */}
+              <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
+                <div className="flex items-center gap-4">
+                  {post.location && (
+                    <span className="truncate max-w-32">{post.location}</span>
+                  )}
+                  {post.crimeDate && (
+                    <span>{format(new Date(post.crimeDate), "MMM dd")}</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                {/* Vote Section */}
+                <div className="flex items-center gap-1">
+                  <Button
+                    className={`min-w-8 h-7 px-2 ${
+                      isUpvoted
+                        ? "text-white bg-brand-primary"
+                        : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                    } transition-colors`}
+                    isDisabled={isVoting}
+                    size="sm"
+                    startContent={<ThumbsUp size={14} />}
+                    variant="flat"
+                    onClick={() => handleVote("up")}
+                  />
+
+                  <span
+                    className={`font-bold text-sm px-2 ${
+                      voteCount > 0
+                        ? "text-emerald-600"
+                        : voteCount < 0
+                          ? "text-red-600"
+                          : "text-gray-600"
+                    }`}
+                  >
+                    {voteCount}
+                  </span>
+
+                  <Button
+                    className={`min-w-8 h-7 px-2 ${
+                      isDownvoted
+                        ? "text-white bg-red-500"
+                        : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                    } transition-colors`}
+                    isDisabled={isVoting}
+                    size="sm"
+                    startContent={<ThumbsDown size={14} />}
+                    variant="flat"
+                    onClick={() => handleVote("down")}
+                  />
+                </div>
+
+                {/* Share and View */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    className="min-w-8 h-7 px-2 bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-brand-primary hover:text-white transition-colors"
+                    size="sm"
+                    startContent={<Eye size={14} />}
+                    variant="flat"
+                  >
+                    <Link href={`/posts/${post.id}`}>View</Link>
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </CardBody>
-    </Card>
+        </CardBody>
+      </Card>
+    </MotionDiv>
   );
 }

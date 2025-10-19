@@ -13,7 +13,10 @@ const router = express.Router();
 router.post(
   '/create',
   auth(USER_ROLE.USER, USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN),
-  multerUpload.single('image'),
+  multerUpload.fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'video', maxCount: 1 },
+  ]),
   //validateImageFileRequest(ImageFilesArrayZodSchema),
   parseBody,
   //validateRequest(PostValidation.createPostValidationSchema),
@@ -42,7 +45,10 @@ router.get('/:id/comments', CommentControllers.getCommentsByPost);
 router.patch(
   '/:id',
   auth(USER_ROLE.ADMIN, USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN),
-  multerUpload.single('image'),
+  multerUpload.fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'video', maxCount: 1 },
+  ]),
   parseBody,
   validateRequest(PostValidation.updatePostValidationSchema),
   PostControllers.updatePost

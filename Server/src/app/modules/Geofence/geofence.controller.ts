@@ -170,7 +170,7 @@ const autoGenerateZones = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: `Auto-generated ${result.created} geofence zones from ${result.totalHotspots} hotspots (${result.skipped} skipped - already exist)`,
+    message: `Auto-generated ${result.created} geofence zones from ${result.totalPosts} approved posts (${result.skipped} skipped - already exist)`,
     data: result,
   });
 });

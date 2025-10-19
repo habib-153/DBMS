@@ -8,7 +8,6 @@ import {
   CardHeader,
   Button,
   Avatar,
-  Chip,
   Divider,
   Textarea,
 } from "@heroui/react";
@@ -55,6 +54,10 @@ const PostDetails = () => {
   const [isVoting, setIsVoting] = useState(false);
   const [openAuthModal, setOpenAuthModal] = useState(false);
   const [comment, setComment] = useState("");
+  const [commentImage, setCommentImage] = useState<File | null>(null);
+  const [commentImagePreview, setCommentImagePreview] = useState<string | null>(
+    null
+  );
   const [showReportModal, setShowReportModal] = useState(false);
   const { mutateAsync: postComment } = usePostAComment();
   const { data: commentsData } = useGetPostComments(id as string);
@@ -183,6 +186,33 @@ const PostDetails = () => {
     }
   };
 
+  const handleCommentImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      // 5MB limit for comments
+      toast.error("Image must be less than 5MB");
+
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload a valid image file");
+
+      return;
+    }
+
+    setCommentImage(file);
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      setCommentImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleCommentSubmit = async () => {
     if (!user) {
       setOpenAuthModal(true);
@@ -191,8 +221,19 @@ const PostDetails = () => {
     }
     if (!comment.trim()) return;
     try {
-      await postComment({ postId: id as string, content: comment });
+      const formData = new FormData();
+      formData.append("postId", id as string);
+      formData.append("content", comment);
+      if (commentImage) {
+        formData.append("image", commentImage);
+      }
+
+      await postComment(formData);
+
+      // clear inputs
       setComment("");
+      setCommentImage(null);
+      setCommentImagePreview(null);
     } catch (err) {
       // error handled by hook onError (toast), keep input intact
     }
@@ -244,8 +285,66 @@ const PostDetails = () => {
       {/* Main Post Card */}
       <Card className="mb-6">
         <CardBody className="p-0">
-          {/* Image */}
-          {postData.image && (
+          {/* Media - Image and/or Video Grid */}
+          {postData.image && postData.video ? (
+            // Both image and video - Grid layout like Facebook
+            <div className="relative overflow-hidden rounded-t-xl">
+              <div className="grid grid-cols-2 gap-1 bg-gray-100 dark:bg-gray-900">
+                {/* Image */}
+                <div className="relative h-96 overflow-hidden">
+                  <Image
+                    fill
+                    alt={postData.title}
+                    className="object-cover"
+                    sizes="(max-width: 768px) 50vw, 400px"
+                    src={postData.image}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = "/api/placeholder/400/400";
+                    }}
+                  />
+                </div>
+                {/* Video */}
+                <div className="relative h-96 bg-black overflow-hidden">
+                  <video
+                    controls
+                    className="w-full h-full object-cover"
+                    poster={postData.image}
+                  >
+                    <track
+                      default
+                      kind="captions"
+                      label="English captions"
+                      src={postData.title || "/api/placeholder/captions.vtt"}
+                      srcLang="en"
+                    />
+                    <source src={postData.video} type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              </div>
+            </div>
+          ) : postData.video ? (
+            // Video only
+            <div className="relative w-full rounded-t-xl overflow-hidden bg-black">
+              <video
+                controls
+                className="w-full max-h-[500px] object-contain"
+                poster={postData.image}
+              >
+                <track
+                  default
+                  kind="captions"
+                  label="English captions"
+                  src={postData.title || "/api/placeholder/captions.vtt"}
+                  srcLang="en"
+                />
+                <source src={postData.video} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          ) : postData.image ? (
+            // Image only
             <div className="relative h-96 overflow-hidden rounded-t-xl">
               <Image
                 fill
@@ -270,7 +369,7 @@ const PostDetails = () => {
                 </Chip>
               </div> */}
             </div>
-          )}
+          ) : null}
 
           {/* Content */}
           <div className="p-6">
@@ -486,6 +585,60 @@ const PostDetails = () => {
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
               />
+
+              {/* Image Upload for Comment */}
+              <div className="flex items-center gap-3">
+                <label className="inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 cursor-pointer border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                    />
+                  </svg>
+                  Add Image (Optional)
+                  <input
+                    accept="image/*"
+                    className="hidden"
+                    type="file"
+                    onChange={handleCommentImageChange}
+                  />
+                </label>
+                {commentImage && (
+                  <span className="text-sm text-gray-500">
+                    {commentImage.name} ({(commentImage.size / 1024).toFixed(1)}
+                    KB)
+                  </span>
+                )}
+              </div>
+
+              {/* Image Preview */}
+              {commentImagePreview && (
+                <div className="relative inline-block">
+                  <img
+                    alt="Comment preview"
+                    className="max-w-xs rounded-lg border border-gray-300 dark:border-gray-600"
+                    src={commentImagePreview}
+                  />
+                  <button
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                    type="button"
+                    onClick={() => {
+                      setCommentImage(null);
+                      setCommentImagePreview(null);
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+
               <div className="flex justify-end">
                 <Button
                   className="bg-brand-primary text-white"

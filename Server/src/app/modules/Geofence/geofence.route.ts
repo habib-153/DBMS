@@ -15,7 +15,7 @@ router.post(
 // Admin-only test endpoint to trigger geofence check for arbitrary user/coords
 router.post(
   '/test-check',
-  auth('ADMIN', 'SUPER_ADMIN'),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
   GeofenceController.triggerCheck
 );
 
@@ -25,21 +25,21 @@ router.get('/zones', GeofenceController.getGeofenceZones);
 // Create new geofence zone (admin only)
 router.post(
   '/zones',
-  auth('ADMIN', 'SUPER_ADMIN'),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
   GeofenceController.createGeofenceZone
 );
 
 // Update geofence zone (admin only)
 router.patch(
   '/zones/:id',
-  auth('ADMIN', 'SUPER_ADMIN'),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
   GeofenceController.updateGeofenceZone
 );
 
 // Delete geofence zone (admin only)
 router.delete(
   '/zones/:id',
-  auth('ADMIN', 'SUPER_ADMIN'),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
   GeofenceController.deleteGeofenceZone
 );
 

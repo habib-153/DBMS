@@ -2,18 +2,21 @@ import express from 'express';
 import auth from '../../middlewares/auth';
 import { CommentControllers } from './comment.controller';
 import { parseBody } from '../../middlewares/bodyParser';
+import { multerUpload } from '../../config/multer.config';
 
 const router = express.Router();
 
 router.post(
   '/',
   auth('USER', 'ADMIN', 'SUPER_ADMIN'),
+  multerUpload.single('image'),
   parseBody,
   CommentControllers.createComment
 );
 router.patch(
   '/:id',
   auth('USER', 'ADMIN', 'SUPER_ADMIN'),
+  multerUpload.single('image'),
   parseBody,
   CommentControllers.updateComment
 );

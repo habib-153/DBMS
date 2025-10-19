@@ -410,3 +410,8 @@ TableGroup notification_system {
 TableGroup ai_analytics {
   ai_analysis_logs
 }
+
+Ref: posts.district > district.id
+Ref: posts.division > division.id
+Ref: geofence_zones.district > district.id
+Ref: geofence_zones.division > division.id

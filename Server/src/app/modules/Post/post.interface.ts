@@ -22,6 +22,7 @@ export interface TPost {
   crimeDate: Date;
   category?: CrimeCategory;
   image?: string;
+  video?: string;
   authorId: string;
   status: PostStatus;
   isDeleted: boolean;

@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Spinner, Card, CardBody, CardHeader, Tabs, Tab } from "@heroui/react";
+import { Card, CardBody, CardHeader, Tabs, Tab } from "@heroui/react";
 import { ParentSize } from "@visx/responsive";
 import {
   LineChart,
@@ -28,6 +28,8 @@ import {
   PolarRadiusAxis,
   Radar,
 } from "recharts";
+
+import Loading from "../../loading";
 
 import {
   EnhancedBarChart,
@@ -164,14 +166,10 @@ const EnhancedAnalytics = () => {
     crimeHourLoading ||
     divisionLoading ||
     dayOfWeekLoading ||
-    recentActivityLoading;
+    recentActivityLoading 
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Spinner label="Loading analytics..." size="lg" />
-      </div>
-    );
+    return <Loading />;
   }
 
   // Process data
@@ -199,12 +197,6 @@ const EnhancedAnalytics = () => {
       "Unknown",
     value: parseInt(item.cnt),
     color: CATEGORY_COLORS[item.category] || COLORS[index % COLORS.length],
-  }));
-
-  const hotspotChartData = hotspots.slice(0, 15).map((item: any) => ({
-    label: item.district || "Unknown",
-    value: parseInt(item.cnt),
-    color: "#FF8042",
   }));
 
   const crimeHourChartData = crimeByHour.map((item: any) => ({
@@ -239,6 +231,64 @@ const EnhancedAnalytics = () => {
   );
   const mostCommonCrime = categories[0]?.category || "N/A";
   const topHotspot = hotspots[0]?.district || "N/A";
+
+  // Create timeline data from trend data - group by weeks and calculate trends
+  const timelineData = (() => {
+    if (!trends.length) return [];
+
+    // Group by weeks and calculate metrics
+    const weeklyData: { [key: string]: number[] } = {};
+
+    trends.forEach((item: any) => {
+      const date = new Date(item.day);
+      const weekStart = new Date(date);
+
+      weekStart.setDate(date.getDate() - date.getDay()); // Start of week
+      const weekKey = weekStart.toISOString().split("T")[0];
+
+      if (!weeklyData[weekKey]) {
+        weeklyData[weekKey] = [];
+      }
+      weeklyData[weekKey].push(parseInt(item.cnt));
+    });
+
+    // Convert to timeline format with trends
+    const weeks = Object.keys(weeklyData).sort().slice(-8); // Last 8 weeks
+
+    return weeks.map((week, index) => {
+      const crimes = weeklyData[week];
+      const avgCrimes = crimes.reduce((a, b) => a + b, 0) / crimes.length;
+
+      // Calculate trend compared to previous week
+      let trend: "up" | "down" | "stable" = "stable";
+
+      if (index > 0) {
+        const prevCrimes = weeklyData[weeks[index - 1]];
+        const prevAvg =
+          prevCrimes.reduce((a, b) => a + b, 0) / prevCrimes.length;
+        const change = ((avgCrimes - prevAvg) / prevAvg) * 100;
+
+        if (change > 10) trend = "up";
+        else if (change < -10) trend = "down";
+      }
+
+      // Calculate intensity (0-1 scale based on all weeks)
+      const allAverages = weeks.map(
+        (w) => weeklyData[w].reduce((a, b) => a + b, 0) / weeklyData[w].length
+      );
+      const maxAvg = Math.max(...allAverages);
+      const minAvg = Math.min(...allAverages);
+      const intensity =
+        maxAvg === minAvg ? 0.5 : (avgCrimes - minAvg) / (maxAvg - minAvg);
+
+      return {
+        period: `Week ${index + 1}`,
+        crimes: Math.round(avgCrimes),
+        trend,
+        intensity: Math.max(0.1, Math.min(1, intensity)), // Clamp between 0.1 and 1
+      };
+    });
+  })();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-6">
@@ -455,28 +505,37 @@ const EnhancedAnalytics = () => {
               </CardBody>
             </Card>
 
-            {/* Top 15 Crime Hotspots - Enhanced Bar Chart */}
-            <Card className="lg:col-span-2">
+            {/* Crime Activity Timeline - Shows patterns across time periods */}
+            {/* <Card className="lg:col-span-2">
               <CardHeader className="pb-0">
                 <div>
-                  <h2 className="text-xl font-bold">Top Crime Hotspots</h2>
+                  <h2 className="text-xl font-bold">Crime Activity Timeline</h2>
                   <p className="text-sm text-gray-500">
-                    Districts with highest crime rates (all time)
+                    Crime reporting patterns across different time periods with
+                    trend analysis
                   </p>
                 </div>
               </CardHeader>
               <CardBody className="pt-4">
                 <ParentSize>
                   {({ width }) => (
-                    <EnhancedBarChart
-                      data={hotspotChartData}
+                    <CrimeActivityTimeline
+                      data={timelineData}
                       height={450}
                       width={width}
                     />
                   )}
                 </ParentSize>
+                <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <strong>Insight:</strong> This timeline shows crime activity
+                    patterns with trend indicators. Darker bars indicate higher
+                    intensity periods. 📈 = increasing trend, 📉 = decreasing
+                    trend, ➡️ = stable.
+                  </p>
+                </div>
               </CardBody>
-            </Card>
+            </Card> */}
           </div>
         )}
 

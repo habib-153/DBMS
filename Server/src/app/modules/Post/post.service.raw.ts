@@ -27,7 +27,7 @@ const generateUuid = (): string => {
 
 const createPost = async (
   postData: TCreatePost,
-  imageFile: TImageFile,
+  files: { image?: TImageFile; video?: TImageFile },
   authorId: string,
   userRole?: string
 ): Promise<DbPostWithDetails> => {
@@ -40,8 +40,8 @@ const createPost = async (
     userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' ? 'APPROVED' : 'PENDING';
 
   const query = `
-    INSERT INTO posts (id, title, description, image, location, district, division, "crimeDate", category, "authorId", latitude, longitude, status, "isDeleted", "postDate", "createdAt", "updatedAt")
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, false, $14, $15, $16)
+    INSERT INTO posts (id, title, description, image, video, location, district, division, "crimeDate", category, "authorId", latitude, longitude, status, "isDeleted", "postDate", "createdAt", "updatedAt")
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, false, $15, $16, $17)
     RETURNING *
   `;
 
@@ -49,7 +49,8 @@ const createPost = async (
     postId,
     postData.title,
     postData.description,
-    imageFile.path,
+    files.image?.path || null,
+    files.video?.path || null,
     postData.location,
     postData.district,
     postData.division,
@@ -75,13 +76,13 @@ const createPost = async (
     );
   }
 
-  // Trigger AI analysis asynchronously (non-blocking)
-  if (imageFile && imageFile.path) {
+  // Trigger AI analysis asynchronously (non-blocking) only if image exists
+  if (files.image && files.image.path) {
     // Import AIAnalysisService dynamically to avoid circular dependencies
     import('../AIAnalysis/aianalysis.service')
       .then(({ AIAnalysisService }) => {
         AIAnalysisService.analyzeImageWithRoboflow(
-          imageFile.path,
+          files.image!.path,
           createdPost.id
         ).catch((error) => {
           console.error('AI analysis failed:', error);
@@ -357,7 +358,7 @@ const getSinglePost = async (id: string): Promise<DbPostWithDetails> => {
 const updatePost = async (
   id: string,
   updateData: TUpdatePost,
-  imageFile: TImageFile | undefined,
+  files: { image?: TImageFile; video?: TImageFile } | undefined,
   user: JwtPayload
 ): Promise<DbPostWithDetails> => {
   // First, check if post exists and user owns it
@@ -450,9 +451,15 @@ const updatePost = async (
     paramIndex++;
   }
 
-  if (imageFile) {
+  if (files?.image) {
     updateFields.push(`image = $${paramIndex}`);
-    values.push(imageFile.path);
+    values.push(files.image.path);
+    paramIndex++;
+  }
+
+  if (files?.video) {
+    updateFields.push(`video = $${paramIndex}`);
+    values.push(files.video.path);
     paramIndex++;
   }
 
@@ -533,6 +540,22 @@ const updatePost = async (
       .catch((err) =>
         console.error('Failed to import PushNotificationService:', err)
       );
+
+    // Auto-create geofence zone when post is approved
+    if (updateData.status === 'APPROVED') {
+      import('../Geofence/geofence.service')
+        .then(({ GeofenceService }) => {
+          GeofenceService.createGeofenceForPost(post.id).catch((err) =>
+            console.error(
+              'Failed to create geofence zone for approved post:',
+              err
+            )
+          );
+        })
+        .catch((err) =>
+          console.error('Failed to import GeofenceService:', err)
+        );
+    }
   }
 
   // Return post with details

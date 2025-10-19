@@ -9,7 +9,7 @@ import {
   MotionDiv,
   MotionH2,
   MotionP,
-  MotionPre
+  MotionPre,
 } from "@/src/components/motion-components";
 
 export default function Error({
@@ -60,25 +60,57 @@ export default function Error({
     },
   };
 
+  const floatingVariants = {
+    y: [0, -15, 0],
+    transition: {
+      duration: 3,
+      repeat: Infinity,
+      ease: "easeInOut",
+    },
+  };
+
   return (
     <MotionDiv
       animate="visible"
-      className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-6"
+      className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-red-900/20 dark:to-gray-900 p-6 relative overflow-hidden"
       initial="hidden"
       variants={containerVariants}
     >
+      {/* Floating background elements */}
+      <MotionDiv
+        animate={floatingVariants}
+        className="absolute top-20 left-10 opacity-10"
+      >
+        <AlertTriangle className="w-32 h-32 text-red-500" />
+      </MotionDiv>
+      <MotionDiv
+        animate={floatingVariants}
+        className="absolute bottom-20 right-10 opacity-10"
+        style={{ animationDelay: "1s" }}
+      >
+        <Bug className="w-24 h-24 text-orange-500" />
+      </MotionDiv>
+
       <MotionDiv
         transition={{ duration: 0.2 }}
         variants={itemVariants}
         whileHover={{ scale: 1.02 }}
       >
-        <Card className="max-w-2xl w-full">
+        <Card className="max-w-2xl w-full shadow-2xl backdrop-blur-sm bg-white/90 dark:bg-gray-800/90">
           <CardHeader className="flex items-center gap-3">
             <MotionDiv
-              animate={{ scale: 1, rotate: 0 }}
+              animate={{
+                scale: 1,
+                rotate: 0,
+                y: [0, -5, 0],
+              }}
               className="p-2 rounded-md bg-red-50 dark:bg-red-900/30"
               initial={{ scale: 0, rotate: -180 }}
-              transition={{ duration: 0.5, delay: 0.2, type: "spring" }}
+              transition={{
+                scale: { duration: 0.5, delay: 0.2, type: "spring" },
+                rotate: { duration: 0.5, delay: 0.2, type: "spring" },
+                y: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+              }}
             >
               <AlertTriangle className="text-red-600 w-6 h-6" />
             </MotionDiv>

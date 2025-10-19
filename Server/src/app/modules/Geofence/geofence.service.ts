@@ -296,128 +296,193 @@ const getUserLocationHistory = async (
   return result.rows;
 };
 
-// Auto-generate geofence zones from crime data
-const autoGenerateGeofenceZones = async (): Promise<{
-  created: number;
-  skipped: number;
-  totalHotspots: number;
-}> => {
-  // First, check how many posts we have
-  const postCountQuery = `
-    SELECT COUNT(*) as total 
-    FROM posts 
-    WHERE "isDeleted" = false 
+// Create geofence zone for a single approved post (auto-triggered)
+const createGeofenceForPost = async (postId: string): Promise<void> => {
+  // Fetch post details
+  const postQuery = `
+    SELECT id, title, latitude, longitude, district, division, "verificationScore"
+    FROM posts
+    WHERE id = $1 
+      AND "isDeleted" = false 
       AND status = 'APPROVED'
       AND latitude IS NOT NULL 
       AND longitude IS NOT NULL
   `;
-  const postCountResult = await database.query(postCountQuery);
-  const totalPosts = parseInt(postCountResult.rows[0].total as string) || 0;
 
-  console.log(
-    `[Geofence Auto-Generate] Total approved posts with coordinates: ${totalPosts}`
-  );
+  const postResult = await database.query(postQuery, [postId]);
+  const post = postResult.rows[0];
 
-  // Find crime hotspots using spatial clustering
-  // Relaxed criteria: Last 365 days instead of 90, and 2+ crimes instead of 3+
-  const hotspotsQuery = `
-    WITH crime_clusters AS (
-      SELECT
-        AVG(latitude) as center_lat,
-        AVG(longitude) as center_lng,
-        COUNT(*) as crime_count,
-        district,
-        division,
-        AVG("verificationScore") as avg_score
-      FROM posts
-      WHERE "isDeleted" = false
-        AND status = 'APPROVED'
-        AND latitude IS NOT NULL
-        AND longitude IS NOT NULL
-        AND "crimeDate" >= NOW() - INTERVAL '365 days'
-      GROUP BY
-        ROUND(latitude::numeric, 2),
-        ROUND(longitude::numeric, 2),
-        district,
-        division
-      HAVING COUNT(*) >= 2
-    )
-    SELECT * FROM crime_clusters
-    ORDER BY crime_count DESC
-    LIMIT 20
+  if (!post) {
+    // eslint-disable-next-line no-console
+    console.log(
+      `[Geofence] Post ${postId} not found or not eligible for geofence`
+    );
+    return;
+  }
+
+  // Check if geofence zone already exists for this exact location (within 2 meters)
+  const existingZoneQuery = `
+    SELECT * FROM geofence_zones
+    WHERE (6371000 * acos(
+      cos(radians($1)) * cos(radians("centerLatitude")) * 
+      cos(radians("centerLongitude") - radians($2)) + 
+      sin(radians($1)) * sin(radians("centerLatitude"))
+    )) <= 2
   `;
 
-  const hotspots = await database.query(hotspotsQuery);
+  const existingZone = await database.query(existingZoneQuery, [
+    post.latitude,
+    post.longitude,
+  ]);
 
+  if (existingZone.rows.length > 0) {
+    // eslint-disable-next-line no-console
+    console.log(
+      `[Geofence] Zone already exists for post ${postId} at this location`
+    );
+    return;
+  }
+
+  // Determine risk level based on verification score
+  let riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 'MEDIUM';
+  const score = parseFloat(post.verificationScore as string) || 50;
+
+  if (score >= 80) riskLevel = 'CRITICAL';
+  else if (score >= 60) riskLevel = 'HIGH';
+  else if (score >= 40) riskLevel = 'MEDIUM';
+  else riskLevel = 'LOW';
+
+  // Create geofence zone with 2-meter radius
+  try {
+    await createGeofenceZone({
+      name:
+        (post.title as string) ||
+        `Crime Location ${(post.district as string) || 'Unknown'}`,
+      centerLatitude: parseFloat(post.latitude as string),
+      centerLongitude: parseFloat(post.longitude as string),
+      radiusMeters: 2,
+      riskLevel,
+      district: (post.district as string) || undefined,
+      division: (post.division as string) || undefined,
+    });
+
+    // eslint-disable-next-line no-console
+    console.log(
+      `[Geofence] ✓ Created 2m zone for post ${postId}: "${
+        post.title as string
+      }" (${riskLevel})`
+    );
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `[Geofence] ✗ Failed to create zone for post ${postId}:`,
+      error
+    );
+  }
+};
+
+// Auto-generate geofence zones from all approved posts (manual button trigger)
+const autoGenerateGeofenceZones = async (): Promise<{
+  created: number;
+  skipped: number;
+  totalPosts: number;
+}> => {
+  // Get all approved posts with coordinates that don't have a geofence zone yet
+  const postsQuery = `
+    SELECT id, title, latitude, longitude, district, division, "verificationScore"
+    FROM posts
+    WHERE "isDeleted" = false 
+      AND status = 'APPROVED'
+      AND latitude IS NOT NULL 
+      AND longitude IS NOT NULL
+    ORDER BY "crimeDate" DESC
+  `;
+
+  const postsResult = await database.query(postsQuery);
+  const posts = postsResult.rows;
+
+  // eslint-disable-next-line no-console
   console.log(
-    `[Geofence Auto-Generate] Found ${hotspots.rows.length} crime hotspots`
+    `[Geofence Auto-Generate] Total approved posts with coordinates: ${posts.length}`
   );
 
   let created = 0;
   let skipped = 0;
 
-  for (const hotspot of hotspots.rows) {
-    console.log(
-      `[Geofence] Processing hotspot at lat:${hotspot.center_lat}, lng:${hotspot.center_lng}, crimes:${hotspot.crime_count}, district:${hotspot.district}`
-    );
-
-    // Check if zone already exists
-    const existingZone = await database.query(
-      `
+  for (const post of posts) {
+    // Check if zone already exists at this exact location (within 2 meters)
+    const existingZoneQuery = `
       SELECT * FROM geofence_zones
       WHERE (6371000 * acos(
         cos(radians($1)) * cos(radians("centerLatitude")) * 
         cos(radians("centerLongitude") - radians($2)) + 
         sin(radians($1)) * sin(radians("centerLatitude"))
-      )) <= 500
-    `,
-      [hotspot.center_lat, hotspot.center_lng]
-    );
+      )) <= 2
+    `;
+
+    const existingZone = await database.query(existingZoneQuery, [
+      post.latitude,
+      post.longitude,
+    ]);
 
     if (existingZone.rows.length > 0) {
-      console.log(`[Geofence] Skipping - zone already exists nearby`);
+      // eslint-disable-next-line no-console
+      console.log(
+        `[Geofence] Skipping post ${
+          post.id as string
+        } - zone already exists at this location`
+      );
       skipped++;
       continue;
     }
 
-    // Create new geofence zone
-    const crimeCount = parseInt(hotspot.crime_count as string) || 0;
+    // Determine risk level based on verification score
     let riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 'MEDIUM';
+    const score = parseFloat(post.verificationScore as string) || 50;
 
-    if (crimeCount >= 10) riskLevel = 'CRITICAL';
-    else if (crimeCount >= 7) riskLevel = 'HIGH';
-    else if (crimeCount >= 5) riskLevel = 'MEDIUM';
+    if (score >= 80) riskLevel = 'CRITICAL';
+    else if (score >= 60) riskLevel = 'HIGH';
+    else if (score >= 40) riskLevel = 'MEDIUM';
     else riskLevel = 'LOW';
 
+    // Create geofence zone with 2-meter radius
     try {
       await createGeofenceZone({
-        name: `${hotspot.district || 'Unknown'} Crime Hotspot`,
-        centerLatitude: parseFloat(hotspot.center_lat as string),
-        centerLongitude: parseFloat(hotspot.center_lng as string),
-        radiusMeters: 500,
+        name:
+          (post.title as string) ||
+          `Crime Location ${(post.district as string) || 'Unknown'}`,
+        centerLatitude: parseFloat(post.latitude as string),
+        centerLongitude: parseFloat(post.longitude as string),
+        radiusMeters: 2,
         riskLevel,
-        district: hotspot.district as string,
-        division: hotspot.division as string,
+        district: (post.district as string) || undefined,
+        division: (post.division as string) || undefined,
       });
       created++;
+      // eslint-disable-next-line no-console
       console.log(
-        `[Geofence] ✓ Created zone: ${
-          hotspot.district || 'Unknown'
-        } Crime Hotspot (${riskLevel})`
+        `[Geofence] ✓ Created 2m zone for post ${post.id as string}: "${
+          post.title as string
+        }" (${riskLevel})`
       );
     } catch (error) {
-      console.error(`[Geofence] ✗ Failed to create zone:`, error);
+      // eslint-disable-next-line no-console
+      console.error(
+        `[Geofence] ✗ Failed to create zone for post ${post.id as string}:`,
+        error
+      );
     }
   }
 
+  // eslint-disable-next-line no-console
   console.log(
-    `[Geofence Auto-Generate] Summary - Created: ${created}, Skipped: ${skipped}, Total hotspots: ${hotspots.rows.length}`
+    `[Geofence Auto-Generate] Summary - Created: ${created}, Skipped: ${skipped}, Total posts: ${posts.length}`
   );
 
   return {
     created,
     skipped,
-    totalHotspots: hotspots.rows.length,
+    totalPosts: posts.length,
   };
 };
 
@@ -508,5 +573,6 @@ export const GeofenceService = {
   recordUserLocation,
   getUserLocationHistory,
   autoGenerateGeofenceZones,
+  createGeofenceForPost,
   calculateDistance,
 };

@@ -25,7 +25,6 @@ import { CircleLayer } from "mapbox-gl";
 import { SymbolLayer } from "mapbox-gl";
 
 import axiosInstance from "@/src/libs/AxiosInstance";
-import { SessionLocationService } from "@/src/services/SessionLocationService";
 
 interface GeofenceZone {
   id: string;
@@ -51,7 +50,6 @@ const GeofenceManager: React.FC<GeofenceManagerProps> = ({
 }) => {
   const mapRef = useRef<MapRef>(null);
   const draw = useRef<MapboxDraw | null>(null);
-  const [mapLoaded, setMapLoaded] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [selectedZone, setSelectedZone] = useState<GeofenceZone | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -100,7 +98,7 @@ const GeofenceManager: React.FC<GeofenceManagerProps> = ({
       }
     });
 
-    setMapLoaded(true);
+    // No need to set mapLoaded state
   }, []);
 
   // Display existing zones
@@ -134,9 +132,11 @@ const GeofenceManager: React.FC<GeofenceManagerProps> = ({
         ["linear"],
         ["zoom"],
         10,
-        ["get", "radius"],
+        2,
         15,
-        ["*", ["get", "radius"], 50],
+        ["*", ["get", "radius"], 2],
+        18,
+        ["*", ["get", "radius"], 10],
       ],
       "circle-color": [
         "match",
@@ -265,7 +265,7 @@ const GeofenceManager: React.FC<GeofenceManagerProps> = ({
   const handleAutoGenerate = async () => {
     if (
       !confirm(
-        "This will auto-generate geofence zones from crime data (last 90 days). Continue?"
+        "This will auto-generate 2-meter geofence zones from all approved crime posts. Continue?"
       )
     )
       return;
@@ -273,6 +273,7 @@ const GeofenceManager: React.FC<GeofenceManagerProps> = ({
     setIsGenerating(true);
     try {
       const { data } = await axiosInstance.post("/geofence/auto-generate");
+
       toast.success(data.message || "Geofence zones generated successfully!");
       onZoneUpdated();
     } catch (error: any) {
@@ -320,8 +321,10 @@ const GeofenceManager: React.FC<GeofenceManagerProps> = ({
       <div className="absolute top-4 left-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-xs">
         <h4 className="font-semibold mb-2">🛡️ Geofence Manager</h4>
         <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
-          Click the <strong>point tool</strong> in the top-left to place a new
-          geofence zone on the map. Click existing zones to edit or delete them.
+          Geofence zones (2m radius) are <strong>automatically created</strong>{" "}
+          when posts are approved. Use the button below to bulk-generate zones
+          for existing approved posts, or use the <strong>point tool</strong> to
+          manually add custom zones.
         </p>
         <Button
           className="w-full bg-[#a50034] text-white"
@@ -329,7 +332,7 @@ const GeofenceManager: React.FC<GeofenceManagerProps> = ({
           size="sm"
           onClick={handleAutoGenerate}
         >
-          {isGenerating ? "Generating..." : "🤖 Auto-Generate Zones"}
+          {isGenerating ? "Generating..." : "🤖 Auto-Generate All Zones"}
         </Button>
       </div>
 
@@ -346,7 +349,7 @@ const GeofenceManager: React.FC<GeofenceManagerProps> = ({
               onClick={() => {
                 mapRef.current?.flyTo({
                   center: [zone.centerLongitude, zone.centerLatitude],
-                  zoom: 13,
+                  zoom: 18,
                 });
               }}
             >

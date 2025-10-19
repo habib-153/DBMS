@@ -119,9 +119,11 @@ const MapContainer: React.FC<MapContainerProps> = ({
         ["linear"],
         ["zoom"],
         10,
-        ["get", "radius"],
+        2,
         15,
-        ["*", ["get", "radius"], 50],
+        ["*", ["get", "radius"], 2],
+        18,
+        ["*", ["get", "radius"], 10],
       ],
       "circle-color": [
         "match",

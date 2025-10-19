@@ -2,9 +2,16 @@ import httpStatus from 'http-status';
 import { catchAsync } from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
 import { CommentService } from './comment.service';
+import { TImageFile } from '../../interfaces/image.interface';
 
 const createComment = catchAsync(async (req, res) => {
-  const result = await CommentService.createComment(req.body, req.user.id);
+  const imageFile = req.file as TImageFile | undefined;
+
+  const result = await CommentService.createComment(
+    req.body,
+    req.user.id,
+    imageFile
+  );
 
   sendResponse(res, {
     success: true,
@@ -16,7 +23,14 @@ const createComment = catchAsync(async (req, res) => {
 
 const updateComment = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await CommentService.updateComment(id, req.body, req.user.id);
+  const imageFile = req.file as TImageFile | undefined;
+
+  const result = await CommentService.updateComment(
+    id,
+    req.body,
+    req.user.id,
+    imageFile
+  );
 
   sendResponse(res, {
     success: true,

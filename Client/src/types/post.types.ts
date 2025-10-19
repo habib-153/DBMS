@@ -3,6 +3,7 @@ export interface IPost {
   title: string;
   description: string;
   image: string;
+  video?: string;
   location: string;
   district: string;
   division: string;
