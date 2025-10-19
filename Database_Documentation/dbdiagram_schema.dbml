@@ -1,0 +1,412 @@
+// Warden - Crime Reporting and Safety Platform
+// Database Schema for dbdiagram.io
+
+Project Warden {
+  database_type: 'PostgreSQL'
+  Note: '''
+  # Warden - Crime Reporting and Community Safety Platform
+  
+  A comprehensive platform for crime reporting, community verification, 
+  and public safety. Features include:
+  - User authentication with OTP verification
+  - Crime post reporting with AI-powered image analysis
+  - Community voting and verification system
+  - Geofence-based safety warnings
+  - Real-time notifications (FCM)
+  - Location tracking and heatmaps
+  - Analytics and trending crime reports
+  - Admin moderation and report management
+  
+  Built with: Next.js 14, Node.js, PostgreSQL (Neon), Firebase Cloud Messaging
+  '''
+}
+
+// ============================================
+// ENUMS
+// ============================================
+Enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+Enum UserStatus {
+  ACTIVE
+  BLOCKED
+  DELETED
+}
+
+Enum PostStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+Enum ReportStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+Enum VoteType {
+  UP
+  DOWN
+}
+
+Enum CrimeCategory {
+  MURDER
+  THEFT
+  PICKPOCKET
+  BURGLARY
+  DACOITY
+  ASSAULT
+  FRAUD
+  VANDALISM
+  KIDNAPPING
+  OTHERS
+}
+
+Enum NotificationType {
+  GEOFENCE_WARNING
+  POST_APPROVED
+  POST_REJECTED
+  COMMENT_REPLY
+  UPVOTE
+  FOLLOW
+  REPORT_REVIEWED
+  SYSTEM_ALERT
+}
+
+// ============================================
+// USER MANAGEMENT
+// ============================================
+Table users [headercolor: #3498DB, note: 'Core user accounts and authentication'] {
+  id text [pk, note: 'UUID']
+  name text [not null]
+  email text [not null, unique]
+  password text [not null, note: 'bcrypt hashed']
+  phone text [unique]
+  address text
+  profilePhoto text [note: 'Cloudinary URL']
+  role UserRole [not null, default: 'USER']
+  status UserStatus [not null, default: 'ACTIVE']
+  isVerified boolean [not null, default: false, note: 'Email/OTP verified']
+  otp text [note: 'Current OTP code']
+  otp_expires_at timestamp [note: 'OTP expiration time']
+  needPasswordChange boolean [not null, default: true]
+  passwordChangedAt timestamp
+  
+  // Location tracking
+  latitude double
+  longitude double
+  lastLocationLatitude double
+  lastLocationLongitude double
+  lastLocationUpdated timestamp
+  
+  // Safety features
+  safeTravelMode boolean [default: false]
+  notificationRadius integer [default: 1000, note: 'Meters']
+  
+  createdAt timestamp [not null, default: `now()`]
+  updatedAt timestamp [not null]
+  
+  indexes {
+    email [unique, name: 'users_email_key']
+    phone [unique, name: 'users_phone_key']
+    (lastLocationLatitude, lastLocationLongitude) [name: 'users_location_idx']
+  }
+}
+
+Table user_sessions [headercolor: #E74C3C, note: 'Active user sessions and login tracking'] {
+  id text [pk]
+  userId text [not null, ref: > users.id]
+  sessionToken text [not null, unique]
+  ipAddress text
+  userAgent text
+  browser text
+  os text
+  device text
+  country text
+  city text
+  latitude double
+  longitude double
+  isActive boolean [default: true]
+  lastActivity timestamp [default: `now()`]
+  loginAt timestamp [default: `now()`]
+  logoutAt timestamp
+  createdAt timestamp [not null, default: `now()`]
+  
+  indexes {
+    userId [name: 'user_sessions_userId_idx']
+    isActive [name: 'user_sessions_isActive_idx']
+    loginAt [name: 'user_sessions_loginAt_idx']
+  }
+}
+
+Table follows [headercolor: #9B59B6, note: 'User follow relationships'] {
+  id text [pk]
+  followerId text [not null, ref: > users.id]
+  followingId text [not null, ref: > users.id]
+  createdAt timestamp [not null, default: `now()`]
+  
+  indexes {
+    (followerId, followingId) [unique, name: 'follows_followerId_followingId_key']
+  }
+}
+
+// ============================================
+// LOCATION MANAGEMENT
+// ============================================
+Table division [headercolor: #2ECC71, note: 'Bangladesh divisions'] {
+  id integer [pk, increment]
+  name varchar(100) [not null]
+  bn_name varchar(100)
+  url varchar(255)
+}
+
+Table district [headercolor: #2ECC71, note: 'Bangladesh districts'] {
+  id integer [pk, increment]
+  division_id integer [not null, ref: > division.id]
+  name varchar(100) [not null]
+  bn_name varchar(100)
+  lat decimal(10,7)
+  lon decimal(10,7)
+  url varchar(255)
+}
+
+// ============================================
+// CRIME REPORTING
+// ============================================
+Table posts [headercolor: #E67E22, note: 'Crime reports from users'] {
+  id text [pk]
+  title text [not null]
+  description text [not null]
+  image text [not null, note: 'Cloudinary URL']
+  location text [not null, note: 'Address/Place name']
+  district text [not null]
+  division text [not null]
+  latitude double
+  longitude double
+  
+  // Crime details
+  category CrimeCategory [default: 'OTHERS']
+  crimeDate timestamp [not null, note: 'When crime occurred']
+  postDate timestamp [not null, default: `now()`]
+  
+  // Moderation
+  status PostStatus [not null, default: 'PENDING']
+  isDeleted boolean [not null, default: false]
+  
+  // Verification & engagement
+  verificationScore decimal(10,2) [not null, default: 50.0]
+  aiVerificationScore decimal(5,2)
+  reportCount integer [not null, default: 0]
+  
+  authorId text [not null, ref: > users.id]
+  createdAt timestamp [not null, default: `now()`]
+  updatedAt timestamp [not null]
+  
+  indexes {
+    authorId [name: 'posts_authorId_idx']
+    category [name: 'posts_category_idx']
+    verificationScore [name: 'posts_verificationScore_idx']
+    reportCount [name: 'posts_reportCount_idx']
+    (latitude, longitude) [name: 'posts_location_idx']
+  }
+}
+
+Table comments [headercolor: #1ABC9C, note: 'User comments on crime posts'] {
+  id text [pk]
+  content text [not null]
+  image text [note: 'Proof/evidence image']
+  postId text [not null, ref: > posts.id]
+  authorId text [not null, ref: > users.id]
+  parentId text [ref: > comments.id, note: 'For nested replies']
+  isDeleted boolean [not null, default: false]
+  createdAt timestamp [not null, default: `now()`]
+  updatedAt timestamp [not null]
+  
+  indexes {
+    postId [name: 'comments_postId_idx']
+    authorId [name: 'comments_authorId_idx']
+    parentId [name: 'comments_parentId_idx']
+  }
+}
+
+Table post_votes [headercolor: #34495E, note: 'Community upvotes/downvotes on posts'] {
+  id text [pk]
+  userId text [not null, ref: > users.id]
+  postId text [not null, ref: > posts.id]
+  type VoteType [not null]
+  createdAt timestamp [not null, default: `now()`]
+  
+  indexes {
+    (userId, postId) [unique, name: 'post_votes_userId_postId_key']
+  }
+}
+
+Table comment_votes [headercolor: #34495E, note: 'Community upvotes/downvotes on comments'] {
+  id text [pk]
+  userId text [not null, ref: > users.id]
+  commentId text [not null, ref: > comments.id]
+  type VoteType [not null]
+  createdAt timestamp [not null, default: `now()`]
+  
+  indexes {
+    (userId, commentId) [unique, name: 'comment_votes_userId_commentId_key']
+  }
+}
+
+Table post_reports [headercolor: #E91E63, note: 'User-reported inappropriate posts'] {
+  id text [pk]
+  postId text [not null, ref: > posts.id]
+  userId text [not null, ref: > users.id]
+  reason text [not null]
+  description text
+  status ReportStatus [not null, default: 'PENDING']
+  reviewedBy text [ref: > users.id]
+  reviewedAt timestamp
+  createdAt timestamp [not null, default: `now()`]
+  
+  indexes {
+    (userId, postId) [unique, name: 'post_reports_userId_postId_key']
+    status [name: 'post_reports_status_idx']
+  }
+}
+
+// ============================================
+// GEOFENCING & LOCATION
+// ============================================
+Table geofence_zones [headercolor: #D35400, note: 'High-crime danger zones'] {
+  id text [pk]
+  name text [not null]
+  centerLatitude double [not null]
+  centerLongitude double [not null]
+  radiusMeters integer [not null, note: 'Zone radius in meters']
+  crimeCount integer [default: 0]
+  averageVerificationScore decimal(5,2) [default: 50.0]
+  riskLevel text [default: 'MEDIUM', note: 'LOW, MEDIUM, HIGH, CRITICAL']
+  district text
+  division text
+  isActive boolean [default: true]
+  createdAt timestamp [not null, default: `now()`]
+  updatedAt timestamp [not null, default: `now()`]
+  
+  indexes {
+    (centerLatitude, centerLongitude) [name: 'geofence_zones_location_idx']
+    isActive [name: 'geofence_zones_isActive_idx']
+    riskLevel [name: 'geofence_zones_riskLevel_idx']
+  }
+}
+
+Table user_location_history [headercolor: #95A5A6, note: 'GPS tracking and geofence entry logs'] {
+  id text [pk]
+  userId text [not null, ref: > users.id]
+  latitude double [not null]
+  longitude double [not null]
+  accuracy double [note: 'GPS accuracy in meters']
+  address text
+  activity text [note: 'stationary, walking, in_vehicle']
+  geofenceZoneId text [ref: > geofence_zones.id]
+  notificationSent boolean [default: false]
+  timestamp timestamp [not null, default: `now()`]
+  
+  indexes {
+    userId [name: 'user_location_history_userId_idx']
+    timestamp [name: 'user_location_history_timestamp_idx']
+    geofenceZoneId [name: 'user_location_history_geofenceZoneId_idx']
+  }
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+Table notifications [headercolor: #FF5722, note: 'In-app and push notifications'] {
+  id text [pk]
+  userId text [not null, ref: > users.id]
+  type NotificationType [not null]
+  title text [not null]
+  message text [not null]
+  data jsonb [note: 'Additional metadata (postId, etc.)']
+  isRead boolean [default: false]
+  isPush boolean [default: false, note: 'Sent via FCM']
+  createdAt timestamp [not null, default: `now()`]
+  
+  indexes {
+    userId [name: 'notifications_userId_idx']
+    isRead [name: 'notifications_isRead_idx']
+    createdAt [name: 'notifications_createdAt_idx']
+  }
+}
+
+Table push_notification_tokens [headercolor: #C0392B, note: 'FCM tokens for push notifications'] {
+  id text [pk]
+  userId text [not null, ref: > users.id]
+  token text [not null, unique, note: 'FCM token']
+  platform text [not null, note: 'web, android, ios']
+  isActive boolean [default: true]
+  createdAt timestamp [not null, default: `now()`]
+  updatedAt timestamp [not null, default: `now()`]
+  
+  indexes {
+    userId [name: 'push_notification_tokens_userId_idx']
+    isActive [name: 'push_notification_tokens_isActive_idx']
+  }
+}
+
+// ============================================
+// AI & ANALYTICS
+// ============================================
+Table ai_analysis_logs [headercolor: #7F8C8D, note: 'AI image analysis and verification logs'] {
+  id text [pk]
+  postId text [not null, ref: > posts.id]
+  analysisType text [not null, note: 'roboflow, image_classification']
+  model text
+  confidence decimal(5,2)
+  predictions jsonb [note: 'Detailed AI predictions']
+  isCrimeRelated boolean
+  detectedObjects text[]
+  processingTime integer [note: 'Milliseconds']
+  status text [default: 'SUCCESS', note: 'SUCCESS, FAILED, PENDING']
+  errorMessage text
+  createdAt timestamp [not null, default: `now()`]
+  
+  indexes {
+    postId [name: 'ai_analysis_logs_postId_idx']
+    analysisType [name: 'ai_analysis_logs_analysisType_idx']
+    createdAt [name: 'ai_analysis_logs_createdAt_idx']
+  }
+}
+
+// ============================================
+// TABLE GROUPS
+// ============================================
+TableGroup user_management {
+  users
+  user_sessions
+  follows
+}
+
+TableGroup location_system {
+  division
+  district
+  geofence_zones
+  user_location_history
+}
+
+TableGroup crime_reporting {
+  posts
+  comments
+  post_votes
+  comment_votes
+  post_reports
+}
+
+TableGroup notification_system {
+  notifications
+  push_notification_tokens
+}
+
+TableGroup ai_analytics {
+  ai_analysis_logs
+}
