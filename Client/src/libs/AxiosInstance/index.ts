@@ -21,7 +21,6 @@ axiosInstance.interceptors.request.use(
           if (accessToken) {
             config.headers = config.headers || {};
             // Ensure Bearer prefix so server can parse uniformly
-            // @ts-ignore
             config.headers["Authorization"] = accessToken.startsWith("Bearer ")
               ? accessToken
               : `Bearer ${accessToken}`;
@@ -30,9 +29,16 @@ axiosInstance.interceptors.request.use(
           // dynamic import failed; ignore
         }
       } else {
-        // Client-side: we rely on cookies being sent (withCredentials=true)
-        // to allow server middleware to read token from http-only cookie.
-        // Do not attempt to read httpOnly cookie from document.cookie.
+        // Client-side: Try to get accessToken from localStorage as fallback
+        // (cookies should be sent automatically via withCredentials)
+        const accessToken = localStorage.getItem("accessToken");
+
+        if (accessToken) {
+          config.headers = config.headers || {};
+          config.headers["Authorization"] = accessToken.startsWith("Bearer ")
+            ? accessToken
+            : `Bearer ${accessToken}`;
+        }
       }
     } catch (e) {
       // ignore and continue
@@ -41,6 +47,49 @@ axiosInstance.interceptors.request.use(
     return config;
   },
   function (error) {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor to handle 401 errors and refresh token
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    // If error is 401 and we haven't tried to refresh yet
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        // Try to refresh the token
+        const { data } = await axiosInstance.post("/auth/refresh-token");
+
+        if (data?.data?.accessToken) {
+          // Store new access token
+          if (typeof window !== "undefined") {
+            localStorage.setItem("accessToken", data.data.accessToken);
+          }
+
+          // Retry the original request with new token
+          originalRequest.headers["Authorization"] =
+            data.data.accessToken.startsWith("Bearer ")
+              ? data.data.accessToken
+              : `Bearer ${data.data.accessToken}`;
+
+          return axiosInstance(originalRequest);
+        }
+      } catch (refreshError) {
+        // Refresh failed, redirect to login
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("accessToken");
+          window.location.href = "/login";
+        }
+
+        return Promise.reject(refreshError);
+      }
+    }
+
     return Promise.reject(error);
   }
 );

@@ -14,6 +14,7 @@ import { useUser } from "@/src/context/user.provider";
 import { logout } from "@/src/services/AuthService";
 import { IUser } from "@/src/types";
 import { protectedRoutes } from "@/src/constant";
+import { clearTokens } from "@/src/utils/tokenStorage";
 
 interface IProps {
   user: IUser;
@@ -26,6 +27,7 @@ export default function NavbarDropdown({ user }: IProps) {
 
   const handleLogout = () => {
     logout();
+    clearTokens(); // Clear client-side tokens
     userLoading(true);
 
     if (protectedRoutes.some((route) => pathname.match(route))) {
@@ -69,9 +71,7 @@ export default function NavbarDropdown({ user }: IProps) {
           {user?.role === "ADMIN" || user?.role === "SUPER_ADMIN" ? (
             <DropdownItem
               key="dashboard"
-              onClick={() =>
-                handleNavigation("/admin" )
-              }
+              onClick={() => handleNavigation("/admin")}
             >
               Dashboard
             </DropdownItem>

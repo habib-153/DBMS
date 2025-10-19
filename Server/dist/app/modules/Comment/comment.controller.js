@@ -18,7 +18,8 @@ const catchAsync_1 = require("../../utils/catchAsync");
 const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
 const comment_service_1 = require("./comment.service");
 const createComment = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield comment_service_1.CommentService.createComment(req.body, req.user.id);
+    const imageFile = req.file;
+    const result = yield comment_service_1.CommentService.createComment(req.body, req.user.id, imageFile);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.CREATED,
@@ -28,7 +29,8 @@ const createComment = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 
 }));
 const updateComment = (0, catchAsync_1.catchAsync)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    const result = yield comment_service_1.CommentService.updateComment(id, req.body, req.user.id);
+    const imageFile = req.file;
+    const result = yield comment_service_1.CommentService.updateComment(id, req.body, req.user.id, imageFile);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,

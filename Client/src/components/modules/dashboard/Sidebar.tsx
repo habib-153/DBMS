@@ -3,8 +3,6 @@ import { Button } from "@heroui/button";
 import { Divider } from "@heroui/divider";
 import {
   MessageSquareQuote,
-  Contact,
-  ContactRound,
   Menu,
   LogOut,
   X,
@@ -49,6 +47,11 @@ const Sidebar = ({ specificLinks, title }: SidebarProps) => {
       userLoading(true);
       // wait for server-side logout to mark session inactive
       await logout();
+
+      // Import clearTokens dynamically to avoid SSR issues
+      const { clearTokens } = await import("@/src/utils/tokenStorage");
+
+      clearTokens(); // Clear client-side tokens
 
       if (protectedRoutes.some((route) => pathname.match(route))) {
         router.push("/");

@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CommentService = void 0;
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const http_status_1 = __importDefault(require("http-status"));
 const crypto_1 = require("crypto");
 const database_1 = __importDefault(require("../../../shared/database"));
@@ -96,13 +97,15 @@ const removeCommentDownvote = (commentId, userId) => __awaiter(void 0, void 0, v
     return yield removeCommentVote(commentId, userId);
 });
 exports.CommentService = {
-    createComment: (commentData, authorId) => __awaiter(void 0, void 0, void 0, function* () {
+    createComment: (commentData, authorId, imageFile) => __awaiter(void 0, void 0, void 0, function* () {
         const commentId = generateUuid();
         const now = new Date();
         // If parentId is provided, validate the parent exists and belongs to same post
         if (commentData.parentId) {
             const parentQuery = `SELECT id, "postId" FROM comments WHERE id = $1 AND "isDeleted" = false`;
-            const parentRes = yield database_1.default.query(parentQuery, [commentData.parentId]);
+            const parentRes = yield database_1.default.query(parentQuery, [
+                commentData.parentId,
+            ]);
             const parent = parentRes.rows[0];
             if (!parent) {
                 throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Parent comment not found');
@@ -119,7 +122,7 @@ exports.CommentService = {
         const values = [
             commentId,
             commentData.content,
-            commentData.image || null,
+            (imageFile === null || imageFile === void 0 ? void 0 : imageFile.path) || commentData.image || null,
             commentData.postId,
             commentData.parentId || null,
             authorId,
@@ -135,7 +138,7 @@ exports.CommentService = {
         yield post_service_raw_1.PostService.calculateVerificationScore(commentData.postId);
         return createdComment;
     }),
-    updateComment: (id, updateData, userId) => __awaiter(void 0, void 0, void 0, function* () {
+    updateComment: (id, updateData, userId, imageFile) => __awaiter(void 0, void 0, void 0, function* () {
         // Check if comment exists and user owns it
         const checkQuery = `
 			SELECT * FROM comments 
@@ -158,7 +161,12 @@ exports.CommentService = {
             values.push(updateData.content);
             paramIndex++;
         }
-        if (updateData.image !== undefined) {
+        if (imageFile) {
+            updateFields.push(`image = $${paramIndex}`);
+            values.push(imageFile.path);
+            paramIndex++;
+        }
+        else if (updateData.image !== undefined) {
             updateFields.push(`image = $${paramIndex}`);
             values.push(updateData.image);
             paramIndex++;
