@@ -21,14 +21,14 @@ const getUserNotifications = (0, catchAsync_1.catchAsync)((req, res) => __awaite
     var _a;
     const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
     const limit = parseInt(req.query.limit) || 50;
-    if (!userId) {
-        return (0, sendResponse_1.default)(res, {
-            statusCode: http_status_1.default.UNAUTHORIZED,
-            success: false,
-            message: 'User not authenticated',
-            data: null,
-        });
-    }
+    // if (!userId) {
+    //   return sendResponse(res, {
+    //     statusCode: httpStatus.UNAUTHORIZED,
+    //     success: false,
+    //     message: 'User not authenticated',
+    //     data: null,
+    //   });
+    // }
     const notifications = yield notification_service_1.NotificationService.getUserNotifications(userId, limit);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,

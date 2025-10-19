@@ -8,14 +8,14 @@ const getUserNotifications = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?.id;
   const limit = parseInt(req.query.limit as string) || 50;
 
-  if (!userId) {
-    return sendResponse(res, {
-      statusCode: httpStatus.UNAUTHORIZED,
-      success: false,
-      message: 'User not authenticated',
-      data: null,
-    });
-  }
+  // if (!userId) {
+  //   return sendResponse(res, {
+  //     statusCode: httpStatus.UNAUTHORIZED,
+  //     success: false,
+  //     message: 'User not authenticated',
+  //     data: null,
+  //   });
+  // }
 
   const notifications = await NotificationService.getUserNotifications(
     userId,

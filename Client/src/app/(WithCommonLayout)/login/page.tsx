@@ -50,13 +50,38 @@ export default function LoginPage() {
   const onSubmit: SubmitHandler<FieldValues> = (data) => {
     handleUserLogin(data, {
       onError: (err: any) => {
-        const errorMessage = err?.message || "Login failed";
+        const rawMessage =
+          err?.response?.data?.message || err?.message || "Login failed";
+        const lower = String(rawMessage).toLowerCase();
 
         // Check if error is about unverified email
-        if (errorMessage.toLowerCase().includes("verify your email")) {
+        if (lower.includes("verify your email")) {
           setUnverifiedEmail(data.email);
           setShowVerifyModal(true);
           toast.info("Please verify your email to continue");
+
+          return;
+        }
+
+        // Map common auth failure messages to a generic message
+        const authFailureKeywords = [
+          "password",
+          "do not matched",
+          "not found",
+          "forbidden",
+          "invalid credentials",
+          "incorrect",
+        ];
+
+        const isAuthFailure = authFailureKeywords.some((k) =>
+          lower.includes(k)
+        );
+
+        if (isAuthFailure) {
+          toast.error("Incorrect email or password");
+        } else {
+          // Fallback to server message for other errors
+          toast.error(String(rawMessage));
         }
       },
     });

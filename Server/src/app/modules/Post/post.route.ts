@@ -55,7 +55,7 @@ router.delete(
 );
 router.post(
   '/:postId/upvote',
-  auth('USER', 'SUPER_ADMIN', 'ADMIN'),
+  auth(USER_ROLE.ADMIN, USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN),
   PostControllers.addPostUpvote
 );
 router.post(
@@ -77,28 +77,28 @@ router.delete(
 // Report routes
 router.post(
   '/:postId/report',
-  auth('USER', 'ADMIN', 'SUPER_ADMIN'),
+  auth(USER_ROLE.ADMIN, USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN),
   validateRequest(PostValidation.reportPostValidationSchema),
   PostControllers.reportPost
 );
 
 router.get(
   '/:postId/reports',
-  auth('ADMIN', 'SUPER_ADMIN'),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
   PostControllers.getPostReports
 );
 
 // Get all pending reports (Admin only)
 router.get(
   '/reports/pending',
-  auth('ADMIN', 'SUPER_ADMIN'),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
   PostControllers.getAllPendingReports
 );
 
 // Review report (Approve or Reject) - Admin only
 router.patch(
   '/reports/:reportId/review',
-  auth('ADMIN', 'SUPER_ADMIN'),
+  auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN),
   validateRequest(PostValidation.reviewReportValidationSchema),
   PostControllers.reviewReport
 );
