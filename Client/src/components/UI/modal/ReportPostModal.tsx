@@ -108,13 +108,13 @@ export default function ReportPostModal({
               onValueChange={setDescription}
             />
 
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+            {/* <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
               <p className="text-xs text-yellow-800 dark:text-yellow-200">
                 <strong>Note:</strong> Each report reduces the post&apos;s
                 verification score by 5 points. Posts with 10 or more reports
                 will be automatically removed.
               </p>
-            </div>
+            </div> */}
           </div>
         </ModalBody>
         <ModalFooter>

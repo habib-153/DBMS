@@ -272,7 +272,7 @@ const ProfilePage = ({ user }: { user: IUser }) => {
             title={
               <div className="flex items-center gap-1">
                 <span>🗺️</span>
-                <span className="font-semibold">Map</span>
+                <span className="font-semibold">Connect</span>
               </div>
             }
           />
