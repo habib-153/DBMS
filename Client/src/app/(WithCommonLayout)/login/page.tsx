@@ -50,12 +50,33 @@ export default function LoginPage() {
   const onSubmit: SubmitHandler<FieldValues> = (data) => {
     handleUserLogin(data, {
       onError: (err: any) => {
-        const rawMessage =
-          err?.response?.data?.message || err?.message || "Login failed";
-        const lower = String(rawMessage).toLowerCase();
+        console.log("Login error:", err); // Debug log
+
+        // Safely extract error message
+        let rawMessage = "Login failed";
+
+        try {
+          if (err?.response?.data?.message) {
+            rawMessage = String(err.response.data.message);
+          } else if (err?.response?.data?.errorSources?.[0]?.message) {
+            rawMessage = String(err.response.data.errorSources[0].message);
+          } else if (err?.message) {
+            rawMessage = String(err.message);
+          }
+        } catch (e) {
+          console.error("Error parsing error message:", e);
+          rawMessage = "Login failed";
+        }
+
+        // Clean the message - take only first sentence
+        const cleanMessage = rawMessage.split("\n")[0].split(".")[0].trim();
+        const lower = cleanMessage.toLowerCase();
 
         // Check if error is about unverified email
-        if (lower.includes("verify your email")) {
+        if (
+          lower.includes("verify your email") ||
+          lower.includes("verification")
+        ) {
           setUnverifiedEmail(data.email);
           setShowVerifyModal(true);
           toast.info("Please verify your email to continue");
@@ -71,6 +92,7 @@ export default function LoginPage() {
           "forbidden",
           "invalid credentials",
           "incorrect",
+          "authentication",
         ];
 
         const isAuthFailure = authFailureKeywords.some((k) =>
@@ -79,9 +101,18 @@ export default function LoginPage() {
 
         if (isAuthFailure) {
           toast.error("Incorrect email or password");
+        } else if (lower.includes("blocked")) {
+          toast.error("Your account has been blocked");
+        } else if (lower.includes("deleted")) {
+          toast.error("This account no longer exists");
         } else {
-          // Fallback to server message for other errors
-          toast.error(String(rawMessage));
+          // Safe fallback - limit message length
+          const safeMessage =
+            cleanMessage.length > 100
+              ? "Login failed. Please try again."
+              : cleanMessage || "Login failed. Please try again.";
+
+          toast.error(safeMessage);
         }
       },
     });

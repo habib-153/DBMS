@@ -37,13 +37,7 @@ export const useUserLogin = () => {
         setTokens(data.data.accessToken, data.data.refreshToken);
       }
     },
-    onError: (error) => {
-      // More specific error handling
-      const errorMessage =
-        error.message || "Login failed. Please check your credentials.";
-
-      toast.error(errorMessage);
-    },
+    // Remove onError here - let the component handle errors to avoid duplicate toasts
   });
 };
 

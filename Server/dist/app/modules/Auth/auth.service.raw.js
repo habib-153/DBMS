@@ -121,7 +121,7 @@ const loginUser = (payload, requestMetadata) => __awaiter(void 0, void 0, void 0
     }
     const isCorrectPassword = yield bcryptjs_1.default.compare(payload.password, user.password);
     if (!isCorrectPassword) {
-        throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'Password do not matched');
+        throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'Incorrect password');
     }
     // Check if user email is verified
     if (!user.isVerified) {

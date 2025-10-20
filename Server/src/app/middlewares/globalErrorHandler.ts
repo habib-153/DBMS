@@ -89,6 +89,17 @@ const globalErrorHandler: ErrorRequestHandler = async (err, req, res, next) => {
     ];
   }
 
+  // Log errors in production for server-side debugging
+  if (config.NODE_ENV === 'production') {
+    console.error('Production Error:', {
+      statusCode,
+      message,
+      path: req.path,
+      method: req.method,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   //ultimate return
   return res.status(statusCode).json({
     success: false,

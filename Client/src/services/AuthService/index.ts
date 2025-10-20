@@ -19,14 +19,28 @@ export const registerUser = async (userData: FieldValues) => {
 
     return data;
   } catch (error: any) {
-    // Extract meaningful error message
-    const errorMessage =
-      error?.response?.data?.message ||
-      error?.response?.data?.errorSources?.[0]?.message ||
-      error?.message ||
-      "Registration failed";
+    // Extract meaningful error message safely
+    let errorMessage = "Registration failed";
 
-    throw new Error(errorMessage);
+    try {
+      if (error?.response?.data?.message) {
+        errorMessage = String(error.response.data.message);
+      } else if (error?.response?.data?.errorSources?.[0]?.message) {
+        errorMessage = String(error.response.data.errorSources[0].message);
+      } else if (error?.message) {
+        errorMessage = String(error.message);
+      }
+    } catch (e) {
+      // If any parsing fails, use default message
+      errorMessage = "Registration failed";
+    }
+
+    // Create a proper Error object with just the message (no circular references)
+    const cleanError = new Error(errorMessage);
+    (cleanError as any).statusCode = error?.response?.status;
+    (cleanError as any).responseMessage = errorMessage;
+
+    throw cleanError;
   }
 };
 
@@ -41,14 +55,29 @@ export const loginUser = async (userData: FieldValues) => {
 
     return data;
   } catch (error: any) {
-    // Extract meaningful error message
-    const errorMessage =
-      error?.response?.data?.message ||
-      error?.response?.data?.errorSources?.[0]?.message ||
-      error?.message ||
-      "Login failed";
+    // Extract meaningful error message safely
+    let errorMessage = "Login failed";
 
-    throw new Error(errorMessage);
+    try {
+      if (error?.response?.data?.message) {
+        errorMessage = String(error.response.data.message);
+      } else if (error?.response?.data?.errorSources?.[0]?.message) {
+        errorMessage = String(error.response.data.errorSources[0].message);
+      } else if (error?.message) {
+        errorMessage = String(error.message);
+      }
+    } catch (e) {
+      // If any parsing fails, use default message
+      errorMessage = "Login failed";
+    }
+
+    // Create a proper Error object with just the message (no circular references)
+    const cleanError = new Error(errorMessage);
+    // Attach response data in a serializable way
+    (cleanError as any).statusCode = error?.response?.status;
+    (cleanError as any).responseMessage = errorMessage;
+
+    throw cleanError;
   }
 };
 

@@ -192,7 +192,7 @@ const loginUser = async (
   );
 
   if (!isCorrectPassword) {
-    throw new AppError(httpStatus.FORBIDDEN, 'Password do not matched');
+    throw new AppError(httpStatus.FORBIDDEN, 'Incorrect password');
   }
 
   // Check if user email is verified
