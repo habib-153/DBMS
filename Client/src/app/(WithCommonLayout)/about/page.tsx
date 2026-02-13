@@ -50,7 +50,7 @@ const teamMembers = [
       linkedin: "https://www.linkedin.com/in/habiburrahman153/",
       facebook: "https://www.facebook.com/h.R4hM4n.8",
       github: "https://github.com/habib-153",
-      portfolio: "https://habiburrahmanv2.vercel.app/",
+      portfolio: "https://habiburrahman-web.vercel.app/",
     },
   },
   {
