@@ -51,7 +51,9 @@ export default function PrivacyPage() {
             how advertising, cookies, notifications and location-related
             features are handled on WARDEN.
           </p>
-          <p className="mt-4 text-sm text-white/70">Last updated: March 15, 2026</p>
+          <p className="mt-4 text-sm text-white/70">
+            Last updated: March 15, 2026
+          </p>
         </div>
 
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
@@ -75,8 +77,7 @@ export default function PrivacyPage() {
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
           <h2 className="text-xl font-semibold text-slate-900">Contact</h2>
           <p className="mt-2 text-sm leading-7 text-slate-700 sm:text-base">
-            For privacy-related questions, contact us at
-            {" "}
+            For privacy-related questions, contact us at{" "}
             <a
               className="font-medium text-rose-700 underline underline-offset-4"
               href="mailto:habibur.web04@gmail.com"
@@ -86,8 +87,7 @@ export default function PrivacyPage() {
             .
           </p>
           <p className="mt-4 text-sm leading-7 text-slate-700 sm:text-base">
-            You can also return to the
-            {" "}
+            You can also return to the{" "}
             <Link
               className="font-medium text-rose-700 underline underline-offset-4"
               href="/"
