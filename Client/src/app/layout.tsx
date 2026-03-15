@@ -33,11 +33,12 @@ export default function RootLayout({
   return (
     <html suppressHydrationWarning lang="en">
       <head>
+        
         <script
           async
+          crossOrigin="anonymous"
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8875395790160173"
-          crossorigin="anonymous"
-        ></script>
+         />
         <link href="//fonts.googleapis.com" rel="dns-prefetch" />
         <link
           crossOrigin=""
